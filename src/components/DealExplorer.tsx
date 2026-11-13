@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { LayoutGrid, Table2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BuyerLocale, CurrencyCode, RiderInput } from "@/lib/types";
-import { CurrencyCode as Currencies } from "@/lib/types";
+import { CurrencyCode as Currencies, DEAL_TIERS } from "@/lib/types";
 import type { DealsResult } from "@/lib/deals";
 import { applyFilters, countByTier, DEFAULT_FILTERS, facets as getFacets, type DealFilters } from "@/lib/filters";
 import { ASSETS } from "@/lib/assets";
@@ -15,7 +15,18 @@ import { FilterPanel } from "./FilterPanel";
 import { RecommendationPanel } from "./RecommendationPanel";
 import { RiderForm } from "./RiderForm";
 
-export function DealExplorer({ initialLocale }: { initialLocale: BuyerLocale }) {
+export type DealsLoader = (q: { country: string; currency: CurrencyCode; rider: RiderInput | null }) => Promise<DealsResult>;
+
+const apiLoader: DealsLoader = async ({ country, currency, rider }) => {
+  const q = new URLSearchParams({ country, currency });
+  if (rider) Object.entries(rider).forEach(([k, v]) => q.set(k, String(v)));
+  const res = await fetch(`/api/deals?${q}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
+/** `loadDeals` defaults to the API; the static build computes deals in the browser instead. */
+export function DealExplorer({ initialLocale, loadDeals = apiLoader }: { initialLocale: BuyerLocale; loadDeals?: DealsLoader }) {
   const [rider, setRider] = useState<RiderInput | null>(null);
   const [locale, setLocale] = useState({ country: initialLocale.country, currency: initialLocale.currency });
   const [result, setResult] = useState<DealsResult | null>(null);
@@ -26,15 +37,18 @@ export function DealExplorer({ initialLocale }: { initialLocale: BuyerLocale }) 
 
   const load = useCallback(async () => {
     setLoading(true);
-    const q = new URLSearchParams({ country: locale.country, currency: locale.currency });
-    if (rider) Object.entries(rider).forEach(([k, v]) => q.set(k, String(v)));
     try {
-      const res = await fetch(`/api/deals?${q}`);
-      if (res.ok) setResult(await res.json());
+      const r = await loadDeals({ ...locale, rider });
+      setResult(r);
+      // Open on the best tier that has deals.
+      const counts = countByTier(r.deals);
+      setTab(DEAL_TIERS.find((t) => counts[t] > 0) ?? "all");
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [rider, locale]);
+  }, [rider, locale, loadDeals]);
 
   useEffect(() => { load(); }, [load]);
 

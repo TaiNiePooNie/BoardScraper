@@ -1,6 +1,7 @@
 "use client";
 import { createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink } from "lucide-react";
+import { ProductImg } from "./ProductImg";
 import { useState } from "react";
 import type { Deal } from "@/lib/types";
 import { formatMoney } from "@/lib/pricing/currency";
@@ -14,8 +15,7 @@ const columns = [
     id: "board", header: "Board",
     cell: (c) => (
       <div className="flex items-center gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.row.original.board.images[0]} alt="" className="h-10 w-8 rounded object-contain" />
+        <ProductImg src={c.row.original.board.images[0]} alt="" className="h-10 w-8 rounded object-contain" />
         <div><div className="font-semibold">{c.row.original.board.model}</div><div className="text-xs text-slate-500">{c.row.original.board.brand}</div></div>
       </div>
     ),
