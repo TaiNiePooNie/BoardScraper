@@ -40,8 +40,10 @@ export const BoardSize = z.object({
   lengthCm: z.number(),
   waist: WaistClass,
   waistWidthMm: z.number().optional(),
-  label: z.string(), // as printed by the retailer: "156W", "158 Wide"
+  label: z.string(), // normalized: "156", "156W", "157MW"
   inStock: z.boolean(),
+  /** Per-size price when the retailer prices sizes/colorways differently. */
+  price: z.number().optional(),
 });
 export type BoardSize = z.infer<typeof BoardSize>;
 
@@ -131,6 +133,8 @@ export const Retailer = z.object({
   currency: CurrencyCode,
   /** Whether listed prices already include the retailer's domestic VAT. */
   pricesIncludeVat: z.boolean(),
+  /** EU shops that show one VAT-inclusive price to every EU country (absorbing VAT-rate differences). */
+  fixedGrossInEu: z.boolean().optional(),
   shipping: z.array(ShippingRule),
 });
 export type Retailer = z.infer<typeof Retailer>;
@@ -141,10 +145,12 @@ export const BoardModel = z.object({
   brand: z.string(),
   model: z.string(),
   season: z.string(), // "2025/26"
-  profile: BoardProfile,
-  shape: BoardShape,
-  flex: z.number().min(1).max(10),
+  /** Specs are parsed from retailer copy and may be unknown. */
+  profile: BoardProfile.nullable(),
+  shape: BoardShape.nullable(),
+  flex: z.number().min(1).max(10).nullable(),
   styles: z.array(RidingStyle),
+  /** Best-known MSRP: retailer RRP/compare-at, else highest observed price. */
   msrp: Money,
   images: z.array(z.string()),
   ambassadors: z.array(Ambassador),
@@ -159,6 +165,8 @@ export const Listing = z.object({
   retailerId: z.string(),
   url: z.string().url(),
   price: Money, // as shown on the retailer's site
+  /** Retailer-displayed RRP / compare-at price, if any. */
+  listPrice: z.number().nullable().default(null),
   sizes: z.array(BoardSize),
   history: z.array(PricePoint),
   lastScrapedAt: z.string(),

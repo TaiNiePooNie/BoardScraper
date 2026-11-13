@@ -108,6 +108,7 @@ export function buildMockCatalog() {
         retailerId: ret.id,
         url: `${ret.homepage}/${b.brand}-${b.model}`.toLowerCase().replace(/[^a-z0-9/:.-]+/g, "-"),
         price: { amount: history[history.length - 1].price, currency: ret.currency },
+        listPrice: msrpLocal,
         sizes: sizesFor(r),
         history,
         lastScrapedAt: "2026-11-13T06:00:00Z",

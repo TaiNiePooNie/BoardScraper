@@ -68,6 +68,14 @@ export function DealExplorer({ initialLocale }: { initialLocale: BuyerLocale }) 
         </div>
       </div>
 
+      {result && (
+        <p className="-mt-2 text-xs text-slate-500">
+          {result.source === "mock"
+            ? "Demo data — set DATABASE_URL to show live prices."
+            : `Live prices from ${new Set(deals.map((d) => d.retailer.id)).size} retailers${result.updatedAt ? ` · updated ${new Date(result.updatedAt).toLocaleString()}` : ""}`}
+        </p>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
         <FilterPanel value={filters} onChange={setFilters} facets={facets} currency={locale.currency} wideLocked={!!rec?.requiresWide} />
         <section aria-live="polite">

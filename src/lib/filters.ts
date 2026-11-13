@@ -35,8 +35,9 @@ export function applyFilters(deals: Deal[], f: DealFilters): Deal[] {
   return deals.filter((d) => {
     if (d.grade.discountPct * 100 < f.minDiscountPct) return false;
     if (f.maxTotal !== null && d.landed.total > f.maxTotal) return false;
-    if (d.board.flex < f.flex[0] || d.board.flex > f.flex[1]) return false;
-    if (f.profiles.length && !f.profiles.includes(d.board.profile)) return false;
+    const flexFiltered = f.flex[0] > 1 || f.flex[1] < 10;
+    if (d.board.flex === null ? flexFiltered : d.board.flex < f.flex[0] || d.board.flex > f.flex[1]) return false;
+    if (f.profiles.length && (d.board.profile === null || !f.profiles.includes(d.board.profile))) return false;
     if (f.brands.length && !f.brands.includes(d.board.brand)) return false;
     if (f.retailers.length && !f.retailers.includes(d.retailer.id)) return false;
     if (f.riders.length && !d.board.ambassadors.some((a) => f.riders.includes(a.name))) return false;
@@ -63,6 +64,6 @@ export function facets(deals: Deal[]) {
     riders: uniq(deals.flatMap((d) => d.board.ambassadors.map((a) => a.name))),
     retailers: [...new Map(deals.map((d) => [d.retailer.id, d.retailer.name])).entries()],
     lengths: uniq(deals.flatMap((d) => sizesOf(d).map((s) => s.lengthCm))).sort((a, b) => a - b),
-    profiles: uniq(deals.map((d) => d.board.profile)),
+    profiles: uniq(deals.flatMap((d) => (d.board.profile ? [d.board.profile] : []))),
   };
 }
