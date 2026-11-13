@@ -73,7 +73,8 @@ export function gradeDeal(price: number, msrp: number, stats: PriceStats | null)
   let vsAllTimeLowPct: number | null = null;
   let vsMedianPct: number | null = null;
 
-  if (stats) {
+  // Comparisons against history are only meaningful once we have enough samples.
+  if (stats && hasHistory) {
     vsAllTimeLowPct = (price - stats.allTimeLow) / stats.allTimeLow;
     vsMedianPct = (price - stats.median90d) / stats.median90d;
   }

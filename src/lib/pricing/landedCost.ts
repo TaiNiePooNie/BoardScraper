@@ -41,6 +41,17 @@ export function landedCost(price: number, retailer: Retailer, buyer: BuyerLocale
   if (buyer.country === "US") notes.push("Excl. state sales tax");
 
   const inclusive = displaysVatInclusive(buyer.country);
+
+  // Shop charges its displayed gross price to every EU buyer: VAT is carved out of it.
+  if (retailer.fixedGrossInEu && retailer.pricesIncludeVat && EU.has(retailer.country) && EU.has(buyer.country)) {
+    const gross = convert(price, retailer.currency, buyer.currency);
+    const grossShip = shipBuyer * (1 + rate);
+    return {
+      currency: buyer.currency, item: round2(gross), vat: round2((gross + grossShip) - (gross + grossShip) / (1 + rate)), vatRate: rate,
+      vatIncluded: true, shipping: round2(grossShip), duties: 0, total: round2(gross + grossShip), notes,
+    };
+  }
+
   const item = inclusive && domesticOrOss ? netBuyer * (1 + rate) : netBuyer;
   const total = netBuyer + shipBuyer + duties + vat;
 

@@ -22,5 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   const catalog = await repository.getCatalog();
-  return NextResponse.json(buildDeals(catalog, locale, rider));
+  const result = buildDeals(catalog, locale, rider);
+  const updatedAt = catalog.listings.reduce<string | null>((m, l) => (!m || l.lastScrapedAt > m ? l.lastScrapedAt : m), null);
+  return NextResponse.json({ ...result, source: repository.source, updatedAt });
 }

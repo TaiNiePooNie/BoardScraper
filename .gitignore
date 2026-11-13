@@ -8,3 +8,4 @@ next-env.d.ts
 data/*.json
 !data/.gitkeep
 playwright-report/
+data/pglite/

@@ -117,10 +117,11 @@ export function matchSizes(sizes: BoardSize[], rec: Recommendation): SizeMatch[]
 /** 0..1 score for how well a board's flex + profile suit the riding style. */
 export function styleFit(board: Pick<BoardModel, "flex" | "profile" | "styles">, rec: Recommendation, style: RidingStyle): number {
   const [lo, hi] = rec.flexRange;
-  const flexDist = board.flex < lo ? lo - board.flex : board.flex > hi ? board.flex - hi : 0;
-  const flexScore = Math.max(0, 1 - flexDist / 3);
-  const profileIdx = rec.profiles.indexOf(board.profile);
-  const profileScore = profileIdx === -1 ? 0 : 1 - profileIdx * 0.15;
+  // Unknown specs score neutral (0.5) rather than penalizing scraped boards with sparse copy.
+  const { flex, profile } = board;
+  const flexScore = flex === null ? 0.5 : Math.max(0, 1 - (flex < lo ? lo - flex : flex > hi ? flex - hi : 0) / 3);
+  const profileIdx = profile === null ? -2 : rec.profiles.indexOf(profile);
+  const profileScore = profileIdx === -2 ? 0.5 : profileIdx === -1 ? 0 : 1 - profileIdx * 0.15;
   const tagScore = board.styles.includes(style) ? 1 : 0.4;
   return Math.round((flexScore * 0.4 + profileScore * 0.4 + tagScore * 0.2) * 100) / 100;
 }

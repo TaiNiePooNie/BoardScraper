@@ -2,7 +2,8 @@
 import { ExternalLink, LineChart, Star, Users } from "lucide-react";
 import { useState } from "react";
 import type { Deal } from "@/lib/types";
-import { convert, formatMoney } from "@/lib/pricing/currency";
+import { formatMoney } from "@/lib/pricing/currency";
+import { effectiveMsrp } from "@/lib/deals";
 import { ImageCarousel } from "./ImageCarousel";
 import { PriceHistoryChart } from "./PriceHistoryChart";
 import { TierBadge } from "./TierBadge";
@@ -10,7 +11,7 @@ import { TierBadge } from "./TierBadge";
 export function DealCard({ deal }: { deal: Deal }) {
   const { board, listing, retailer, grade, landed, stats } = deal;
   const [showChart, setShowChart] = useState(false);
-  const msrpLocal = convert(board.msrp.amount, board.msrp.currency, listing.price.currency);
+  const msrpLocal = effectiveMsrp(listing, board);
   const sizes = (deal.matchingSizes.length ? deal.matchingSizes.map((m) => m.size) : listing.sizes).toSorted((a, b) => a.lengthCm - b.lengthCm);
 
   return (
@@ -26,8 +27,12 @@ export function DealCard({ deal }: { deal: Deal }) {
 
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-black">{formatMoney(listing.price.amount, listing.price.currency)}</span>
-        <span className="text-sm text-slate-500 line-through">{formatMoney(msrpLocal, listing.price.currency)}</span>
-        <span className="text-sm font-semibold text-tier-xg">−{Math.round(grade.discountPct * 100)}%</span>
+        {Math.round(grade.discountPct * 100) > 0 && (
+          <>
+            <span className="text-sm text-slate-500 line-through">{formatMoney(msrpLocal, listing.price.currency)}</span>
+            <span className="text-sm font-semibold text-tier-xg">−{Math.round(grade.discountPct * 100)}%</span>
+          </>
+        )}
       </div>
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
@@ -42,9 +47,9 @@ export function DealCard({ deal }: { deal: Deal }) {
       {landed.notes.length > 0 && <p className="text-[11px] text-slate-500">{landed.notes.join(" · ")}</p>}
 
       <div className="flex flex-wrap gap-1">
-        <span className="chip border-slate-300 capitalize dark:border-slate-700">{board.profile.replace("-", " ")}</span>
-        <span className="chip border-slate-300 dark:border-slate-700">Flex {board.flex}/10</span>
-        <span className="chip border-slate-300 capitalize dark:border-slate-700">{board.shape.replace("-", " ")}</span>
+        {board.profile && <span className="chip border-slate-300 capitalize dark:border-slate-700">{board.profile.replace("-", " ")}</span>}
+        {board.flex !== null && <span className="chip border-slate-300 dark:border-slate-700">Flex {board.flex}/10</span>}
+        {board.shape && <span className="chip border-slate-300 capitalize dark:border-slate-700">{board.shape.replace("-", " ")}</span>}
       </div>
       <div className="flex flex-wrap gap-1">
         {sizes.map((s) => (

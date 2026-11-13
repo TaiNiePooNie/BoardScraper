@@ -1,59 +1,93 @@
 /**
- * CLI: npm run scrape -- --retailer=example [--limit=20]
- * Crawls listing pages → product pages, stores a price snapshot per listing.
+ * Scrape → ingest → regrade.
+ *
+ *   npm run scrape                          # all retailers
+ *   npm run scrape -- --retailer=evo --limit=20
+ *   npm run scrape -- --retailer=glisshop --dry-run   # parse only, print, no DB
+ *
+ * Exit code is non-zero if any retailer errored (not if it was merely blocked),
+ * so the scheduled workflow surfaces breakage.
  */
-import { BlockedError, gotoSafe, launchBrowser, newStealthContext } from "./browser";
+import { eq } from "drizzle-orm";
+import { openDb } from "@/db/client";
+import { scrapeRuns } from "@/db/schema";
+import { BlockedError, PoliteFetcher } from "./http";
+import { deactivateMissing, ingestProduct, refreshBoards, upsertRetailer } from "./ingest";
 import { ADAPTERS } from "./retailers";
-import type { ScrapedProduct } from "./retailers/base";
-import { saveSnapshot } from "./store";
 
-const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, "").split("=")));
-const ids = args.retailer ? [args.retailer] : Object.keys(ADAPTERS);
-const limit = Number(args.limit ?? Infinity);
+const args = Object.fromEntries(process.argv.slice(2).map((a) => {
+  const [k, v] = a.replace(/^--/, "").split("=");
+  return [k, v ?? "true"];
+}));
+const ids = args.retailer ? String(args.retailer).split(",") : Object.keys(ADAPTERS);
+const limit = args.limit ? Number(args.limit) : Infinity;
+const dryRun = args["dry-run"] === "true";
 
 async function main() {
-  const browser = await launchBrowser();
+  for (const id of ids) if (!ADAPTERS[id]) throw new Error(`Unknown retailer "${id}". Known: ${Object.keys(ADAPTERS).join(", ")}`);
+
+  const handle = dryRun ? null : await openDb();
+  if (handle) await handle.migrate();
+  let failed = false;
+
   try {
     for (const id of ids) {
       const adapter = ADAPTERS[id];
-      if (!adapter) throw new Error(`Unknown retailer "${id}". Known: ${Object.keys(ADAPTERS).join(", ")}`);
-      const ctx = await newStealthContext(browser, { locale: `en-${adapter.retailer.country}` });
-      const page = await ctx.newPage();
-      const productUrls = new Set<string>();
+      const http = new PoliteFetcher();
+      const log = (m: string) => console.log(`[${id}] ${m}`);
+      const started = Date.now();
+      let seen = 0;
+      const boardIds = new Set<number>();
+      const listingIds: number[] = [];
+      let runId: number | null = null;
+
+      if (handle) {
+        await upsertRetailer(handle.db, adapter.retailer);
+        [{ id: runId }] = await handle.db.insert(scrapeRuns).values({ retailerId: id }).returning({ id: scrapeRuns.id });
+      }
+      const finish = async (status: string, error?: string) => {
+        if (handle && runId !== null) {
+          await handle.db.update(scrapeRuns)
+            .set({ status, finishedAt: new Date(), productsSeen: seen, productsSaved: listingIds.length, error: error ?? null })
+            .where(eq(scrapeRuns.id, runId));
+        }
+      };
 
       try {
-        for (let url of adapter.listingUrls) {
-          for (let guard = 0; url && guard < 50 && productUrls.size < limit; guard++) {
-            await gotoSafe(page, url);
-            const { productUrls: found, nextPage } = await adapter.parseListing(page);
-            found.forEach((u) => productUrls.add(u));
-            url = nextPage ?? "";
+        for await (const p of adapter.crawl({ http, limit, log })) {
+          seen++;
+          if (!handle) {
+            console.log(JSON.stringify({ brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
+            continue;
           }
+          const r = await ingestProduct(handle.db, id, p);
+          boardIds.add(r.boardId);
+          listingIds.push(r.listingId);
         }
-
-        const products: ScrapedProduct[] = [];
-        for (const url of [...productUrls].slice(0, limit)) {
-          try {
-            await gotoSafe(page, url);
-            const p = await adapter.parseProduct(page);
-            if (p) products.push(p);
-          } catch (e) {
-            if (e instanceof BlockedError) throw e;
-            console.warn(`  ✗ ${url}: ${(e as Error).message}`);
-          }
+        if (handle) {
+          await refreshBoards(handle.db, [...boardIds]);
+          const off = Number.isFinite(limit) ? 0 : await deactivateMissing(handle.db, id, listingIds);
+          log(`deactivated ${off} stale listings`);
         }
-        await saveSnapshot(id, products);
-        console.log(`✓ ${id}: ${products.length}/${productUrls.size} products`);
+        await finish("ok");
+        log(`✓ ${seen} products, ${http.requests} requests, ${Math.round((Date.now() - started) / 1000)}s`);
       } catch (e) {
-        if (e instanceof BlockedError) console.error(`⚠ ${id}: ${e.message} — backing off this retailer`);
-        else throw e;
-      } finally {
-        await ctx.close();
+        const msg = (e as Error).message;
+        if (e instanceof BlockedError) {
+          log(`⚠ ${msg} — backing off this retailer`);
+          await finish("blocked", msg);
+        } else {
+          failed = true;
+          console.error(`[${id}] ✗`, e);
+          await finish("error", msg);
+        }
+        if (handle && boardIds.size) await refreshBoards(handle.db, [...boardIds]);
       }
     }
   } finally {
-    await browser.close();
+    await handle?.close();
   }
+  if (failed) process.exitCode = 1;
 }
 
 main().catch((e) => {
