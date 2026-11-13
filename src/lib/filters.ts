@@ -2,7 +2,6 @@ import type { BoardProfile, Deal, DealTier, WaistClass } from "./types";
 
 export interface DealFilters {
   minDiscountPct: number; // 0..100
-  maxTotal: number | null; // buyer currency, incl. shipping/VAT/duties
   lengths: number[]; // empty = any
   waist: WaistClass | "any";
   flex: [number, number];
@@ -16,7 +15,6 @@ export interface DealFilters {
 
 export const DEFAULT_FILTERS: DealFilters = {
   minDiscountPct: 0,
-  maxTotal: null,
   lengths: [],
   waist: "any",
   flex: [1, 10],
@@ -34,7 +32,6 @@ export function applyFilters(deals: Deal[], f: DealFilters): Deal[] {
   const q = f.query.trim().toLowerCase();
   return deals.filter((d) => {
     if (d.grade.discountPct * 100 < f.minDiscountPct) return false;
-    if (f.maxTotal !== null && d.landed.total > f.maxTotal) return false;
     const flexFiltered = f.flex[0] > 1 || f.flex[1] < 10;
     if (d.board.flex === null ? flexFiltered : d.board.flex < f.flex[0] || d.board.flex > f.flex[1]) return false;
     if (f.profiles.length && (d.board.profile === null || !f.profiles.includes(d.board.profile))) return false;

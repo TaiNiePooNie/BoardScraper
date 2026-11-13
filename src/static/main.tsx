@@ -31,8 +31,8 @@ const loadDeals: DealsLoader = async ({ country, currency, rider }) => ({
 
 function App() {
   return (
-    <main className="app-gutter">
-      <header className="mx-auto max-w-7xl pb-8 pt-8">
+    <main>
+      <header className="app-gutter mx-auto max-w-7xl pb-8 pt-8">
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-glacier">BoardScraper · test build</div>
         <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-5xl" style={{ textWrap: "balance" }}>
           Snowboard deals, sized for <span className="text-glacier">you</span>.

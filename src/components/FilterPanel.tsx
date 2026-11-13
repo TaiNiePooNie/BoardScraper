@@ -40,10 +40,6 @@ export function FilterPanel({ value, onChange, facets, currency, wideLocked }: {
         <input type="range" min={0} max={70} step={5} value={value.minDiscountPct} onChange={(e) => set("minDiscountPct", Number(e.target.value))} className="w-full accent-glacier" />
       </label>
 
-      <label className="text-sm">
-        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Max total incl. shipping ({currency})</div>
-        <input className="input mt-1" type="number" min={0} placeholder="Any" value={value.maxTotal ?? ""} onChange={(e) => set("maxTotal", e.target.value ? Number(e.target.value) : null)} />
-      </label>
 
       <div className="text-sm">
         <div className="flex justify-between text-xs font-semibold uppercase tracking-wide text-slate-500"><span>Flex</span><span>{value.flex[0]}–{value.flex[1]}</span></div>

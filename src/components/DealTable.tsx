@@ -1,42 +1,68 @@
 "use client";
 import { createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type SortingState } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink } from "lucide-react";
-import { ProductImg } from "./ProductImg";
 import { useState } from "react";
-import type { Deal } from "@/lib/types";
 import { formatMoney } from "@/lib/pricing/currency";
+import { isFullPrice } from "@/lib/grading";
+import type { BoardGroup } from "@/lib/offers";
+import { ProductImg } from "./ProductImg";
 import { TierBadge } from "./TierBadge";
 
 const TIER_ORDER = { "extremely-good": 4, "very-good": 3, good: 2, normal: 1, bad: 0 } as const;
-const col = createColumnHelper<Deal>();
+const col = createColumnHelper<BoardGroup>();
+const cleanName = (n: string) => n.replace(/ \(mock\)$/, "");
 
 const columns = [
-  col.accessor((d) => `${d.board.brand} ${d.board.model}`, {
+  col.accessor((g) => `${g.board.brand} ${g.board.model}`, {
     id: "board", header: "Board",
     cell: (c) => (
       <div className="flex items-center gap-2">
         <ProductImg src={c.row.original.board.images[0]} alt="" className="h-10 w-8 rounded object-contain" />
-        <div><div className="font-semibold">{c.row.original.board.model}</div><div className="text-xs text-slate-500">{c.row.original.board.brand}</div></div>
+        <div>
+          <div className="font-semibold">{c.row.original.board.model}</div>
+          <div className="text-xs text-slate-500">{c.row.original.board.brand} · {c.row.original.board.season}</div>
+        </div>
       </div>
     ),
   }),
-  col.accessor((d) => TIER_ORDER[d.grade.tier] * 1000 + d.grade.score, { id: "tier", header: "Deal", cell: (c) => <TierBadge tier={c.row.original.grade.tier} score={c.row.original.grade.score} /> }),
-  col.accessor((d) => d.grade.discountPct, { id: "drop", header: "Drop", cell: (c) => (Math.round(c.getValue() * 100) > 0 ? <span className="font-semibold text-tier-xg">−{Math.round(c.getValue() * 100)}%</span> : "—") }),
-  col.accessor((d) => d.grade.vsAllTimeLowPct, { id: "atl", header: "vs Low", sortUndefined: "last", cell: (c) => { const v = c.getValue(); return v === null ? <span className="text-xs text-slate-400" title="Not enough price history yet">new</span> : v <= 0 ? <b className="text-tier-xg">At low</b> : `+${Math.round(v * 100)}%`; } }),
-  col.accessor((d) => d.listing.price.amount, { id: "price", header: "Price", cell: (c) => formatMoney(c.getValue(), c.row.original.listing.price.currency) }),
-  col.accessor((d) => d.landed.total, { id: "total", header: "Delivered", cell: (c) => <b>{formatMoney(c.getValue(), c.row.original.landed.currency)}</b> }),
-  col.accessor((d) => d.board.flex, { id: "flex", header: "Flex", sortUndefined: "last", cell: (c) => c.getValue() ?? "—" }),
-  col.accessor((d) => d.board.profile, { id: "profile", header: "Profile", cell: (c) => <span className="capitalize">{c.getValue()?.replace("-", " ") ?? "—"}</span> }),
-  col.accessor((d) => (d.matchingSizes.length ? d.matchingSizes.map((m) => m.size) : d.listing.sizes).toSorted((a, b) => a.lengthCm - b.lengthCm).map((s) => s.label).join(", "), { id: "sizes", header: "Sizes", enableSorting: false }),
-  col.accessor((d) => d.board.reviews?.average ?? 0, { id: "rating", header: "Rating", cell: (c) => (c.getValue() ? `★ ${c.getValue().toFixed(1)}` : "—") }),
-  col.accessor((d) => d.board.ambassadors.map((a) => a.name).join(", "), { id: "riders", header: "Pro riders", cell: (c) => <span className="text-xs">{c.getValue() || "—"}</span> }),
-  col.accessor((d) => Math.round(d.styleFit * 100), { id: "fit", header: "Style fit", cell: (c) => `${c.getValue()}%` }),
-  col.display({ id: "link", header: "", cell: (c) => <a href={c.row.original.listing.url} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1 text-xs text-glacier hover:underline">{c.row.original.retailer.name.replace(/ \(mock\)$/, "")}<ExternalLink className="h-3 w-3" /></a> }),
+  col.accessor((g) => g.value.score, { id: "match", header: "Match", cell: (c) => <span className="font-semibold tabular-nums" title={c.row.original.value.reasons.join(" · ")}>{c.getValue()}</span> }),
+  col.accessor((g) => TIER_ORDER[g.tier] * 1000 + g.best.grade.score, {
+    id: "tier", header: "Deal",
+    cell: (c) => <TierBadge tier={c.row.original.tier} score={c.row.original.best.grade.score} fullPrice={isFullPrice(c.row.original.best.grade)} />,
+  }),
+  col.accessor((g) => g.best.grade.discountPct, { id: "drop", header: "Drop", cell: (c) => (Math.round(c.getValue() * 100) > 0 ? <span className="font-semibold text-tier-xg">−{Math.round(c.getValue() * 100)}%</span> : "—") }),
+  col.accessor((g) => g.best.grade.vsAllTimeLowPct, {
+    id: "atl", header: "vs Low", sortUndefined: "last",
+    cell: (c) => { const v = c.getValue(); return v === null ? <span className="text-xs text-slate-400" title="Not enough price history yet">new</span> : v <= 0 ? <b className="text-tier-xg">At low</b> : `+${Math.round(v * 100)}%`; },
+  }),
+  col.accessor((g) => g.best.landed.total, {
+    id: "total", header: "Delivered",
+    cell: (c) => (
+      <span className="tabular-nums">
+        <b>{formatMoney(c.getValue(), c.row.original.best.landed.currency)}</b>
+        {c.row.original.budget === "over" && <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">over</span>}
+      </span>
+    ),
+  }),
+  col.accessor((g) => g.offers.length, { id: "shops", header: "Shops", cell: (c) => <span className="tabular-nums">{c.getValue()}</span> }),
+  col.accessor((g) => g.board.flex, { id: "flex", header: "Flex", sortUndefined: "last", cell: (c) => c.getValue() ?? "—" }),
+  col.accessor((g) => g.board.profile, { id: "profile", header: "Profile", cell: (c) => <span className="capitalize">{c.getValue()?.replace("-", " ") ?? "—"}</span> }),
+  col.accessor((g) => (g.best.matchingSizes.length ? g.best.matchingSizes.map((m) => m.size) : g.best.listing.sizes).toSorted((a, b) => a.lengthCm - b.lengthCm).map((s) => s.label).join(", "), { id: "sizes", header: "Sizes", enableSorting: false }),
+  col.accessor((g) => g.board.reviews?.average ?? 0, { id: "rating", header: "Rating", cell: (c) => (c.getValue() ? `★ ${c.getValue().toFixed(1)}` : "—") }),
+  col.accessor((g) => g.board.ambassadors.map((a) => a.name).join(", "), { id: "riders", header: "Pro riders", cell: (c) => <span className="text-xs">{c.getValue() || "—"}</span> }),
+  col.display({
+    id: "link", header: "",
+    cell: (c) => (
+      <a href={c.row.original.best.listing.url} target="_blank" rel="noopener noreferrer nofollow" className="flex items-center gap-1 text-xs text-glacier hover:underline">
+        {cleanName(c.row.original.best.retailer.name)}<ExternalLink className="h-3 w-3" />
+      </a>
+    ),
+  }),
 ];
 
-export function DealTable({ deals }: { deals: Deal[] }) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: "tier", desc: true }]);
-  const table = useReactTable({ data: deals, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel() });
+export function DealTable({ groups, initialSort = "match" }: { groups: BoardGroup[]; initialSort?: "match" | "tier" }) {
+  const [sorting, setSorting] = useState<SortingState>([{ id: initialSort, desc: true }]);
+  const table = useReactTable({ data: groups, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel() });
 
   return (
     <div className="panel overflow-x-auto">
