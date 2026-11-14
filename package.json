@@ -14,7 +14,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:stats": "tsx src/db/stats.ts",
     "retailers": "tsx src/scraper/list.ts",
-    "build:static": "tsx scripts/build-static.ts"
+    "build:static": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/build-static.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
@@ -41,6 +41,7 @@
     "esbuild": "^0.28.2",
     "playwright": "^1.65.0",
     "postcss": "^8.5.32",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
