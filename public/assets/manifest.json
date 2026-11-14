@@ -32,14 +32,14 @@
     "width": 64,
     "height": 64,
     "format": "png",
-    "alt": "Browser tab icon."
+    "alt": "BoardBuddy snowboard monogram browser icon."
   },
   {
     "file": "app-icon-512.png",
     "width": 512,
     "height": 512,
     "format": "png",
-    "alt": "Home-screen icon when the site is added to a phone."
+    "alt": "BoardBuddy snowboard monogram on a dark concrete background."
   },
   {
     "file": "og-image.png",
@@ -371,17 +371,227 @@
     "alt": "Empty state when no boards fit the rider's size and budget."
   },
   {
-    "file": "contact-sheet.jpg",
-    "width": 1836,
-    "height": 2232,
-    "format": "jpg",
-    "alt": "Contact sheet of all 53 BoardBuddy art assets."
-  },
-  {
     "file": "revision-v1-1-before-after.jpg",
     "width": 1032,
     "height": 1560,
     "format": "jpg",
     "alt": "Before and after comparison of the five v1.1 art fixes."
+  },
+  {
+    "file": "logo-full.svg",
+    "width": 1200,
+    "height": 300,
+    "format": "svg",
+    "alt": "BoardBuddy snowboard monogram and hand-cut wordmark."
+  },
+  {
+    "file": "logo-icon.svg",
+    "width": 300,
+    "height": 300,
+    "format": "svg",
+    "alt": "Acid snowboard sticker with a bold BB monogram."
+  },
+  {
+    "file": "logo-full.png",
+    "width": 1200,
+    "height": 300,
+    "format": "png",
+    "alt": "BoardBuddy snowboard monogram and hand-cut wordmark."
+  },
+  {
+    "file": "rider-man-slim.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: men, slim build."
+  },
+  {
+    "file": "rider-man-regular.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: men, regular build."
+  },
+  {
+    "file": "rider-man-broad.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: men, broad/heavier build."
+  },
+  {
+    "file": "rider-woman-slim.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: women, slim build."
+  },
+  {
+    "file": "rider-woman-regular.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: women, regular build."
+  },
+  {
+    "file": "rider-woman-broad.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: women, broad/heavier build."
+  },
+  {
+    "file": "rider-kid-slim.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: kids, slim build."
+  },
+  {
+    "file": "rider-kid-regular.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: kids, regular build."
+  },
+  {
+    "file": "rider-kid-broad.svg",
+    "width": 220,
+    "height": 600,
+    "format": "svg",
+    "alt": "Size preview figure: kids, broad build."
+  },
+  {
+    "file": "preview-board.svg",
+    "width": 80,
+    "height": 600,
+    "format": "svg",
+    "alt": "The board standing next to the rider in the size preview; scaled to the recommended length"
+  },
+  {
+    "file": "fit-all.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "\"All\" choice in \"Who's it for?\""
+  },
+  {
+    "file": "fit-men.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "\"Men\" choice"
+  },
+  {
+    "file": "fit-women.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "\"Women\" choice"
+  },
+  {
+    "file": "fit-kids.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "\"Kids\" choice"
+  },
+  {
+    "file": "style-any.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "\"All styles\" choice on the \"How do you ride?\" step"
+  },
+  {
+    "file": "avatar-1.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Fox with a lime beanie and goggles."
+  },
+  {
+    "file": "avatar-2.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Ibex with curled horns through a pink beanie."
+  },
+  {
+    "file": "avatar-3.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Snowy owl with cyan goggles."
+  },
+  {
+    "file": "avatar-4.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Bear cub with an orange beanie and lowered scarf."
+  },
+  {
+    "file": "avatar-5.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Mountain hare with long ears and a striped beanie."
+  },
+  {
+    "file": "avatar-6.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Shaggy white yeti with small horns and mirrored goggles."
+  },
+  {
+    "file": "avatar-7.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Penguin with a sticker-covered helmet."
+  },
+  {
+    "file": "avatar-8.png",
+    "width": 256,
+    "height": 256,
+    "format": "png",
+    "alt": "Buddy the marmot in a lime beanie and cyan goggles."
+  },
+  {
+    "file": "mascot-card.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Buddy holding a blank membership card and giving a thumbs up."
+  },
+  {
+    "file": "email-header.png",
+    "width": 1200,
+    "height": 360,
+    "format": "png",
+    "alt": "BoardBuddy logo, two blank boards and waving Buddy on a shop wall."
+  },
+  {
+    "file": "logo-morph-strip.png",
+    "width": 1200,
+    "height": 1500,
+    "format": "png",
+    "alt": "Five-frame full-logo-to-icon transition with a stationary icon."
+  },
+  {
+    "file": "contact-sheet.jpg",
+    "width": 1836,
+    "height": 3584,
+    "format": "jpg",
+    "alt": "Contact sheet of the complete BoardBuddy art library."
+  },
+  {
+    "file": "contact-sheet-v2.jpg",
+    "width": 1836,
+    "height": 1280,
+    "format": "jpg",
+    "alt": "Contact sheet of the v2 additions and replacements."
   }
 ]
