@@ -6,6 +6,7 @@ import type { BuyerLocale, CurrencyCode, RiderInput } from "@/lib/types";
 import { CurrencyCode as Currencies, DEAL_TIERS } from "@/lib/types";
 import type { DealsResult } from "@/lib/deals";
 import { applyFilters, countByTier, DEFAULT_FILTERS, facets as getFacets, type DealFilters } from "@/lib/filters";
+import { currencyForCountry, VAT_RATES } from "@/lib/pricing/vat";
 import { countGroupsByTier, groupDeals, SLIGHTLY_OVER, sortGroups, type BoardGroup, type Budget, type SortMode } from "@/lib/offers";
 import { ASSETS } from "@/lib/assets";
 import { AssetImg } from "./AssetImg";
@@ -15,6 +16,16 @@ import { DealTabs, type TabValue } from "./DealTabs";
 import { FilterPanel } from "./FilterPanel";
 import { RecommendationPanel } from "./RecommendationPanel";
 import { RiderForm } from "./RiderForm";
+
+const countryName = (code: string) => {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+};
+/** Countries we have VAT data for, by name. Changing country also switches to its currency. */
+const SHIP_COUNTRIES = Object.keys(VAT_RATES).map((code) => ({ code, name: countryName(code) })).sort((a, b) => a.name.localeCompare(b.name));
 
 export type DealsLoader = (q: { country: string; currency: CurrencyCode; rider: RiderInput | null }) => Promise<DealsResult>;
 
@@ -69,6 +80,7 @@ export function DealExplorer({ initialLocale, loadDeals = apiLoader }: { initial
     : (tab === "all" ? inBudget : inBudget.filter((g) => g.tier === tab)).toSorted((a, b) => b.best.grade.score - a.best.grade.score);
   const facets = useMemo(() => getFacets(deals), [deals]);
   const hasBudget = budget.min !== null || budget.max !== null;
+  const shopCount = new Set(deals.map((d) => d.retailer.id)).size;
 
   const renderGroups = (list: BoardGroup[], ranked: boolean) =>
     view === "cards" ? (
@@ -101,11 +113,20 @@ export function DealExplorer({ initialLocale, loadDeals = apiLoader }: { initial
               <option value="discount">Biggest discount</option>
             </select>
           )}
-          <select id="currency" className="input w-auto" value={locale.currency} onChange={(e) => setLocale((l) => ({ ...l, currency: e.target.value as CurrencyCode }))} aria-label="Currency">
-            {Currencies.options.map((c) => <option key={c}>{c}</option>)}
-          </select>
-          <input id="country" className="input w-16 uppercase" maxLength={2} defaultValue={locale.country} aria-label="Ship-to country"
-            onChange={(e) => e.target.value.length === 2 && setLocale((l) => ({ ...l, country: e.target.value.toUpperCase() }))} title="Ship-to country (ISO code)" />
+          <label htmlFor="country" className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            Ship to
+            <select id="country" className="input w-auto" value={locale.country}
+              onChange={(e) => setLocale({ country: e.target.value, currency: currencyForCountry(e.target.value) })}>
+              {SHIP_COUNTRIES.some((c) => c.code === locale.country) ? null : <option value={locale.country}>{countryName(locale.country)}</option>}
+              {SHIP_COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+            </select>
+          </label>
+          <label htmlFor="currency" className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            Currency
+            <select id="currency" className="input w-auto" value={locale.currency} onChange={(e) => setLocale((l) => ({ ...l, currency: e.target.value as CurrencyCode }))}>
+              {Currencies.options.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </label>
           <div className="flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700">
             {(["cards", "table"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)} aria-label={`${v} view`} className={clsx("rounded-md p-1.5", view === v && "bg-glacier/20 text-glacier")}>
@@ -128,7 +149,7 @@ export function DealExplorer({ initialLocale, loadDeals = apiLoader }: { initial
           )}
           {result.source === "mock"
             ? "Demo data — set DATABASE_URL to show live prices."
-            : `Live prices from ${new Set(deals.map((d) => d.retailer.id)).size} retailers${result.updatedAt ? ` · updated ${new Date(result.updatedAt).toLocaleString()}` : ""}`}
+            : `Live prices from ${shopCount} shop${shopCount === 1 ? "" : "s"} that ship to ${countryName(locale.country)}${result.updatedAt ? ` · updated ${new Date(result.updatedAt).toLocaleString()}` : ""}`}
         </p>
       )}
 
