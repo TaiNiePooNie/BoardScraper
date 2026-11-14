@@ -26,6 +26,8 @@ export interface AccountUser {
   email: string;
   image?: string | null;
   emailVerified?: boolean;
+  /** Site owner: sees owner-only tools like Restock. */
+  isOwner?: boolean;
 }
 
 export interface Providers {
@@ -58,7 +60,8 @@ export interface ShopServices {
   account?: AccountServices;
   loadDeals: DealsLoader;
   restock?: {
-    start: (passcode: string) => Promise<RestockStatus>;
+    /** passcode only needed when not signed in as an owner */
+    start: (passcode?: string) => Promise<RestockStatus>;
     status: () => Promise<RestockStatus>;
   };
   liveCheck?: (listingId: string) => Promise<LiveResult>;
@@ -138,7 +141,7 @@ export const apiServices: ShopServices = {
   },
   restock: {
     async start(passcode) {
-      const res = await fetch("/api/restock", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ passcode }) });
+      const res = await fetch("/api/restock", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(passcode ? { passcode } : {}) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
       return body;

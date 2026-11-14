@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { isOwnerEmail, sessionUser } from "@/lib/auth";
 
 /**
  * Owner-only "Restock": starts the scheduled-scrape GitHub workflow on demand.
- * Needs two Vercel environment variables:
- *   RESTOCK_PASSCODE – the passcode typed in the app
- *   GITHUB_TOKEN     – fine-grained token for this repo with "Actions: read and write"
+ * Who may restock: a signed-in owner (confirmed email listed in OWNER_EMAILS),
+ * or anyone with RESTOCK_PASSCODE (optional fallback).
+ *   GITHUB_TOKEN – fine-grained token for this repo with "Actions: read and write" (required)
  * Optional: GITHUB_REPOSITORY (default TaiNiePooNie/BoardScraper).
  */
 export const dynamic = "force-dynamic";
@@ -49,14 +50,19 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const pass = process.env.RESTOCK_PASSCODE;
-  if (!pass || !process.env.GITHUB_TOKEN) {
-    return NextResponse.json({ error: "Restock isn't set up yet: add RESTOCK_PASSCODE and GITHUB_TOKEN in Vercel." }, { status: 503 });
+  if (!process.env.GITHUB_TOKEN) {
+    return NextResponse.json({ error: "Restock isn't set up yet: add GITHUB_TOKEN in Vercel." }, { status: 503 });
   }
-  const body = await req.json().catch(() => ({}));
-  if (typeof body.passcode !== "string" || !same(body.passcode, pass)) {
-    await new Promise((r) => setTimeout(r, 800)); // slow down guessing
-    return NextResponse.json({ error: "Wrong passcode." }, { status: 401 });
+  // Owners (signed in with a confirmed OWNER_EMAILS address) need no passcode.
+  const u = await sessionUser(req.headers).catch(() => null);
+  const owner = !!u && u.emailVerified && isOwnerEmail(u.email);
+  if (!owner) {
+    const pass = process.env.RESTOCK_PASSCODE;
+    const body = await req.json().catch(() => ({}));
+    if (!pass || typeof body.passcode !== "string" || !same(body.passcode, pass)) {
+      await new Promise((r) => setTimeout(r, 800)); // slow down guessing
+      return NextResponse.json({ error: "Only the site owner can restock." }, { status: 401 });
+    }
   }
   try {
     const current = await latestRun();

@@ -99,3 +99,12 @@ export async function sessionUser(headers: Headers) {
   const s = await getAuth().api.getSession({ headers });
   return s?.user ?? null;
 }
+
+/** Site owners (OWNER_EMAILS, comma-separated) can restock without a passcode. */
+export const isOwnerEmail = (email: string | null | undefined) =>
+  !!email &&
+  (process.env.OWNER_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(email.toLowerCase());

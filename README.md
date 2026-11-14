@@ -34,7 +34,7 @@ Every path used is allowed by the shop's robots.txt; the fetcher checks robots.t
 - **Shop walls** (`src/lib/walls.ts`, `ShopWall`, `RackBoard`): picks for you, sale rack, last season corner, full price wall, slightly over budget, holds, whole shop.
 - **Board detail** (`BoardDetail`): pick-up transition, callouts around the board, game-style stats (`src/lib/stats.ts`), delivered price breakdown, other shops, price history, riders and reviews. Swipe or arrow keys to browse.
 - **Pro mode**: ship-to and currency, filters, list and deal-tier view.
-- **Restock** (`/api/restock`): owner-only button that starts the scrape workflow. Needs Vercel env vars `RESTOCK_PASSCODE` and `GITHUB_TOKEN` (fine-grained token for this repo with *Actions: read and write*).
+- **Restock** (`/api/restock`): button in Pro mode, visible only when signed in with a confirmed email listed in `OWNER_EMAILS`; starts the scrape workflow. Needs `GITHUB_TOKEN` (fine-grained, this repo, *Actions: read and write*).
 - **Live price check** (`/api/live/[id]`): opening a board re-checks that one listing at the shop (at most every 15 min per listing).
 - **Riders & buddies**: several rider profiles (you + buddies) with a header switcher; "Browse everything" shows the whole shop without size or budget filters. Kids / Men / Women / All fit filter.
 - **Accounts** (Better Auth, optional): Google, Apple and email sign-in links; profile page with riders, deal-email settings, log out and delete account. Guests keep everything on the device.
@@ -85,5 +85,7 @@ Every path used is allowed by the shop's robots.txt; the fetcher checks robots.t
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | "Continue with Google" (redirect URI `<site>/api/auth/callback/google`) |
 | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET` | "Continue with Apple" (needs an Apple Developer account) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Email sign-in links and deal emails (also GitHub secrets for the alerts job) |
-| `RESTOCK_PASSCODE`, `GITHUB_TOKEN` | Owner Restock button |
+| `OWNER_EMAILS` | Your sign-in email(s), comma-separated: shows the Restock button (Pro mode) to you only |
+| `GITHUB_TOKEN` | Restock (fine-grained token, this repo, *Actions: Read and write*) |
+| `RESTOCK_PASSCODE` | Optional: lets the restock API be called with a passcode instead of an owner sign-in |
 | `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` | Faster builds |
