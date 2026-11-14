@@ -9,7 +9,7 @@ import { recommend, requiresWide, WIDE_THRESHOLD_EU, WIDE_THRESHOLD_US } from "@
 import type { CurrencyCode, FitPreference, RiderInput, RiderStyle, SkillLevel } from "@/lib/types";
 import type { AlertSettings } from "@/lib/account";
 import { AlertSettingsForm } from "../account/AlertSettingsForm";
-import { AvatarPicker } from "../account/Avatar";
+import { Avatar, AvatarPicker } from "../account/Avatar";
 import { SignInOptions } from "../account/SignInOptions";
 import { AssetImg } from "../../AssetImg";
 import { Logo } from "../Logo";
@@ -57,6 +57,7 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
   const [step, setStep] = useState(0);
   const [name, setName] = useState(initialName);
   const [avatar, setAvatar] = useState(initialAvatar);
+  const [pickingAvatar, setPickingAvatar] = useState(false);
   const [dir, setDir] = useState(1);
   const [rider, setRider] = useState<RiderInput>(initial.rider);
   const [budget, setBudget] = useState(initial.budget);
@@ -85,37 +86,43 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
   };
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto overflow-x-hidden bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
-      <img src={ASSETS.heroShopfront} alt="" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-55" />
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-r from-asphalt via-asphalt/80 to-asphalt/20" />
-      <img src={ASSETS.mountains} alt="" className="pointer-events-none fixed inset-x-0 bottom-0 w-full opacity-70" />
+    <div className="fixed inset-0 z-[60] overflow-hidden bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
+      <img src={ASSETS.heroShopfront} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-asphalt via-asphalt/80 to-asphalt/20" />
+      <img src={ASSETS.mountains} alt="" className="pointer-events-none absolute inset-x-0 bottom-0 w-full opacity-70" />
 
-      <div className="app-gutter relative mx-auto flex min-h-full max-w-6xl flex-col py-6">
-        <div className="flex items-center gap-3">
+      {/* Screen-fitting column: top bar + card that fills the remaining height (100dvh). */}
+      <div
+        className="app-gutter relative mx-auto flex h-[100dvh] max-w-6xl flex-col"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex shrink-0 items-center gap-3 py-3 [@media(max-height:640px)]:py-1.5">
           {onClose && (
             <button type="button" onClick={onClose} className="rounded-full border-2 border-paper/30 bg-asphalt/80 p-2 text-paper" aria-label="Close setup">
               <X className="h-5 w-5" />
             </button>
           )}
-          <Logo height={44} />
+          <Logo height={36} />
         </div>
 
-        <div className="mt-6 w-full max-w-md md:mt-12">
-          <div className="sticker relative p-5 pt-6 sm:p-6">
+        <div className="flex min-h-0 w-full max-w-md flex-1 flex-col pb-3 pt-9 md:pt-14 [@media(max-height:640px)]:pt-7">
+          <div className="sticker relative flex min-h-0 flex-1 flex-col p-4 sm:p-6 md:max-h-[820px]">
             <AssetImg
               key={step}
               src={STEPS[step].mascot}
               alt=""
-              className="pointer-events-none absolute -right-2 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36"
-              fallback={<img src={ASSETS.mascot.celebrate} alt="" className="pointer-events-none absolute -right-2 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />}
+              className="pointer-events-none absolute -right-2 -top-14 h-24 w-24 rotate-6 sm:-right-14 sm:-top-16 sm:h-36 sm:w-36"
+              fallback={<img src={ASSETS.mascot.celebrate} alt="" className="pointer-events-none absolute -right-2 -top-14 h-24 w-24 rotate-6 sm:-right-14 sm:-top-16 sm:h-36 sm:w-36" />}
             />
-            <div className="mb-1 flex gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+            <div className="mb-1 flex shrink-0 gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
               {STEPS.map((s, i) => (
                 <span key={s.key} className={clsx("h-1.5 rounded-full transition-all", i === step ? "w-8 bg-acid" : i < step ? "w-4 bg-acid/60" : "w-4 bg-paper/20")} />
               ))}
             </div>
-            <h1 className="headline mb-5 text-4xl">{STEPS[step].title}</h1>
+            <h1 className="headline mb-3 shrink-0 pr-16 text-[clamp(1.6rem,4.6dvh,2.6rem)] [@media(max-height:640px)]:mb-1.5 sm:pr-0">{STEPS[step].title}</h1>
 
+            {/* Content fills the card; scrolls only as a last resort on very small screens. */}
+            <div className="no-scrollbar -mx-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-1">
             <AnimatePresence mode="wait" custom={dir} initial={false}>
               <motion.div
                 key={step}
@@ -124,17 +131,24 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: dir * -40 }}
                 transition={{ duration: 0.18 }}
-                className="flex flex-col gap-5"
+                className="flex h-full min-h-0 flex-col gap-[clamp(0.5rem,1.8dvh,1.25rem)]"
               >
                 {step === 0 && (
                   <>
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="rider-name" className="text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Name</label>
-                      <input id="rider-name" className="input !py-2.5 !text-base" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Me" />
-                      <AvatarPicker value={avatar} name={name} onChange={setAvatar} />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button type="button" onClick={() => setPickingAvatar((v) => !v)} aria-expanded={pickingAvatar} aria-label="Change profile picture"
+                        className={clsx("shrink-0 rounded-full border-[3px] p-0.5", pickingAvatar ? "border-acid" : "border-transparent")}>
+                        <Avatar n={avatar} name={name} size={38} />
+                      </button>
+                      <label htmlFor="rider-name" className="sr-only">Name</label>
+                      <input id="rider-name" className="input !py-2 !text-base" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
                     </div>
-                    <div>
-                      <div className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Who&apos;s it for?</div>
+                    {pickingAvatar && (
+                      <div className="shrink-0">
+                        <AvatarPicker value={avatar} name={name} onChange={(n) => { setAvatar(n); setPickingAvatar(false); }} />
+                      </div>
+                    )}
+                    <div className="shrink-0">
                       <ChoiceCards<FitPreference>
                         name="Who's it for"
                         columns={4}
@@ -149,14 +163,14 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
                         ]}
                       />
                     </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_150px] items-center gap-3">
-                      <div className="flex min-w-0 flex-col gap-4">
+                    {/* Sliders left, Buddy + board fill all remaining height on the right. */}
+                    <div className="grid min-h-[110px] flex-1 grid-cols-[minmax(0,1fr)_minmax(110px,42%)] gap-3">
+                      <div className="flex min-w-0 flex-col justify-center gap-[clamp(0.5rem,2dvh,1.25rem)]">
                         <SliderField id="height" label="Height" unit="cm" min={90} max={210} value={rider.heightCm} onChange={(v) => set("heightCm", v)} />
                         <SliderField id="weight" label="Weight" unit="kg" min={15} max={140} step={0.5} value={rider.weightKg} onChange={(v) => set("weightKg", v)} />
                       </div>
                       <SizePreview heightCm={rider.heightCm} weightKg={rider.weightKg} boardCm={rec.idealLengthCm} wide={wide} fit={rider.fit ?? "any"} />
                     </div>
-                    <p className="text-xs text-paper/60">Weight decides your board length; height only fine-tunes it.</p>
                   </>
                 )}
 
@@ -232,8 +246,9 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
                 )}
               </motion.div>
             </AnimatePresence>
+            </div>
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-3 flex shrink-0 items-center gap-3">
               {step > 0 && (
                 <button type="button" onClick={() => go(-1)} className="btn-ghost flex items-center gap-1" aria-label="Back">
                   <ChevronLeft className="h-4 w-4" />Back
@@ -241,16 +256,16 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
               )}
               <button
                 type="button"
-                className="btn-acid ml-auto flex-1"
+                className="btn-acid ml-auto flex-1 !py-2.5"
                 onClick={() => (last ? onDone({ rider, budget }, { name: name.trim() || "Me", avatar }) : go(1))}
               >
                 {last ? (inbox && !inbox.alerts.enabled ? "No thanks, open the shop" : "Open the shop") : "Next"}
               </button>
             </div>
+            <p className="mt-2 shrink-0 text-center text-[11px] text-paper/60">
+              Your board: <b className="text-paper">{rec.idealLengthCm}{rec.requiresWide ? "W" : ""} cm</b> · flex {rec.flexRange[0]}–{rec.flexRange[1]} · saved on this device
+            </p>
           </div>
-          <p className="mt-3 text-center text-xs text-paper/60">
-            Your board: <b className="text-paper">{rec.idealLengthCm}{rec.requiresWide ? "W" : ""} cm</b> · flex {rec.flexRange[0]}–{rec.flexRange[1]} · saved on this device
-          </p>
         </div>
       </div>
     </div>

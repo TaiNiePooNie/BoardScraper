@@ -1,74 +1,137 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ASSETS } from "@/lib/assets";
 import type { FitPreference } from "@/lib/types";
 
-type Build = "slim" | "regular" | "broad";
+/**
+ * Buddy holding the recommended board, driven by the sliders like a flipbook.
+ *
+ * Art: CHATGPT_CALL_size-preview-buddy.md → preview-buddy-{man|woman|kid}-{slim|regular|broad}.webp,
+ * each a 10-frame sheet (300×600 per frame). Frame k shows a board of RATIOS[k] × rider height.
+ *  - board ÷ rider ratio → fractional frame; the two nearest frames crossfade
+ *  - weight-to-height (BMI) → fractional build; the two nearest builds crossfade
+ *  - rider height → overall scale (taller rider = bigger Buddy)
+ * Until the sheets exist it falls back to the simple figure + board.
+ */
+export const RATIOS = [0.5, 0.58, 0.66, 0.73, 0.8, 0.86, 0.91, 0.97, 1.05, 1.15];
+const BUILDS = ["slim", "regular", "broad"] as const;
+type Build = (typeof BUILDS)[number];
+type Persona = "man" | "woman" | "kid";
 
-/** Build from weight-to-height (BMI); kids have lower thresholds. */
-export function buildFor(heightCm: number, weightKg: number, kid: boolean): Build {
-  const bmi = weightKg / (heightCm / 100) ** 2;
-  const [lo, hi] = kid ? [15.5, 20] : [20.5, 27];
-  return bmi < lo ? "slim" : bmi > hi ? "broad" : "regular";
+const sheet = (p: Persona, b: Build) => `/assets/preview-buddy-${p}-${b}.webp`;
+const inlined = () => (globalThis as { __BB_ASSETS?: Record<string, string> }).__BB_ASSETS;
+const sheetUrl = (p: Persona, b: Build) => inlined()?.[`preview-buddy-${p}-${b}.webp`] ?? sheet(p, b);
+
+/** Fractional frame index for a board/rider ratio (piecewise-linear between RATIOS). */
+export function frameFor(ratio: number): number {
+  if (ratio <= RATIOS[0]) return 0;
+  for (let i = 1; i < RATIOS.length; i++) {
+    if (ratio <= RATIOS[i]) return i - 1 + (ratio - RATIOS[i - 1]) / (RATIOS[i] - RATIOS[i - 1]);
+  }
+  return RATIOS.length - 1;
 }
 
-const BOX = 190; // px for the tallest rider (210 cm)
+/** Fractional build 0 (slim) … 2 (broad) from BMI; kids have lower thresholds. */
+export function buildFor(heightCm: number, weightKg: number, kid: boolean): number {
+  const bmi = weightKg / (heightCm / 100) ** 2;
+  const [lo, mid, hi] = kid ? [14, 17, 21] : [19, 23, 29];
+  if (bmi <= lo) return 0;
+  if (bmi <= mid) return (bmi - lo) / (mid - lo);
+  if (bmi <= hi) return 1 + (bmi - mid) / (hi - mid);
+  return 2;
+}
 
-/**
- * Rider figure next to their recommended board, to scale. Uses the sticker
- * rider art (man/woman/kid × slim/regular/broad) and falls back to a simple
- * drawing until that art is in /public/assets.
- */
+/** Do the sprite sheets exist yet? (checked once per page) */
+let sheetsReady: Promise<boolean> | null = null;
+function checkSheets(): Promise<boolean> {
+  sheetsReady ??= new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = sheetUrl("man", "regular");
+  });
+  return sheetsReady;
+}
+
+const MAX_RIDER_CM = 210;
+
 export function SizePreview({ heightCm, weightKg, boardCm, wide, fit }: { heightCm: number; weightKg: number; boardCm: number; wide: boolean; fit: FitPreference }) {
-  const [artFailed, setArtFailed] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const [boxH, setBoxH] = useState(200);
+  const [hasSprites, setHasSprites] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkSheets().then(setHasSprites);
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBoxH(Math.max(100, e.contentRect.height)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const kid = fit === "kids";
-  const type = kid ? "kid" : fit === "womens" ? "woman" : "man";
-  const build = buildFor(heightCm, weightKg, kid);
-  const k = BOX / 210;
-  const riderPx = heightCm * k;
-  const boardPx = boardCm * k;
+  const persona: Persona = kid ? "kid" : fit === "womens" ? "woman" : "man";
   const label = `Rider ${heightCm} cm next to a ${boardCm}${wide ? " cm wide" : " cm"} board`;
+  const scale = Math.min(1, heightCm / MAX_RIDER_CM);
 
   return (
-    <div className="relative flex h-[200px] w-[150px] shrink-0 items-end justify-center gap-3" role="img" aria-label={label}>
+    <div ref={box} className="relative flex h-full min-h-[100px] w-full items-end justify-center" role="img" aria-label={label}>
       <div className="absolute inset-x-0 bottom-0 h-[2px] rounded bg-paper/25" />
-      {artFailed ? (
-        <FallbackRider heightPx={riderPx} widthFactor={build === "slim" ? 0.85 : build === "broad" ? 1.3 : 1} kid={kid} />
-      ) : (
-        <img
-          key={`${type}-${build}`}
-          src={ASSETS.rider[type][build]}
-          alt=""
-          onError={() => setArtFailed(true)}
-          className="w-auto transition-[height] duration-200"
-          style={{ height: riderPx }}
-        />
-      )}
-      <div className="flex flex-col items-center">
-        <span className="headline mb-1 text-sm text-acid">{boardCm}{wide ? "W" : ""}</span>
-        {artFailed ? (
-          <span className="block rounded-full border-[3px] border-asphalt bg-acid transition-[height] duration-200" style={{ height: boardPx, width: wide ? 22 : 18 }} />
-        ) : (
-          <img src={ASSETS.previewBoard} alt="" onError={() => setArtFailed(true)} className="transition-[height] duration-200" style={{ height: boardPx, width: (wide ? 1.15 : 1) * boardPx * (80 / 600) }} />
-        )}
-      </div>
+      <span className="headline absolute right-0 top-0 rounded-md bg-acid px-1.5 text-sm text-asphalt">{boardCm}{wide ? "W" : ""} cm</span>
+      {hasSprites ? (
+        <BuddySprite persona={persona} frame={frameFor(boardCm / heightCm)} build={buildFor(heightCm, weightKg, kid)} frameH={boxH * scale} />
+      ) : hasSprites === false ? (
+        <Fallback heightCm={heightCm} weightKg={weightKg} boardCm={boardCm} wide={wide} kid={kid} persona={persona} pxPerCm={(boxH * 0.94) / MAX_RIDER_CM} />
+      ) : null}
     </div>
   );
 }
 
-/** Interim figure in the sticker style (white body, asphalt outline, lime beanie). */
-function FallbackRider({ heightPx, widthFactor, kid }: { heightPx: number; widthFactor: number; kid: boolean }) {
-  const w = 60 * widthFactor;
-  const headR = kid ? 13 : 10;
+/** 4-layer bilinear crossfade: nearest two frames × nearest two builds. */
+function BuddySprite({ persona, frame, build, frameH }: { persona: Persona; frame: number; build: number; frameH: number }) {
+  const f0 = Math.floor(frame);
+  const f1 = Math.min(RATIOS.length - 1, f0 + 1);
+  const t = frame - f0;
+  const b0 = Math.floor(build);
+  const b1 = Math.min(2, b0 + 1);
+  const u = build - b0;
+  const layers = [
+    { f: f0, b: b0, w: (1 - t) * (1 - u) },
+    { f: f1, b: b0, w: t * (1 - u) },
+    { f: f0, b: b1, w: (1 - t) * u },
+    { f: f1, b: b1, w: t * u },
+  ];
+  // Frames are 300×600; the sheet holds 10 across.
+  const w = frameH / 2;
   return (
-    <svg viewBox={`0 0 ${w + 10} 200`} preserveAspectRatio="none" style={{ height: heightPx, width: (w + 10) * (heightPx / 200) * 0.55 }} aria-hidden>
-      <g stroke="#15161a" strokeWidth="3" strokeLinejoin="round">
-        <rect x={(w + 10) / 2 - headR * 1.1} y="2" width={headR * 2.2} height={headR * 1.1} rx={headR * 0.5} fill="#d4ff3a" />
-        <circle cx={(w + 10) / 2} cy={headR + 10} r={headR} fill="#fafaf7" />
-        <rect x="5" y={headR * 2 + 12} width={w} height="78" rx="14" fill="#ff3d8b" />
-        <rect x={5 + w * 0.12} y={headR * 2 + 86} width={w * 0.34} height={200 - headR * 2 - 90} rx="6" fill="#2a2c31" />
-        <rect x={5 + w * 0.54} y={headR * 2 + 86} width={w * 0.34} height={200 - headR * 2 - 90} rx="6" fill="#2a2c31" />
-      </g>
-    </svg>
+    <div className="relative transition-[height,width] duration-150 ease-out" style={{ height: frameH, width: w }}>
+      {layers.map((l, i) =>
+        l.w > 0.001 ? (
+          <div
+            key={i}
+            aria-hidden
+            className="absolute inset-0 bg-no-repeat transition-opacity duration-100"
+            style={{
+              backgroundImage: `url(${sheetUrl(persona, BUILDS[l.b])})`,
+              backgroundSize: `${RATIOS.length * 100}% 100%`,
+              backgroundPosition: `${(l.f / (RATIOS.length - 1)) * 100}% 0`,
+              opacity: l.w,
+            }}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
+
+/** Interim: v2 rider figure + board, scaled to the box. */
+function Fallback({ heightCm, weightKg, boardCm, wide, kid, persona, pxPerCm }: { heightCm: number; weightKg: number; boardCm: number; wide: boolean; kid: boolean; persona: Persona; pxPerCm: number }) {
+  const b = BUILDS[Math.round(buildFor(heightCm, weightKg, kid))];
+  const boardPx = boardCm * pxPerCm;
+  return (
+    <div className="flex items-end gap-3">
+      <img src={ASSETS.rider[persona][b]} alt="" className="w-auto transition-[height] duration-150" style={{ height: heightCm * pxPerCm }} />
+      <img src={ASSETS.previewBoard} alt="" className="transition-[height] duration-150" style={{ height: boardPx, width: (wide ? 1.15 : 1) * boardPx * (80 / 600) }} />
+    </div>
   );
 }

@@ -32,14 +32,14 @@ export function ChoiceCards<T extends string>({ name, choices, value, onChange, 
             onClick={() => onChange(c.id)}
             className={clsx(
               "flex flex-col items-center gap-1.5 rounded-2xl border-[3px] text-center transition",
-              compact ? "px-1 py-2" : "px-2 py-3",
+              compact ? "px-1 py-2 [@media(max-height:640px)]:py-1" : "px-2 py-3 [@media(max-height:640px)]:py-1.5",
               on ? "border-acid bg-acid/10 shadow-[0_5px_0_#15161a]" : "border-paper/15 bg-asphalt/60 hover:border-paper/40",
             )}
             style={{ transform: on ? `rotate(${i % 2 ? 1.5 : -1.5}deg) scale(1.03)` : undefined }}
           >
-            {c.icon && <AssetImg src={c.icon} alt="" className={compact ? "h-10 w-10" : "h-14 w-14"} />}
+            {c.icon && <AssetImg src={c.icon} alt="" className={compact ? "h-10 w-10 [@media(max-height:640px)]:h-7 [@media(max-height:640px)]:w-7" : "h-14 w-14 [@media(max-height:640px)]:h-9 [@media(max-height:640px)]:w-9"} />}
             <span className={clsx("headline text-paper", compact ? "text-base" : "text-lg")}>{c.label}</span>
-            {c.hint && <span className="text-[11px] leading-tight text-paper/60">{c.hint}</span>}
+            {c.hint && <span className="text-[11px] leading-tight text-paper/60 [@media(max-height:640px)]:hidden">{c.hint}</span>}
           </button>
         );
       })}

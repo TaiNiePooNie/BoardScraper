@@ -2,7 +2,8 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
 
-const ITEM = 52;
+/** Row height: smaller on short screens so the wheel fits without scrolling. */
+const itemHeight = () => (typeof window !== "undefined" && window.innerHeight < 640 ? 40 : 52);
 
 /**
  * Rotating slot / wheel picker: scroll or swipe the numbers, the one in the
@@ -17,6 +18,7 @@ export function SlotPicker({ id, label, values, value, onChange, format = String
   format?: (v: number) => string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [ITEM] = useState(itemHeight);
   const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [typing, setTyping] = useState(false);
   const index = Math.max(0, values.indexOf(value));
