@@ -1,6 +1,6 @@
 # BoardBuddy — UI Art Requests
 
-> **ChatGPT / Codex: the v1 pack is delivered and merged. Your current job is the "v1.1 revisions" section at the end of this file. Read the Style Bible first, then execute only the v1.1 section.**
+> **ChatGPT / Codex: the v1 pack is delivered and merged. Read the Style Bible first, then execute the open sections at the end of this file in order: "v1.1 revisions" (skip its two logo-wordmark items: the v2 logo system replaces them), then "v2: logo system, riders, profiles and email".**
 > This file replaces all earlier art requests. Snowboard *product* photos are scraped by the app — do **not** generate those.
 
 ---
@@ -430,3 +430,202 @@
 - **Dimensions:** 64x64, transparent.
 - **Style/Theme:** Simplified logo-mark.
 - **Specific Instructions:** **Fix: v1 reads as a lime blob.** Show Buddy's face recognisably: round brown marmot head, two white front teeth, lime beanie on top with pink pom, cyan goggle band across the beanie. Max 4 colours + Asphalt outline, no white sticker border (too small).
+
+---
+
+## v2: logo system, riders, profiles and email
+
+> **Codex: execute this section after v1.1** (skip v1.1's `logo-wordmark.svg` / `logo-wordmark.png` items). Same Style Bible and "How to execute" rules. New files go flat into `/public/assets/`; files that already exist are overwritten with the same name. Add every new file to `manifest.json`. Branch **`art/boardbuddy-v2`**, PR titled **"BoardBuddy UI art v2"** with a contact sheet, and a short screen recording or frame strip showing the logo morph (full logo → icon). Do not merge.
+
+### Logo system rules (read before the logo assets)
+- One system, two forms: the **full logo** (icon + wordmark) and the **icon** alone. The icon inside the full logo is **exactly the same drawing, size and position** as the standalone icon, so the app can animate between them: the wordmark slides/fades out and the icon stays put.
+- In `logo-full.svg` the icon occupies **exactly the box x 0–300, y 0–300** of the 1200x300 viewBox; the wordmark sits in x 330–1200. `logo-icon.svg` is that 0–300 box on its own (viewBox 0 0 300 300).
+- Structure the SVGs for motion: wrap the icon in `<g id="bb-icon">` (inside it, `<g id="bb-icon-shape">` and `<g id="bb-icon-mark">`), the wordmark in `<g id="bb-word">`, and give **each letter its own `<path id="bb-l1">` … `<path id="bb-l10">`** in reading order so letters can be stagger-animated. Convert all lettering to paths. No masks or filters that break when groups move independently.
+- Direction: chunky **hand-cut vinyl sticker** lettering ("BOARDBUDDY", all caps or mixed case — pick the stronger one), slanted ~10°, slightly uneven baseline, Sticker White letters with Asphalt outline, Acid on the two **B**s, one Hot Pink spray drip. The icon is a **die-cut sticker of a snowboard seen from above, tilted ~20°, with a bold "BB" monogram** cut into it in the same lettering, Acid board on Asphalt, white die-cut border. It must read at 24 px.
+- Must not resemble any existing brand's logo.
+
+### Asset Required: logo-full.svg
+- **Purpose:** Main logo in the header (top of page) and on the setup and sign-in screens; animates into the icon when the header shrinks.
+- **Dimensions:** viewBox 1200x300.
+- **Style/Theme:** Logo system rules above; transparent background.
+- **Specific Instructions:** Icon in box 0–300 (`#bb-icon`), wordmark (`#bb-word`, letters `#bb-l1`–`#bb-l10`) to the right, vertically centred on the icon. One die-cut white border around the wordmark only (the icon has its own). Legible at 32 px tall.
+
+### Asset Required: logo-icon.svg
+- **Purpose:** Compact logo (scrolled header, app icon source, loading spinner base).
+- **Dimensions:** viewBox 300x300.
+- **Style/Theme:** Identical to `#bb-icon` in logo-full.svg.
+- **Specific Instructions:** Exactly the icon from logo-full.svg (same paths, same coordinates), keeping the `#bb-icon`, `#bb-icon-shape`, `#bb-icon-mark` groups.
+
+### Asset Required: logo-full.png
+- **Purpose:** Raster logo for emails and social previews.
+- **Dimensions:** 1200x300, transparent.
+- **Style/Theme:** Export of logo-full.svg.
+- **Specific Instructions:** Pixel-exact export.
+
+### Asset Required: favicon.png
+- **Purpose:** Browser tab icon (replaces v1/v1.1 favicon).
+- **Dimensions:** 64x64, transparent.
+- **Style/Theme:** Simplified logo-icon.
+- **Specific Instructions:** The icon's board shape + "BB" only, no thin details; reads at 16 px.
+
+### Asset Required: app-icon-512.png
+- **Purpose:** Home-screen icon (replaces v1).
+- **Dimensions:** 512x512, opaque Asphalt background.
+- **Style/Theme:** logo-icon centred on Asphalt with subtle concrete texture.
+- **Specific Instructions:** Keep the icon inside the central 80 %.
+
+### Rider figures (size preview) — rules
+- Used in the setup screen next to a to-scale board. The app **scales each figure's height** to the rider's height and picks the **build** (slim / regular / broad) from their weight-to-height ratio, so draw three builds per rider type rather than stretching one.
+- Front view, standing, feet together on the bottom edge of the viewBox, arms slightly away from the body, friendly neutral expression, original characters (no real people).
+- Outfit: snowboard jacket and pants, beanie, goggles pushed up on the beanie, boots. Sticker treatment (white die-cut border, Asphalt outline, flat fills, Style Bible colours; jackets can use Hot Pink/Ice/Acid patches).
+- Every figure fills the full height of its viewBox (top of beanie at y=0, boot soles at y=600) so the app can scale it exactly. Body width grows from slim → regular → broad; head size stays the same within a rider type.
+
+### Asset Required: rider-man-slim.svg
+- **Purpose:** Size preview figure: men, slim build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Adult man, slim build, Acid jacket with Asphalt pants.
+
+### Asset Required: rider-man-regular.svg
+- **Purpose:** Size preview figure: men, regular build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Same character as rider-man-slim, regular build.
+
+### Asset Required: rider-man-broad.svg
+- **Purpose:** Size preview figure: men, broad/heavier build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Same character, broad build (wider torso and legs, still friendly and positive; not a caricature).
+
+### Asset Required: rider-woman-slim.svg
+- **Purpose:** Size preview figure: women, slim build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Adult woman, slim build, Hot Pink jacket, long hair or braid under the beanie, Asphalt pants.
+
+### Asset Required: rider-woman-regular.svg
+- **Purpose:** Size preview figure: women, regular build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Same character as rider-woman-slim, regular build.
+
+### Asset Required: rider-woman-broad.svg
+- **Purpose:** Size preview figure: women, broad/heavier build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above.
+- **Specific Instructions:** Same character, broad build, positive and respectful.
+
+### Asset Required: rider-kid-slim.svg
+- **Purpose:** Size preview figure: kids, slim build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** Rider figure rules above; child proportions (bigger head relative to body, shorter legs).
+- **Specific Instructions:** Child around 8–12 years, Ice jacket, oversized goggles, mittens.
+
+### Asset Required: rider-kid-regular.svg
+- **Purpose:** Size preview figure: kids, regular build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** As rider-kid-slim.
+- **Specific Instructions:** Same child, regular build.
+
+### Asset Required: rider-kid-broad.svg
+- **Purpose:** Size preview figure: kids, broad build.
+- **Dimensions:** viewBox 220x600.
+- **Style/Theme:** As rider-kid-slim.
+- **Specific Instructions:** Same child, broad build.
+
+### Asset Required: preview-board.svg
+- **Purpose:** The board standing next to the rider in the size preview; scaled to the recommended length (height) and widened slightly for Wide boards.
+- **Dimensions:** viewBox 80x600.
+- **Style/Theme:** Sticker-treated snowboard, front (top sheet) view, standing on its tail.
+- **Specific Instructions:** Rounded nose and tail, slight waist, top sheet in Acid with a Hot Pink stripe and two small binding-mount marks; fills the full viewBox height. No logos or text.
+
+### Asset Required: fit-all.svg
+- **Purpose:** "All" choice in "Who's it for?" (setup and buddy profiles). Rendered 40–80 px.
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Icon sticker; one set with fit-men/fit-women/fit-kids.
+- **Specific Instructions:** Three small rider heads (man, woman, kid from the rider figures) grouped together on one round sticker.
+
+### Asset Required: fit-men.svg
+- **Purpose:** "Men" choice (men's and unisex boards).
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Same set as fit-all.svg.
+- **Specific Instructions:** Head-and-shoulders of the man rider (beanie, goggles up) on an Acid round sticker.
+
+### Asset Required: fit-women.svg
+- **Purpose:** "Women" choice (women's boards).
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Same set as fit-all.svg.
+- **Specific Instructions:** Head-and-shoulders of the woman rider on a Hot Pink round sticker.
+
+### Asset Required: fit-kids.svg
+- **Purpose:** "Kids" choice (kids' boards).
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Same set as fit-all.svg.
+- **Specific Instructions:** Head-and-shoulders of the kid rider with oversized goggles on an Ice round sticker.
+
+### Asset Required: style-any.svg
+- **Purpose:** "All styles" choice on the "How do you ride?" step (show boards for every style).
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Same set as style-park/all-mountain/freeride.
+- **Specific Instructions:** The three style motifs (rail, S-turn peak, powder plume) as a small fanned collage on one sticker.
+
+### Asset Required: avatar-1.png
+- **Purpose:** Profile picture choices for the user and their "buddies" (other riders they shop for). Shown 32–96 px in a round crop.
+- **Dimensions:** 256x256, transparent; artwork centred in a circle of diameter 240.
+- **Style/Theme:** Sticker head portraits, one consistent set of 8 original alpine characters, each in snowboard gear.
+- **Specific Instructions:** A fox with a lime beanie and goggles.
+
+### Asset Required: avatar-2.png
+- **Purpose:** Profile picture choice (see avatar-1.png).
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** An ibex (mountain goat) with curled horns poking through a pink beanie.
+
+### Asset Required: avatar-3.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** A snowy owl with ice-blue goggles.
+
+### Asset Required: avatar-4.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** A bear cub with an orange beanie and a face-mask scarf pulled down.
+
+### Asset Required: avatar-5.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** A mountain hare with long ears through a striped beanie.
+
+### Asset Required: avatar-6.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** A friendly yeti (original design: shaggy white fur, small horns, no resemblance to any existing franchise yeti) with mirrored goggles.
+
+### Asset Required: avatar-7.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** A penguin with a helmet covered in tiny stickers.
+
+### Asset Required: avatar-8.png
+- **Purpose:** Profile picture choice.
+- **Dimensions:** 256x256, transparent.
+- **Style/Theme:** Same set as avatar-1.png.
+- **Specific Instructions:** Buddy the marmot (the mascot) head only, matching the mascot exactly.
+
+### Asset Required: mascot-card.png
+- **Purpose:** Sign-in / create-account screen ("Join the crew"), and the email opt-in step.
+- **Dimensions:** 800x800, transparent.
+- **Style/Theme:** Mascot sticker, same character as the v1 mascot poses.
+- **Specific Instructions:** Buddy holding up a blank membership card (card face empty, no text) in one paw and giving a thumbs up with the other.
+
+### Asset Required: email-header.png
+- **Purpose:** Top banner of the deal-alert emails ("New boards that fit you"). Emails are dark-themed in the site's style.
+- **Dimensions:** 1200x360, opaque Asphalt/Concrete background (emails can't rely on transparency).
+- **Style/Theme:** Night shop wall collage like og-image.png.
+- **Specific Instructions:** Concrete wall with sticker remnants; logo-full on the left (the only text); Buddy (wave pose) on the right; two blank boards on a rack between them. Keep the logo inside the left 55 % and everything inside a 1120x300 safe area. ≤ 250 KB (PNG or high-quality, so test that it stays crisp at 600 px wide).
