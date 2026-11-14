@@ -37,6 +37,8 @@ body {
 }
 body {
   @apply antialiased;
+  /* Nothing may widen the page: on phones that makes Safari zoom the whole site out. */
+  overflow-x: clip;
 }
 .app-gutter {
   padding-left: max(16px, env(safe-area-inset-left, 0px));

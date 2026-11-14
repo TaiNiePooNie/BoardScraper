@@ -25,17 +25,27 @@ function frame(inner: string, preheader: string, footer: string) {
 const button = (href: string, label: string) =>
   `<a href="${href}" style="display:inline-block;background:${C.acid};color:${C.asphalt};${FONT};font-size:20px;font-weight:800;font-style:italic;text-transform:uppercase;text-decoration:none;padding:12px 22px;border:3px solid ${C.asphalt};border-radius:12px">${esc(label)}</a>`;
 
-export function magicLinkEmail(url: string) {
-  const inner = `<h1 style="margin:0 0 8px;${FONT};font-size:36px;font-weight:800;font-style:italic;text-transform:uppercase;color:${C.paper}">Your sign-in link</h1>
-<p style="margin:0 0 20px;font-size:15px;line-height:22px">Tap the button to sign in to BoardBuddy. The link works once and expires in 5 minutes.</p>
-<p style="margin:0 0 20px">${button(url, "Sign in")}</p>
+/** One-button account email (sign-in link, confirm email, reset password). */
+function actionEmail({ subject, title, body, label, url }: { subject: string; title: string; body: string; label: string; url: string }) {
+  const inner = `<h1 style="margin:0 0 8px;${FONT};font-size:36px;font-weight:800;font-style:italic;text-transform:uppercase;color:${C.paper}">${esc(title)}</h1>
+<p style="margin:0 0 20px;font-size:15px;line-height:22px">${esc(body)}</p>
+<p style="margin:0 0 20px">${button(url, label)}</p>
 <p style="margin:0;font-size:12px;color:${C.muted}">Didn't ask for this? You can ignore this email.</p>`;
   return {
-    subject: "Your BoardBuddy sign-in link",
-    html: frame(inner, "Your BoardBuddy sign-in link", "BoardBuddy · snowboards that fit you"),
-    text: `Sign in to BoardBuddy: ${url}\n\nThe link works once and expires in 5 minutes. Didn't ask for this? Ignore this email.`,
+    subject,
+    html: frame(inner, subject, "BoardBuddy · snowboards that fit you"),
+    text: `${title}\n\n${body}\n\n${label}: ${url}\n\nDidn't ask for this? Ignore this email.`,
   };
 }
+
+export const magicLinkEmail = (url: string) =>
+  actionEmail({ subject: "Your BoardBuddy sign-in link", title: "Your sign-in link", body: "Tap the button to sign in to BoardBuddy. The link works once and expires in 5 minutes.", label: "Sign in", url });
+
+export const verifyEmail = (url: string) =>
+  actionEmail({ subject: "Confirm your email for BoardBuddy", title: "Confirm your email", body: "Tap the button to confirm this is your email address. After that we can send you the deals you asked for.", label: "Confirm email", url });
+
+export const resetPasswordEmail = (url: string) =>
+  actionEmail({ subject: "Reset your BoardBuddy password", title: "Reset your password", body: "Tap the button to choose a new password. The link expires in 1 hour.", label: "Choose a new password", url });
 
 export interface DigestBoard {
   boardUrl: string;

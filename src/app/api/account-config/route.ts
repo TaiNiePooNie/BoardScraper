@@ -7,5 +7,6 @@ export const dynamic = "force-dynamic";
 export function GET() {
   const enabled = authConfigured();
   const p = providers();
-  return NextResponse.json({ enabled: enabled && (p.google || p.apple || p.email), providers: enabled ? p : { google: false, apple: false, email: false } });
+  const off = { google: false, apple: false, email: false, password: false, passwordReset: false };
+  return NextResponse.json({ enabled, providers: enabled ? p : off });
 }
