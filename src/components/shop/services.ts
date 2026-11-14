@@ -1,3 +1,4 @@
+import type { MePayload } from "@/lib/account";
 import type { DealsResult } from "@/lib/deals";
 import type { CurrencyCode, RiderInput } from "@/lib/types";
 
@@ -19,8 +20,27 @@ export interface LiveResult {
   message: string;
 }
 
+export interface AccountUser {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
+export interface AccountServices {
+  config: () => Promise<{ enabled: boolean; providers: { google: boolean; apple: boolean; email: boolean } }>;
+  /** Signed-in user + their saved data (null data = nothing saved yet), or null when signed out. */
+  me: () => Promise<{ user: AccountUser; data: MePayload | null } | null>;
+  save: (data: MePayload) => Promise<void>;
+  signInSocial: (provider: "google" | "apple") => Promise<void>;
+  sendMagicLink: (email: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+}
+
 /** What the shop can do in this environment. The static test build only has loadDeals. */
 export interface ShopServices {
+  account?: AccountServices;
   loadDeals: DealsLoader;
   restock?: {
     start: (passcode: string) => Promise<RestockStatus>;
@@ -29,7 +49,45 @@ export interface ShopServices {
   liveCheck?: (listingId: string) => Promise<LiveResult>;
 }
 
+const callback = () => `${location.pathname}?signedin=1`;
+
+const accountServices: AccountServices = {
+  async config() {
+    const r = await fetch("/api/account-config", { cache: "no-store" });
+    return r.ok ? r.json() : { enabled: false, providers: { google: false, apple: false, email: false } };
+  },
+  async me() {
+    const r = await fetch("/api/me", { cache: "no-store" });
+    if (r.status === 401 || r.status === 503) return null;
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  async save(data) {
+    const r = await fetch("/api/me", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(data) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  },
+  async signInSocial(provider) {
+    const { authClient } = await import("@/lib/auth-client");
+    await authClient.signIn.social({ provider, callbackURL: callback() });
+  },
+  async sendMagicLink(email) {
+    const { authClient } = await import("@/lib/auth-client");
+    const r = await authClient.signIn.magicLink({ email, callbackURL: callback() });
+    if (r.error) throw new Error(r.error.message ?? "Couldn't send the link.");
+  },
+  async signOut() {
+    const { authClient } = await import("@/lib/auth-client");
+    await authClient.signOut();
+  },
+  async deleteAccount() {
+    const { authClient } = await import("@/lib/auth-client");
+    const r = await authClient.deleteUser();
+    if (r.error) throw new Error(r.error.message ?? "Couldn't delete the account.");
+  },
+};
+
 export const apiServices: ShopServices = {
+  account: accountServices,
   async loadDeals({ country, currency, rider }) {
     const q = new URLSearchParams({ country, currency });
     if (rider) Object.entries(rider).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));

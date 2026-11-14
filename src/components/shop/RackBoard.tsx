@@ -35,8 +35,13 @@ export function RackBoard({ group, wallId, offset, hidden, onSelect, tilt }: {
         className="group relative -mt-2 block w-full rounded-[30px] focus-visible:outline-offset-4"
         aria-label={`${name}, ${formatMoney(best.landed.total, best.landed.currency)} delivered, ${TIER_LABELS[group.tier]} deal. Open details`}
       >
-        <div className="flex h-[220px] w-full items-start justify-center sm:h-[330px]">
-          {!hidden && (
+        <div className="flex min-h-[120px] w-full items-start justify-center">
+          {hidden ? (
+            // Same-size invisible stand-in while the board is "off the rack", so nothing jumps.
+            <div className="invisible inline-flex max-w-full border-4 p-1" aria-hidden>
+              <ProductImg src={board.images[0] ?? ""} alt="" size={440} className="block max-h-[212px] w-auto max-w-full sm:max-h-[322px]" />
+            </div>
+          ) : (
             <motion.div
               layoutId={boardLayoutId(wallId, group.id)}
               className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-[22px] border-4 border-paper bg-paper shadow-[0_8px_0_rgba(0,0,0,0.4)] transition-transform group-hover:-translate-y-1"

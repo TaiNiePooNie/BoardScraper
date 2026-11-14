@@ -7,7 +7,13 @@ import { ASSETS } from "@/lib/assets";
 import type { Profile } from "@/lib/profile";
 import { recommend, requiresWide, WIDE_THRESHOLD_EU, WIDE_THRESHOLD_US } from "@/lib/sizing";
 import type { CurrencyCode, FitPreference, RiderInput, RiderStyle, SkillLevel } from "@/lib/types";
+import type { AlertSettings } from "@/lib/account";
+import { AlertSettingsForm } from "../account/AlertSettingsForm";
+import { AvatarPicker } from "../account/Avatar";
+import { SignInOptions } from "../account/SignInOptions";
+import { AssetImg } from "../../AssetImg";
 import { Logo } from "../Logo";
+import type { AccountServices } from "../services";
 import { BudgetRange } from "./BudgetRange";
 import { ChoiceCards } from "./ChoiceCards";
 import { SizePreview } from "./SizePreview";
@@ -17,22 +23,40 @@ import { SlotPicker } from "./SlotPicker";
 const US_SIZES = Array.from({ length: 29 }, (_, i) => 1 + i * 0.5); // 1–15 (kids from 1)
 const EU_SIZES = Array.from({ length: 41 }, (_, i) => 30 + i * 0.5); // 30–50
 
-const STEPS = [
+const BASE_STEPS = [
   { key: "rider", title: "Who's riding?", mascot: ASSETS.mascot.wave },
   { key: "boots", title: "Boot size", mascot: ASSETS.mascot.point },
   { key: "style", title: "How do you ride?", mascot: ASSETS.mascot.ride },
   { key: "skill", title: "Your level", mascot: ASSETS.mascot.thinking },
   { key: "budget", title: "Your budget", mascot: ASSETS.mascot.celebrate },
 ] as const;
+const INBOX_STEP = { key: "inbox", title: "Deals in your inbox?", mascot: ASSETS.mascotCard } as const;
+
+/** Optional last step on first setup: opt in to deal emails (needs an account). */
+export interface InboxStep {
+  account: AccountServices;
+  providers: { google: boolean; apple: boolean; email: boolean };
+  signedIn: boolean;
+  alerts: AlertSettings;
+  onAlerts: (a: AlertSettings) => void;
+  /** Save the setup so far (before signing in redirects away). */
+  onPersist: (p: Profile, who: { name: string; avatar: number }) => void;
+}
 
 /** Lean, step-by-step rider setup. Sliders, a wheel and cards; every number can also be typed. */
-export function SetupFlow({ initial, currency, onDone, onClose }: {
+export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, currency, onDone, onClose, inbox }: {
   initial: Profile;
+  name: string;
+  avatar: number;
   currency: CurrencyCode;
-  onDone: (p: Profile) => void;
+  onDone: (p: Profile, who: { name: string; avatar: number }) => void;
   onClose?: () => void;
+  inbox?: InboxStep;
 }) {
+  const STEPS = inbox ? [...BASE_STEPS, INBOX_STEP] : BASE_STEPS;
   const [step, setStep] = useState(0);
+  const [name, setName] = useState(initialName);
+  const [avatar, setAvatar] = useState(initialAvatar);
   const [dir, setDir] = useState(1);
   const [rider, setRider] = useState<RiderInput>(initial.rider);
   const [budget, setBudget] = useState(initial.budget);
@@ -78,7 +102,13 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
 
         <div className="mt-6 w-full max-w-md md:mt-12">
           <div className="sticker relative p-5 pt-6 sm:p-6">
-            <img src={STEPS[step].mascot} alt="" className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />
+            <AssetImg
+              key={step}
+              src={STEPS[step].mascot}
+              alt=""
+              className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36"
+              fallback={<img src={ASSETS.mascot.celebrate} alt="" className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />}
+            />
             <div className="mb-1 flex gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
               {STEPS.map((s, i) => (
                 <span key={s.key} className={clsx("h-1.5 rounded-full transition-all", i === step ? "w-8 bg-acid" : i < step ? "w-4 bg-acid/60" : "w-4 bg-paper/20")} />
@@ -98,6 +128,11 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
               >
                 {step === 0 && (
                   <>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="rider-name" className="text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Name</label>
+                      <input id="rider-name" className="input !py-2.5 !text-base" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Me" />
+                      <AvatarPicker value={avatar} name={name} onChange={setAvatar} />
+                    </div>
                     <div>
                       <div className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Who&apos;s it for?</div>
                       <ChoiceCards<FitPreference>
@@ -182,6 +217,19 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
                 )}
 
                 {step === 4 && <BudgetRange value={budget} onChange={setBudget} currency={currency} />}
+
+                {step === 5 && inbox && (
+                  <div className="flex flex-col gap-4">
+                    <p className="text-sm text-paper/75">Get boards that fit you by email: a weekly roundup or as soon as a new one fits. Totally optional.</p>
+                    <AlertSettingsForm value={inbox.alerts} onChange={inbox.onAlerts} buddies={[]} />
+                    {inbox.alerts.enabled && !inbox.signedIn && (
+                      <div className="rounded-2xl border-2 border-paper/15 p-3">
+                        <p className="mb-3 text-sm font-semibold">Sign in so we know where to send them:</p>
+                        <SignInOptions account={inbox.account} providers={inbox.providers} beforeSignIn={() => inbox.onPersist({ rider, budget }, { name: name.trim() || "Me", avatar })} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
 
@@ -194,9 +242,9 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
               <button
                 type="button"
                 className="btn-acid ml-auto flex-1"
-                onClick={() => (last ? onDone({ rider, budget }) : go(1))}
+                onClick={() => (last ? onDone({ rider, budget }, { name: name.trim() || "Me", avatar }) : go(1))}
               >
-                {last ? "Open the shop" : "Next"}
+                {last ? (inbox && !inbox.alerts.enabled ? "No thanks, open the shop" : "Open the shop") : "Next"}
               </button>
             </div>
           </div>

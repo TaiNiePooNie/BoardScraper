@@ -5,6 +5,8 @@ import { ASSETS } from "@/lib/assets";
 let cached: Promise<string | null> | null = null;
 /** logo-full.svg as text (works for /assets paths and inlined data URIs); null until the v2 art exists. */
 function loadLogoSvg() {
+  // Static build without the v2 logo embedded: nothing to fetch.
+  if ("__BB_ASSETS" in globalThis && !ASSETS.logoFull.startsWith("data:")) return Promise.resolve(null);
   cached ??= fetch(ASSETS.logoFull)
     .then((r) => (r.ok ? r.text() : null))
     .then((t) => (t && t.includes("bb-icon") ? t.replace(/<\?xml[^>]*>/, "") : null))
