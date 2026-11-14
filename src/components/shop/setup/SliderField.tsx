@@ -24,7 +24,7 @@ export function SliderField({
   };
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-end justify-between gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] items-end gap-2">
         <label htmlFor={id} className="text-xs font-bold uppercase tracking-[0.14em] text-paper/60">{label}</label>
         {typing ? (
           <input
@@ -37,13 +37,13 @@ export function SliderField({
             step={step}
             onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && commit((e.target as HTMLInputElement).value)}
-            className="w-28 rounded-lg border-2 border-acid bg-asphalt px-2 py-1 text-right text-2xl font-bold tabular-nums text-paper outline-none"
+            className="w-full rounded-lg border-2 border-acid bg-asphalt px-2 py-1 text-right text-2xl font-bold tabular-nums text-paper outline-none"
             aria-label={`${label} (${unit})`}
           />
         ) : (
-          <button type="button" onClick={() => setTyping(true)} className="headline text-4xl tabular-nums text-paper" title="Tap to type">
+          <button type="button" onClick={() => setTyping(true)} className="headline w-full whitespace-nowrap text-right text-[2rem] tabular-nums text-paper" title="Tap to type">
             {format ? format(value) : value}
-            <span className="ml-1 text-lg text-paper/60">{unit}</span>
+            <span className="ml-1 text-base text-paper/60">{unit}</span>
           </button>
         )}
       </div>

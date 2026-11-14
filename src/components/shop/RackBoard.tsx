@@ -35,17 +35,17 @@ export function RackBoard({ group, wallId, offset, hidden, onSelect, tilt }: {
         className="group relative -mt-2 block w-full rounded-[30px] focus-visible:outline-offset-4"
         aria-label={`${name}, ${formatMoney(best.landed.total, best.landed.currency)} delivered, ${TIER_LABELS[group.tier]} deal. Open details`}
       >
-        {hidden ? (
-          <div className="h-[220px] w-full sm:h-[330px]" />
-        ) : (
-          <motion.div
-            layoutId={boardLayoutId(wallId, group.id)}
-            className="relative h-[220px] w-full overflow-hidden rounded-[26px] sm:rounded-[30px] border-4 border-paper bg-paper shadow-[0_8px_0_rgba(0,0,0,0.4)] transition-transform group-hover:-translate-y-1 sm:h-[330px]"
-            style={{ rotate: tilt }}
-          >
-            <ProductImg src={board.images[0] ?? ""} alt="" loading="lazy" className="h-full w-full object-contain p-1.5" />
-          </motion.div>
-        )}
+        <div className="flex h-[220px] w-full items-start justify-center sm:h-[330px]">
+          {!hidden && (
+            <motion.div
+              layoutId={boardLayoutId(wallId, group.id)}
+              className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-[22px] border-4 border-paper bg-paper shadow-[0_8px_0_rgba(0,0,0,0.4)] transition-transform group-hover:-translate-y-1"
+              style={{ rotate: tilt }}
+            >
+              <ProductImg src={board.images[0] ?? ""} alt="" loading="lazy" size={440} className="block max-h-[212px] w-auto max-w-full object-contain p-1 sm:max-h-[322px]" />
+            </motion.div>
+          )}
+        </div>
         <img src={ASSETS.rank[group.tier]} alt={`Rank ${TIER_RANK[group.tier]}`} className="absolute -left-2 top-2 z-10 h-9 w-9 -rotate-12 drop-shadow sm:h-11 sm:w-11" />
       </button>
       <div className="relative z-10 -mt-3 flex flex-col items-center" style={{ transform: `rotate(${-tilt * 2}deg)` }}>

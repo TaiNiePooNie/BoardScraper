@@ -6,15 +6,16 @@ import { useState } from "react";
 import { ASSETS } from "@/lib/assets";
 import type { Profile } from "@/lib/profile";
 import { recommend, requiresWide, WIDE_THRESHOLD_EU, WIDE_THRESHOLD_US } from "@/lib/sizing";
-import type { CurrencyCode, FitPreference, RiderInput, RidingStyle, SkillLevel } from "@/lib/types";
+import type { CurrencyCode, FitPreference, RiderInput, RiderStyle, SkillLevel } from "@/lib/types";
+import { Logo } from "../Logo";
 import { BudgetRange } from "./BudgetRange";
 import { ChoiceCards } from "./ChoiceCards";
 import { SizePreview } from "./SizePreview";
 import { SliderField } from "./SliderField";
 import { SlotPicker } from "./SlotPicker";
 
-const US_SIZES = Array.from({ length: 23 }, (_, i) => 4 + i * 0.5); // 4–15
-const EU_SIZES = Array.from({ length: 31 }, (_, i) => 35 + i * 0.5); // 35–50
+const US_SIZES = Array.from({ length: 29 }, (_, i) => 1 + i * 0.5); // 1–15 (kids from 1)
+const EU_SIZES = Array.from({ length: 41 }, (_, i) => 30 + i * 0.5); // 30–50
 
 const STEPS = [
   { key: "rider", title: "Who's riding?", mascot: ASSETS.mascot.wave },
@@ -44,6 +45,15 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
     setStep((s) => Math.min(STEPS.length - 1, Math.max(0, s + d)));
   };
 
+  // Switching to Kids from adult numbers (or back) moves the sliders to a sensible start.
+  const pickFit = (fit: FitPreference) => {
+    setRider((r) => {
+      if (fit === "kids" && r.weightKg > 50) return { ...r, fit, heightCm: 135, weightKg: 32, bootSize: r.bootSystem === "US" ? 4 : 36 };
+      if (fit !== "kids" && r.fit === "kids" && r.weightKg < 45) return { ...r, fit, heightCm: 175, weightKg: 72, bootSize: r.bootSystem === "US" ? 9 : 42.5 };
+      return { ...r, fit };
+    });
+  };
+
   const switchSystem = (sys: "US" | "EU") => {
     if (sys === rider.bootSystem) return;
     const converted = sys === "EU" ? Math.round((rider.bootSize + 33.5) * 2) / 2 : Math.round((rider.bootSize - 33.5) * 2) / 2;
@@ -57,13 +67,13 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
       <img src={ASSETS.mountains} alt="" className="pointer-events-none fixed inset-x-0 bottom-0 w-full opacity-70" />
 
       <div className="app-gutter relative mx-auto flex min-h-full max-w-6xl flex-col py-6">
-        <div className="flex items-center justify-between">
-          <img src={ASSETS.logo} alt="BoardBuddy" className="h-10 w-auto sm:h-12" />
+        <div className="flex items-center gap-3">
           {onClose && (
-            <button type="button" onClick={onClose} className="rounded-full bg-asphalt/70 p-2 text-paper" aria-label="Close setup">
+            <button type="button" onClick={onClose} className="rounded-full border-2 border-paper/30 bg-asphalt/80 p-2 text-paper" aria-label="Close setup">
               <X className="h-5 w-5" />
             </button>
           )}
+          <Logo height={44} />
         </div>
 
         <div className="mt-6 w-full max-w-md md:mt-12">
@@ -88,22 +98,28 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
               >
                 {step === 0 && (
                   <>
-                    <ChoiceCards<FitPreference>
-                      name="Boards to show"
-                      value={rider.fit ?? "any"}
-                      onChange={(v) => set("fit", v)}
-                      choices={[
-                        { id: "any", label: "All boards" },
-                        { id: "mens", label: "Men's & unisex" },
-                        { id: "womens", label: "Women's" },
-                      ]}
-                    />
-                    <div className="grid grid-cols-[1fr_auto] items-center gap-4">
-                      <div className="flex flex-col gap-4">
-                        <SliderField id="height" label="Height" unit="cm" min={130} max={210} value={rider.heightCm} onChange={(v) => set("heightCm", v)} />
-                        <SliderField id="weight" label="Weight" unit="kg" min={35} max={140} step={0.5} value={rider.weightKg} onChange={(v) => set("weightKg", v)} />
+                    <div>
+                      <div className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Who&apos;s it for?</div>
+                      <ChoiceCards<FitPreference>
+                        name="Who's it for"
+                        columns={4}
+                        compact
+                        value={rider.fit ?? "any"}
+                        onChange={pickFit}
+                        choices={[
+                          { id: "kids", label: "Kids", icon: ASSETS.fit.kids },
+                          { id: "mens", label: "Men", icon: ASSETS.fit.mens },
+                          { id: "womens", label: "Women", icon: ASSETS.fit.womens },
+                          { id: "any", label: "All", icon: ASSETS.fit.any },
+                        ]}
+                      />
+                    </div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_150px] items-center gap-3">
+                      <div className="flex min-w-0 flex-col gap-4">
+                        <SliderField id="height" label="Height" unit="cm" min={90} max={210} value={rider.heightCm} onChange={(v) => set("heightCm", v)} />
+                        <SliderField id="weight" label="Weight" unit="kg" min={15} max={140} step={0.5} value={rider.weightKg} onChange={(v) => set("weightKg", v)} />
                       </div>
-                      <SizePreview heightCm={rider.heightCm} weightKg={rider.weightKg} boardCm={rec.idealLengthCm} wide={wide} />
+                      <SizePreview heightCm={rider.heightCm} weightKg={rider.weightKg} boardCm={rec.idealLengthCm} wide={wide} fit={rider.fit ?? "any"} />
                     </div>
                     <p className="text-xs text-paper/60">Weight decides your board length; height only fine-tunes it.</p>
                   </>
@@ -136,11 +152,13 @@ export function SetupFlow({ initial, currency, onDone, onClose }: {
                 )}
 
                 {step === 2 && (
-                  <ChoiceCards<RidingStyle>
+                  <ChoiceCards<RiderStyle>
                     name="Riding style"
+                    columns={2}
                     value={rider.style}
                     onChange={(v) => set("style", v)}
                     choices={[
+                      { id: "any", label: "All styles", hint: "Show every board", icon: ASSETS.styleAny },
                       { id: "park", label: "Park", hint: "Rails, jumps, butters", icon: ASSETS.style.park },
                       { id: "all-mountain", label: "All-Mountain", hint: "A bit of everything", icon: ASSETS.style["all-mountain"] },
                       { id: "freeride", label: "Freeride", hint: "Powder, steeps, speed", icon: ASSETS.style.freeride },

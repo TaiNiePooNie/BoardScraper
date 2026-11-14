@@ -1,4 +1,4 @@
-import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RidingStyle, SizeMatch, SkillLevel } from "./types";
+import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RiderStyle, RidingStyle, SizeMatch, SkillLevel } from "./types";
 
 /**
  * Weight → base board length (cm), all-mountain reference.
@@ -6,6 +6,13 @@ import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, Ri
  * Anchors are linearly interpolated and clamped at the ends.
  */
 const WEIGHT_ANCHORS: ReadonlyArray<[kg: number, cm: number]> = [
+  // kids
+  [15, 90],
+  [20, 100],
+  [25, 110],
+  [30, 119],
+  [35, 129],
+  // adults
   [40, 138],
   [50, 144],
   [60, 149],
@@ -93,8 +100,15 @@ export const SKILL_ADJUST: Record<SkillLevel, { lengthCm: number; flex: number }
 
 const clampFlex = (n: number) => Math.min(10, Math.max(1, n));
 
+/** "All styles": all-mountain length, every flex and profile. */
+const ANY_STYLE: StyleSpec = {
+  lengthOffsetCm: 0,
+  flex: [1, 10],
+  profiles: ["hybrid-camber", "camber", "directional-camber", "hybrid-rocker", "rocker", "flat"],
+};
+
 export function recommend(input: RiderInput): Recommendation {
-  const spec = STYLE_SPECS[input.style];
+  const spec = input.style === "any" ? ANY_STYLE : STYLE_SPECS[input.style];
   const skill = SKILL_ADJUST[input.skill ?? "intermediate"];
   const base = lengthFromWeight(input.weightKg);
   const ideal = Math.round(base + spec.lengthOffsetCm + skill.lengthCm + heightNudge(input.weightKg, input.heightCm));
@@ -102,7 +116,7 @@ export function recommend(input: RiderInput): Recommendation {
   const bootUS = toUSBootSize(input.bootSize, input.bootSystem);
 
   const notes = [`Length from weight (${input.weightKg} kg) → ${Math.round(base)} cm base`];
-  if (spec.lengthOffsetCm) notes.push(`${input.style}: ${spec.lengthOffsetCm > 0 ? "+" : ""}${spec.lengthOffsetCm} cm`);
+  if (spec.lengthOffsetCm && input.style !== "any") notes.push(`${input.style}: ${spec.lengthOffsetCm > 0 ? "+" : ""}${spec.lengthOffsetCm} cm`);
   if (skill.lengthCm) notes.push(`${input.skill}: ${skill.lengthCm > 0 ? "+" : ""}${skill.lengthCm} cm, flex ${skill.flex > 0 ? "+" : ""}${skill.flex}`);
   if (wide) notes.push(`Boot US ${bootUS} ≥ US ${WIDE_THRESHOLD_US}: Wide (W) boards only`);
 
@@ -130,7 +144,8 @@ export function matchSizes(sizes: BoardSize[], rec: Recommendation): SizeMatch[]
 }
 
 /** 0..1 score for how well a board's flex + profile suit the riding style. */
-export function styleFit(board: Pick<BoardModel, "flex" | "profile" | "styles">, rec: Recommendation, style: RidingStyle): number {
+export function styleFit(board: Pick<BoardModel, "flex" | "profile" | "styles">, rec: Recommendation, style: RiderStyle): number {
+  if (style === "any") return 1;
   const [lo, hi] = rec.flexRange;
   // Unknown specs score neutral (0.5) rather than penalizing scraped boards with sparse copy.
   const { flex, profile } = board;
@@ -144,7 +159,13 @@ export function styleFit(board: Pick<BoardModel, "flex" | "profile" | "styles">,
 /** Women's-specific board, detected from the model name (shops tag these consistently in titles). */
 export const isWomensBoard = (model: string) => /\b(women'?s?|womens|wmns|ladies|damen|femme|femmes|für frauen|fur frauen|w's)\b/i.test(model);
 
+/** Kids' board, detected from the model name (kids/youth/junior or well-known kids model names). */
+export const isKidsBoard = (model: string) => /\b(kids?|youth|junior|jr|boys?|girls?|enfants?|kinder|grom|chopper|riglet|mini)\b/i.test(model);
+
 export function fitAllows(fit: FitPreference | undefined, model: string): boolean {
   if (!fit || fit === "any") return true;
+  const kids = isKidsBoard(model);
+  if (fit === "kids") return kids;
+  if (kids) return false;
   return fit === "womens" ? isWomensBoard(model) : !isWomensBoard(model);
 }

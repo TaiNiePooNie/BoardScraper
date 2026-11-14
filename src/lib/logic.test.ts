@@ -188,3 +188,29 @@ describe("skill, fit and stats", async () => {
     for (const v of Object.values(charger).filter((x) => typeof x === "number")) expect(v).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("kids, fit categories and all styles", async () => {
+  const { fitAllows, isKidsBoard, styleFit } = await import("./sizing");
+  it("kids sizing gives short boards", () => {
+    const r = recommend({ weightKg: 30, heightCm: 135, bootSize: 4, bootSystem: "US", style: "all-mountain", fit: "kids" });
+    expect(r.idealLengthCm).toBeGreaterThanOrEqual(115);
+    expect(r.idealLengthCm).toBeLessThanOrEqual(122);
+  });
+  it("fit categories", () => {
+    expect(isKidsBoard("Chopper")).toBe(true);
+    expect(isKidsBoard("Riglet Kids")).toBe(true);
+    expect(isKidsBoard("Custom")).toBe(false);
+    expect(fitAllows("kids", "Chopper")).toBe(true);
+    expect(fitAllows("kids", "Custom")).toBe(false);
+    expect(fitAllows("mens", "Chopper")).toBe(false);
+    expect(fitAllows("womens", "Feelgood Women's")).toBe(true);
+    expect(fitAllows("any", "Chopper")).toBe(true);
+  });
+  it("all styles: all-mountain length, any flex, neutral fit", () => {
+    const base = { weightKg: 75, heightCm: 178, bootSize: 9, bootSystem: "US" as const };
+    const any = recommend({ ...base, style: "any" });
+    expect(any.idealLengthCm).toBe(recommend({ ...base, style: "all-mountain" }).idealLengthCm);
+    expect(any.flexRange).toEqual([1, 10]);
+    expect(styleFit({ flex: 9, profile: "camber", styles: ["freeride"] }, any, "any")).toBe(1);
+  });
+});

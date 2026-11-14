@@ -11,16 +11,20 @@ export type BootSizeSystem = z.infer<typeof BootSizeSystem>;
 export const SkillLevel = z.enum(["beginner", "intermediate", "advanced", "expert"]);
 export type SkillLevel = z.infer<typeof SkillLevel>;
 
-/** Which boards to show: men's/unisex, women's-specific, or everything. */
-export const FitPreference = z.enum(["any", "mens", "womens"]);
+/** Which boards to show: all, men's/unisex, women's-specific or kids'. */
+export const FitPreference = z.enum(["any", "mens", "womens", "kids"]);
 export type FitPreference = z.infer<typeof FitPreference>;
 
+/** Rider's chosen style; "any" = show boards for every style (sized as all-mountain). */
+export const RiderStyle = z.enum(["park", "all-mountain", "freeride", "any"]);
+export type RiderStyle = z.infer<typeof RiderStyle>;
+
 export const RiderInput = z.object({
-  weightKg: z.coerce.number().min(25).max(160),
-  heightCm: z.coerce.number().min(100).max(230),
+  weightKg: z.coerce.number().min(15).max(160),
+  heightCm: z.coerce.number().min(80).max(230),
   bootSize: z.coerce.number().min(3).max(52),
   bootSystem: BootSizeSystem.default("US"),
-  style: RidingStyle,
+  style: RiderStyle,
   skill: SkillLevel.optional(), // default: intermediate
   fit: FitPreference.optional(), // default: any
 });

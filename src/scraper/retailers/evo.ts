@@ -1,7 +1,7 @@
 import type { Retailer } from "@/lib/types";
 import { extractSpecs } from "../parse/specs";
 import { mergeSizes, headlinePrice, parseSizeLabel } from "../parse/sizes";
-import { displayModel, hasModelYear, KIDS, NOT_A_BOARD, seasonFrom } from "../parse/normalize";
+import { displayModel, hasModelYear, NOT_A_BOARD, seasonFrom } from "../parse/normalize";
 import { htmlToText, parsePrice } from "../parse/text";
 import type { CrawlContext, RetailerAdapter, ScrapedProduct } from "../types";
 
@@ -19,7 +19,7 @@ interface ShopifyProduct {
 }
 
 export function parseShopifyProduct(p: ShopifyProduct, origin: string, scrapedAt: string): ScrapedProduct | null {
-  if (NOT_A_BOARD.test(p.title) || KIDS.test(p.title)) return null;
+  if (NOT_A_BOARD.test(p.title)) return null; // kids boards are kept (Kids filter)
   const sizeOpt = p.options.find((o) => /size/i.test(o.name));
   const pick = (v: ShopifyVariant) => (sizeOpt ? [v.option1, v.option2, v.option3][sizeOpt.position - 1] : v.title) ?? "";
 

@@ -4,7 +4,7 @@ import type { BoardSize } from "@/lib/types";
  * Parses size labels: "156", "156W", "155W cm", "158 Wide", "159MW", "157 (Mid-Wide)", "162 W".
  * Rejects non-board lengths (kids < 100 cm handled by caller via MIN/MAX).
  */
-export const MIN_LENGTH = 125;
+export const MIN_LENGTH = 80; // kids boards start around 80–90 cm
 export const MAX_LENGTH = 200;
 
 export function parseSizeLabel(label: string, inStock = true, price?: number): BoardSize | null {
