@@ -121,3 +121,16 @@ describe("accounts", () => {
     expect(await serverDb().select().from(s.alertPrefs)).toHaveLength(0);
   });
 });
+
+describe("owner check", () => {
+  it("matches OWNER_EMAILS case-insensitively, nothing else", async () => {
+    const { isOwnerEmail } = await import("@/lib/auth");
+    process.env.OWNER_EMAILS = " Owner@Test.dev , second@test.dev";
+    expect(isOwnerEmail("owner@test.dev")).toBe(true);
+    expect(isOwnerEmail("SECOND@test.dev")).toBe(true);
+    expect(isOwnerEmail("someone@test.dev")).toBe(false);
+    expect(isOwnerEmail(null)).toBe(false);
+    delete process.env.OWNER_EMAILS;
+    expect(isOwnerEmail("owner@test.dev")).toBe(false);
+  });
+});

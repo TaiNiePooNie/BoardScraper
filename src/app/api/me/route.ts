@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { alertPrefs, userData } from "@/db/schema";
 import { serverDb } from "@/db/server";
 import { DEFAULT_ALERTS, MePayload } from "@/lib/account";
-import { sessionUser } from "@/lib/auth";
+import { isOwnerEmail, sessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const [data] = await db.select().from(userData).where(eq(userData.userId, u.id));
   const [prefs] = await db.select().from(alertPrefs).where(eq(alertPrefs.userId, u.id));
   return NextResponse.json({
-    user: { id: u.id, name: u.name, email: u.email, image: u.image, emailVerified: u.emailVerified },
+    user: { id: u.id, name: u.name, email: u.email, image: u.image, emailVerified: u.emailVerified, isOwner: isOwnerEmail(u.email) && u.emailVerified },
     data: data
       ? {
           buddies: data.buddies,

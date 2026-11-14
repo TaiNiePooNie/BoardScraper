@@ -298,9 +298,11 @@ export function ShopApp({ initialLocale, services }: { initialLocale: BuyerLocal
                 </button>
               ))}
             </div>
-            <button type="button" onClick={() => setRestockOpen(true)} className="flex items-center gap-1.5 rounded-xl border-2 border-paper/20 px-2.5 py-1 text-sm font-bold hover:border-acid" title="Refresh prices from the shops now">
-              <img src={ASSETS.icon.restock} alt="" className="h-5 w-5" />Restock
-            </button>
+            {acct.user?.isOwner && (
+              <button type="button" onClick={() => setRestockOpen(true)} className="flex items-center gap-1.5 rounded-xl border-2 border-paper/20 px-2.5 py-1 text-sm font-bold hover:border-acid" title="Refresh prices from the shops now (owner only)">
+                <img src={ASSETS.icon.restock} alt="" className="h-5 w-5" />Restock
+              </button>
+            )}
             <label htmlFor="country" className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-paper/60">
               Ship to
               <select id="country" className="input w-auto" value={locale.country}
@@ -417,7 +419,7 @@ export function ShopApp({ initialLocale, services }: { initialLocale: BuyerLocal
         />
       )}
 
-      {restockOpen && <RestockSheet services={services} onClose={() => setRestockOpen(false)} onFinished={load} />}
+      {restockOpen && acct.user?.isOwner && <RestockSheet services={services} onClose={() => setRestockOpen(false)} onFinished={load} />}
 
       {toast && (
         <div role="status" className="fixed inset-x-0 bottom-4 z-[70] flex justify-center px-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>

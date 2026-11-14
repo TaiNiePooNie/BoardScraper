@@ -4,14 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { ASSETS } from "@/lib/assets";
 import type { RestockStatus, ShopServices } from "./services";
 
-const PASS_KEY = "boardbuddy.restock.pass";
-const readPass = () => {
-  try {
-    return localStorage.getItem(PASS_KEY) ?? "";
-  } catch {
-    return "";
-  }
-};
 
 const STATE_TEXT: Record<RestockStatus["state"], string> = {
   idle: "Racks are stocked.",
@@ -20,9 +12,8 @@ const STATE_TEXT: Record<RestockStatus["state"], string> = {
   completed: "Restock finished.",
 };
 
-/** Owner-only "restock now": starts the scrape workflow and shows its progress. */
+/** Owner-only "restock now" (shown only to OWNER_EMAILS): starts the scrape workflow and shows its progress. */
 export function RestockSheet({ services, onClose, onFinished }: { services: ShopServices; onClose: () => void; onFinished: () => void }) {
-  const [pass, setPass] = useState(readPass);
   const [status, setStatus] = useState<RestockStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,12 +52,7 @@ export function RestockSheet({ services, onClose, onFinished }: { services: Shop
     setBusy(true);
     setError(null);
     try {
-      try {
-        localStorage.setItem(PASS_KEY, pass);
-      } catch {
-        /* ignore */
-      }
-      setStatus(await restock.start(pass));
+      setStatus(await restock.start());
       poll();
     } catch (e) {
       setError((e as Error).message);
@@ -94,9 +80,7 @@ export function RestockSheet({ services, onClose, onFinished }: { services: Shop
             {status && <p className="mt-3 rounded-lg bg-paper/5 px-3 py-2 text-sm font-semibold">{STATE_TEXT[status.state]}{status.conclusion && status.state === "completed" ? ` (${status.conclusion})` : ""}</p>}
             {!running && (
               <div className="mt-3 flex flex-col gap-2">
-                <label htmlFor="restock-pass" className="text-xs font-bold uppercase tracking-[0.14em] text-paper/60">Owner passcode</label>
-                <input id="restock-pass" type="password" autoComplete="current-password" className="input" value={pass} onChange={(e) => setPass(e.target.value)} />
-                <button type="button" className="btn-acid mt-1" disabled={busy || !pass} onClick={start}>{busy ? "Starting…" : "Restock now"}</button>
+                <button type="button" className="btn-acid mt-1" disabled={busy} onClick={start}>{busy ? "Starting…" : "Restock now"}</button>
               </div>
             )}
             {error && <p className="mt-2 text-sm font-semibold text-orange">{error}</p>}
