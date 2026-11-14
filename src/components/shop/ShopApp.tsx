@@ -328,7 +328,7 @@ export function ShopApp({ initialLocale, services }: { initialLocale: BuyerLocal
 
       {/* the shop */}
       <LayoutGroup>
-        <main className="mt-6 flex flex-col gap-10 pb-24">
+        <main className="mt-6 flex flex-col gap-10 pb-10">
           {pro && proView === "list" ? (
             <div className="app-gutter mx-auto flex w-full max-w-7xl flex-col gap-4">
               <DealTabs value={tab} onChange={setTab} counts={countGroupsByTier(fitting)} />
@@ -371,6 +371,12 @@ export function ShopApp({ initialLocale, services }: { initialLocale: BuyerLocal
           )}
         </AnimatePresence>
       </LayoutGroup>
+
+      <footer className="app-gutter mx-auto max-w-7xl pb-28 text-xs text-paper/45">
+        Prices come from the shops and can change. ·{" "}
+        <a href="/privacy" className="underline hover:text-paper">Privacy</a> ·{" "}
+        <a href="/terms" className="underline hover:text-paper">Terms</a>
+      </footer>
 
       {setup && (
         <SetupFlow
