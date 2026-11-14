@@ -167,6 +167,10 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
             )}
           </section>
         )}
+
+        <p className="text-xs text-paper/45">
+          <a href="/privacy" className="underline hover:text-paper">Privacy policy</a> · <a href="/terms" className="underline hover:text-paper">Terms</a>
+        </p>
       </div>
     </div>
   );
