@@ -593,5 +593,75 @@
     "height": 1280,
     "format": "jpg",
     "alt": "Contact sheet of the v2 additions and replacements."
+  },
+  {
+    "file": "preview-buddy-man-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of man Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-man-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of man Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-man-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of man Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-woman-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of woman Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-woman-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of woman Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-woman-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of woman Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-kid-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of kid Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-kid-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of kid Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-kid-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten registered board-sizing frames of kid Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-contact.png",
+    "width": 3000,
+    "height": 1800,
+    "format": "png",
+    "alt": "All nine Buddy size-preview sprite sheets at one-third scale with frame and ground guides."
   }
 ]

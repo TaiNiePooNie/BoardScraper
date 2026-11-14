@@ -115,3 +115,56 @@ Animate in small steps: each frame should be a believable in-between of its neig
 - **Dimensions:** 3000x1800, opaque Concrete background.
 - **Style/Theme:** Plain grid.
 - **Specific Instructions:** All 9 sheets stacked (rows: man slim/regular/broad, woman slim/regular/broad, kid slim/regular/broad) at 1/3 scale, with a thin guide line at the ground line and frame borders, so registration can be checked at a glance. Text labels are allowed on this sheet only.
+
+
+## Response
+
+Delivered all nine registered sprite sheets and the review contact sheet. The art uses a shared, newly drawn flat vector Buddy puppet, rendered to sRGB WebP at quality 80 with lossless alpha. Existing mascot art and the Style Bible supplied the character and palette reference. Application code and the existing rider/board fallback assets were left unchanged for integration by Claude.
+
+![Registered Buddy sprite contact sheet](public/assets/preview-buddy-contact.png)
+
+| File | Bytes | Dimensions | Format |
+|---|---:|---|---|
+| `preview-buddy-man-slim.webp` | 160,234 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-man-regular.webp` | 160,744 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-man-broad.webp` | 160,004 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-woman-slim.webp` | 181,342 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-woman-regular.webp` | 182,168 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-woman-broad.webp` | 182,716 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-kid-slim.webp` | 182,868 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-kid-regular.webp` | 187,140 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-kid-broad.webp` | 191,706 | 3000 × 600 | WebP with alpha |
+| `preview-buddy-contact.png` | 422,331 | 3000 × 1800 | Opaque PNG |
+
+### Registration and validation
+
+- Every sheet has ten 300 × 600 cells in one 3000 × 600 row; all are below the 600 KB limit.
+- Buddy sticker bounds are exactly y=152–592 (440 px) in all 90 frames; boots are centred on x=115. The board tail is fixed at y=592 and its centre is x=225.
+- No alpha enters the 4 px cell safety margin. The final WebP alpha matches the rendered source alpha exactly.
+- All three builds of each persona share identical head/face artwork for a given frame. Torso and leg widths are individually drawn; hand targets and boot registration are shared.
+- The contact sheet stacks the nine rows in the requested order. Each 3000 × 600 sheet occupies a centred 1000 × 200 area (exactly one-third scale) on the requested 3000 × 1800 canvas; labels and registration notes use the side gutters. Thin frame borders and ground guides overlay the rows.
+- `public/assets/manifest.json` includes all ten new images.
+
+### Board geometry
+
+| Frame | Ratio | Board length (px) | Board top y |
+|---|---:|---:|---:|
+| 0 | 0.50 | 220.0 | 372.0 |
+| 1 | 0.58 | 255.2 | 336.8 |
+| 2 | 0.66 | 290.4 | 301.6 |
+| 3 | 0.73 | 321.2 | 270.8 |
+| 4 | 0.80 | 352.0 | 240.0 |
+| 5 | 0.86 | 378.4 | 213.6 |
+| 6 | 0.91 | 400.4 | 191.6 |
+| 7 | 0.97 | 426.8 | 165.2 |
+| 8 | 1.05 | 462.0 | 130.0 |
+| 9 | 1.15 | 506.0 | 86.0 |
+
+Fractional lengths are exact in the drawing geometry; decoded bitmap top edges follow the normal subpixel coverage of that geometry. The numeric ratios take precedence over the approximate anatomical labels in the request (a chubby marmot’s knees/chest do not align with human rider proportions). The strained pose keeps the registered pom-pom height fixed while bending the legs and adding sweat/wobble marks.
+
+### Project checks
+
+- `npm run typecheck`: passed.
+- `npm test`: passed, 57 tests across 4 files.
+- `npm run build`: passed.
+- Visual review: all nine contact rows and the ten-frame regular-man strip inspected after export.
