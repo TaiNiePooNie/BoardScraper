@@ -1,0 +1,380 @@
+[
+  {
+    "file": "style-sheet.png",
+    "width": 2400,
+    "height": 1600,
+    "format": "png",
+    "alt": "BoardBuddy palette, Buddy turnaround and sticker references."
+  },
+  {
+    "file": "logo-wordmark.svg",
+    "width": 1200,
+    "height": 300,
+    "format": "svg",
+    "alt": "BoardBuddy sticker wordmark."
+  },
+  {
+    "file": "logo-wordmark.png",
+    "width": 1200,
+    "height": 300,
+    "format": "png",
+    "alt": "BoardBuddy sticker wordmark."
+  },
+  {
+    "file": "logo-mark.svg",
+    "width": 512,
+    "height": 512,
+    "format": "svg",
+    "alt": "Square brand mark: app icon, loading screens, compact header on phones."
+  },
+  {
+    "file": "favicon.png",
+    "width": 64,
+    "height": 64,
+    "format": "png",
+    "alt": "Browser tab icon."
+  },
+  {
+    "file": "app-icon-512.png",
+    "width": 512,
+    "height": 512,
+    "format": "png",
+    "alt": "Home-screen icon when the site is added to a phone."
+  },
+  {
+    "file": "og-image.png",
+    "width": 1200,
+    "height": 630,
+    "format": "png",
+    "alt": "Preview image when a link to the site is shared."
+  },
+  {
+    "file": "mascot-wave.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Greets the user on the first setup step"
+  },
+  {
+    "file": "mascot-point.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Points at tips, tooltips and the \"why this board\" panel."
+  },
+  {
+    "file": "mascot-thinking.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Loading states"
+  },
+  {
+    "file": "mascot-celebrate.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Shown when an Extremely Good deal is found or a board is added to the watchlist."
+  },
+  {
+    "file": "mascot-shrug.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Empty results and errors."
+  },
+  {
+    "file": "mascot-ride.png",
+    "width": 1000,
+    "height": 800,
+    "format": "png",
+    "alt": "Hero image on the setup screen and the \"Restock\""
+  },
+  {
+    "file": "shop-wall-concrete.webp",
+    "width": 1024,
+    "height": 1024,
+    "format": "webp",
+    "alt": ""
+  },
+  {
+    "file": "rack-rail.png",
+    "width": 1024,
+    "height": 96,
+    "format": "png",
+    "alt": "Horizontal slatwall rail that runs across each wall section"
+  },
+  {
+    "file": "rack-hook.png",
+    "width": 160,
+    "height": 120,
+    "format": "png",
+    "alt": "Wall hook holding each board on the rail."
+  },
+  {
+    "file": "sign-plate-neon.png",
+    "width": 1000,
+    "height": 260,
+    "format": "png",
+    "alt": "Blank neon sign behind each shop section title"
+  },
+  {
+    "file": "sign-plate-tape.png",
+    "width": 800,
+    "height": 160,
+    "format": "png",
+    "alt": "Lighter alternative header for small sections and the board detail panels."
+  },
+  {
+    "file": "hero-shopfront.webp",
+    "width": 2400,
+    "height": 1350,
+    "format": "webp",
+    "alt": "Background of the rider setup screens."
+  },
+  {
+    "file": "backdrop-mountains.png",
+    "width": 2400,
+    "height": 500,
+    "format": "png",
+    "alt": "Decorative cut-paper mountain range along the bottom of the setup screens and the board detail view."
+  },
+  {
+    "file": "price-tag.png",
+    "width": 360,
+    "height": 480,
+    "format": "png",
+    "alt": "Hanging price tag on each board in the racks"
+  },
+  {
+    "file": "sale-sticker.png",
+    "width": 300,
+    "height": 300,
+    "format": "png",
+    "alt": "Discount sticker slapped on the price tag"
+  },
+  {
+    "file": "sticker-full-price.png",
+    "width": 320,
+    "height": 120,
+    "format": "png",
+    "alt": "Small marker on undiscounted boards"
+  },
+  {
+    "file": "sticker-over-budget.png",
+    "width": 320,
+    "height": 120,
+    "format": "png",
+    "alt": "Marker on boards in the \"slightly over budget\" section"
+  },
+  {
+    "file": "tape-strip.png",
+    "width": 300,
+    "height": 90,
+    "format": "png",
+    "alt": ""
+  },
+  {
+    "file": "rank-s.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rank badge for the **Extremely Good** deal tier"
+  },
+  {
+    "file": "rank-a.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rank badge for the **Very Good** tier."
+  },
+  {
+    "file": "rank-b.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rank badge for the **Good** tier."
+  },
+  {
+    "file": "rank-c.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rank badge for the **Normal** tier."
+  },
+  {
+    "file": "rank-d.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rank badge for the **Bad** tier."
+  },
+  {
+    "file": "style-park.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Riding-style choice card \"Park\" on the setup screen and filter chips. Rendered 32\u2013120 px."
+  },
+  {
+    "file": "style-all-mountain.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Riding-style choice \"All-Mountain\"."
+  },
+  {
+    "file": "style-freeride.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Riding-style choice \"Freeride\"."
+  },
+  {
+    "file": "skill-beginner.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skill-level picker"
+  },
+  {
+    "file": "skill-intermediate.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skill level \"Intermediate\"."
+  },
+  {
+    "file": "skill-advanced.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skill level \"Advanced\"."
+  },
+  {
+    "file": "skill-expert.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skill level \"Expert\"."
+  },
+  {
+    "file": "stat-speed.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Label icon for the \"Speed\" bar in the board stats panel"
+  },
+  {
+    "file": "stat-pop.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Label icon for the \"Pop\" stat"
+  },
+  {
+    "file": "stat-float.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Label icon for the \"Float\" stat"
+  },
+  {
+    "file": "stat-edge-hold.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Label icon for the \"Edge Hold\" stat"
+  },
+  {
+    "file": "stat-forgiveness.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Label icon for the \"Forgiveness\" stat"
+  },
+  {
+    "file": "icon-restock.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "\"Restock\" button that refreshes the shop's prices on command."
+  },
+  {
+    "file": "icon-watch.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "\"Hold this board\""
+  },
+  {
+    "file": "icon-compare.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "\"Compare boards\" action."
+  },
+  {
+    "file": "icon-share.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Share a board or setup link."
+  },
+  {
+    "file": "icon-pro-mode.svg",
+    "width": 128,
+    "height": 128,
+    "format": "svg",
+    "alt": "Toggle that expands the lean basic UI into the advanced \"Pro mode\""
+  },
+  {
+    "file": "board-placeholder.png",
+    "width": 400,
+    "height": 1200,
+    "format": "png",
+    "alt": "Shown in racks and the detail view when a board's product photo can't load. Must look intentional, like a blank demo board."
+  },
+  {
+    "file": "snow-spray-sprite.png",
+    "width": 1536,
+    "height": 256,
+    "format": "png",
+    "alt": "Short burst animation when a board is picked off the rack."
+  },
+  {
+    "file": "halftone-overlay.png",
+    "width": 512,
+    "height": 512,
+    "format": "png",
+    "alt": ""
+  },
+  {
+    "file": "scribble-underline.svg",
+    "width": 600,
+    "height": 60,
+    "format": "svg",
+    "alt": "Hand-drawn underline under section titles and key numbers."
+  },
+  {
+    "file": "doodle-arrow.svg",
+    "width": 240,
+    "height": 120,
+    "format": "svg",
+    "alt": "Hand-drawn callout arrow pointing from detail labels to parts of the board"
+  },
+  {
+    "file": "empty-no-boards.png",
+    "width": 1000,
+    "height": 700,
+    "format": "png",
+    "alt": "Empty state when no boards fit the rider's size and budget."
+  },
+  {
+    "file": "contact-sheet.jpg",
+    "width": 1836,
+    "height": 2232,
+    "format": "jpg",
+    "alt": "Contact sheet of all 53 BoardBuddy art assets."
+  }
+]
