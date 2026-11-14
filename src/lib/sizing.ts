@@ -100,6 +100,18 @@ export const SKILL_ADJUST: Record<SkillLevel, { lengthCm: number; flex: number }
 
 const clampFlex = (n: number) => Math.min(10, Math.max(1, n));
 
+/**
+ * Weight shifts flex too: a light rider can't bend a stiff board, a heavy rider
+ * overpowers a soft one. Kids' weights land at the soft end.
+ */
+export function weightFlexShift(weightKg: number): number {
+  if (weightKg < 40) return -2;
+  if (weightKg < 55) return -1;
+  if (weightKg <= 85) return 0;
+  if (weightKg <= 100) return 1;
+  return 2;
+}
+
 /** "All styles": all-mountain length, every flex and profile. */
 const ANY_STYLE: StyleSpec = {
   lengthOffsetCm: 0,
@@ -118,6 +130,8 @@ export function recommend(input: RiderInput): Recommendation {
   const notes = [`Length from weight (${input.weightKg} kg) → ${Math.round(base)} cm base`];
   if (spec.lengthOffsetCm && input.style !== "any") notes.push(`${input.style}: ${spec.lengthOffsetCm > 0 ? "+" : ""}${spec.lengthOffsetCm} cm`);
   if (skill.lengthCm) notes.push(`${input.skill}: ${skill.lengthCm > 0 ? "+" : ""}${skill.lengthCm} cm, flex ${skill.flex > 0 ? "+" : ""}${skill.flex}`);
+  const wFlex = input.style === "any" ? 0 : weightFlexShift(input.weightKg);
+  if (wFlex) notes.push(`${input.weightKg} kg: flex ${wFlex > 0 ? "+" : ""}${wFlex}`);
   if (wide) notes.push(`Boot US ${bootUS} ≥ US ${WIDE_THRESHOLD_US}: Wide (W) boards only`);
 
   return {
@@ -125,7 +139,7 @@ export function recommend(input: RiderInput): Recommendation {
     lengthRangeCm: [ideal - LENGTH_TOLERANCE_CM, ideal + LENGTH_TOLERANCE_CM],
     requiresWide: wide,
     bootSizeUS: bootUS,
-    flexRange: [clampFlex(spec.flex[0] + skill.flex), clampFlex(spec.flex[1] + skill.flex)],
+    flexRange: [clampFlex(spec.flex[0] + skill.flex + wFlex), clampFlex(spec.flex[1] + skill.flex + wFlex)],
     profiles: spec.profiles,
     notes,
   };
