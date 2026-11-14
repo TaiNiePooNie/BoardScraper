@@ -12,7 +12,11 @@ export const TIER_STYLES: Record<DealTier, string> = {
   bad: "bg-tier-b/15 text-tier-b border-tier-b/40",
 };
 
-export function TierBadge({ tier, score }: { tier: DealTier; score?: number }) {
+/** `fullPrice` relabels an undiscounted "bad" deal as "Full price" (neutral), so it doesn't read as "avoid". */
+export function TierBadge({ tier, score, fullPrice = false }: { tier: DealTier; score?: number; fullPrice?: boolean }) {
+  if (tier === "bad" && fullPrice) {
+    return <span className="chip inline-flex items-center border-slate-300 text-slate-500 dark:border-slate-700">Full price</span>;
+  }
   return (
     <span className={clsx("chip inline-flex items-center gap-1.5", TIER_STYLES[tier])}>
       <AssetImg src={ASSETS.tierIcon[tier]} alt="" className="h-4 w-4" />

@@ -9,3 +9,4 @@ data/*.json
 !data/.gitkeep
 playwright-report/
 data/pglite/
+dist/

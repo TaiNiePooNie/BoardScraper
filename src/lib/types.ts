@@ -215,5 +215,5 @@ export interface Deal {
 export interface BuyerLocale {
   country: CountryCode;
   currency: CurrencyCode;
-  source: "header" | "accept-language" | "override" | "default";
+  source: "header" | "timezone" | "accept-language" | "override" | "default";
 }

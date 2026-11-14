@@ -1,7 +1,8 @@
 "use client";
 import clsx from "clsx";
 import { useState } from "react";
-import type { RiderInput, RidingStyle } from "@/lib/types";
+import type { CurrencyCode, RiderInput, RidingStyle } from "@/lib/types";
+import type { Budget } from "@/lib/offers";
 import { ASSETS } from "@/lib/assets";
 import { AssetImg } from "./AssetImg";
 
@@ -11,13 +12,19 @@ const STYLES: { id: RidingStyle; label: string; hint: string }[] = [
   { id: "freeride", label: "Freeride", hint: "Powder, steeps, speed" },
 ];
 
-export function RiderForm({ onSubmit, loading }: { onSubmit: (r: RiderInput) => void; loading: boolean }) {
+const toNum = (s: string) => (s.trim() === "" ? null : Number(s));
+
+export function RiderForm({ onSubmit, loading, currency }: { onSubmit: (r: RiderInput, b: Budget) => void; loading: boolean; currency: CurrencyCode }) {
   const [v, setV] = useState<RiderInput>({ weightKg: 75, heightCm: 178, bootSize: 10, bootSystem: "US", style: "all-mountain" });
+  const [budget, setBudget] = useState({ min: "", max: "" });
   const set = <K extends keyof RiderInput>(k: K, val: RiderInput[K]) => setV((p) => ({ ...p, [k]: val }));
   const num = (k: "weightKg" | "heightCm" | "bootSize") => (e: React.ChangeEvent<HTMLInputElement>) => set(k, Number(e.target.value));
 
   return (
-    <form className="panel grid gap-4 p-5 md:grid-cols-[repeat(3,minmax(0,1fr))_2fr_auto] md:items-end" onSubmit={(e) => { e.preventDefault(); onSubmit(v); }}>
+    <form
+      className="panel grid grid-cols-2 gap-4 p-5 md:grid-cols-4 md:items-end"
+      onSubmit={(e) => { e.preventDefault(); onSubmit(v, { min: toNum(budget.min), max: toNum(budget.max) }); }}
+    >
       <label className="text-sm font-medium">
         Weight (kg)
         <input className="input mt-1" type="number" min={25} max={160} step={0.5} value={v.weightKg} onChange={num("weightKg")} required />
@@ -36,7 +43,15 @@ export function RiderForm({ onSubmit, loading }: { onSubmit: (r: RiderInput) => 
           </select>
         </div>
       </label>
-      <fieldset className="text-sm font-medium">
+      <label className="text-sm font-medium">
+        Budget ({currency}, delivered)
+        <div className="mt-1 flex items-center gap-1">
+          <input id="budget-min" className="input" type="number" min={0} step={10} placeholder="Min" value={budget.min} onChange={(e) => setBudget((b) => ({ ...b, min: e.target.value }))} aria-label="Minimum budget" />
+          <span className="text-slate-400">–</span>
+          <input id="budget-max" className="input" type="number" min={0} step={10} placeholder="e.g. 500" value={budget.max} onChange={(e) => setBudget((b) => ({ ...b, max: e.target.value }))} aria-label="Maximum budget" />
+        </div>
+      </label>
+      <fieldset className="col-span-2 text-sm font-medium md:col-span-3">
         <legend>Riding style</legend>
         <div className="mt-1 grid grid-cols-3 gap-2">
           {STYLES.map((s) => (
@@ -59,7 +74,7 @@ export function RiderForm({ onSubmit, loading }: { onSubmit: (r: RiderInput) => 
           ))}
         </div>
       </fieldset>
-      <button disabled={loading} className="h-10 rounded-lg bg-glacier px-5 font-semibold text-ink transition hover:brightness-110 disabled:opacity-50">
+      <button disabled={loading} className="col-span-2 h-10 rounded-lg md:col-span-1 bg-glacier px-5 font-semibold text-ink transition hover:brightness-110 disabled:opacity-50">
         {loading ? "Finding…" : "Find deals"}
       </button>
     </form>

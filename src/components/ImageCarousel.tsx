@@ -1,6 +1,7 @@
 "use client";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { ProductImg } from "./ProductImg";
 import { useState } from "react";
 import { ZoomModal } from "./ZoomModal";
 
@@ -16,8 +17,7 @@ export function ImageCarousel({ images, alt }: { images: string[]; alt: string }
       <button type="button" onClick={() => setZoomOpen(true)} className="block w-full cursor-zoom-in overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800" aria-label="Zoom image">
         <div className="flex transition-transform duration-300" style={{ transform: `translateX(-${i * 100}%)` }}>
           {images.map((src, idx) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={idx} src={src} alt={`${alt} ${idx + 1}`} loading="lazy" className="aspect-[4/5] w-full shrink-0 object-contain" />
+            <ProductImg key={idx} src={src} alt={`${alt} ${idx + 1}`} loading="lazy" className="aspect-[4/5] w-full shrink-0 object-contain" />
           ))}
         </div>
         <ZoomIn className="absolute right-2 top-2 h-5 w-5 rounded bg-black/50 p-0.5 text-white opacity-0 transition group-hover:opacity-100" />

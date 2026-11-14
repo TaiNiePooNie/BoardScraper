@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Dark mode follows the OS unless an explicit data-theme is set on <html> (light or dark). */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 @theme {
   --color-snow: #f6f8fb;
   --color-ink: #0b1220;
@@ -13,10 +25,11 @@
 }
 
 body {
-  @apply bg-snow text-ink antialiased;
+  @apply bg-snow text-ink antialiased dark:bg-ink dark:text-slate-100;
 }
-@media (prefers-color-scheme: dark) {
-  body { @apply bg-ink text-slate-100; }
+.app-gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
 .panel {

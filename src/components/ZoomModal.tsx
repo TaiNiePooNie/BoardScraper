@@ -2,6 +2,7 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { ProductImg } from "./ProductImg";
 
 /**
  * Floating lightbox. Click the image to toggle 2.5× zoom anchored at the cursor;
@@ -34,20 +35,18 @@ export function ZoomModal({ images, alt, startIndex, onClose }: { images: string
     <div role="dialog" aria-modal="true" aria-label={`${alt} images`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="relative flex max-h-full w-full max-w-4xl flex-col items-center" onClick={(e) => e.stopPropagation()}>
         <div className="relative h-[80vh] w-full overflow-hidden rounded-xl bg-white" onMouseMove={track} onClick={(e) => { track(e); setZoomed((z) => !z); }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ProductImg
             src={images[i]}
             alt={`${alt} ${i + 1}`}
             className={`h-full w-full select-none object-contain transition-transform duration-200 ${zoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
             style={{ transform: zoomed ? "scale(2.5)" : "scale(1)", transformOrigin: origin }}
-            draggable={false}
+           
           />
         </div>
         <div className="mt-3 flex gap-2">
           {images.map((src, idx) => (
             <button key={idx} onClick={() => { setZoomed(false); setI(idx); }} className={`h-16 w-12 overflow-hidden rounded border-2 bg-white ${idx === i ? "border-glacier" : "border-transparent opacity-60"}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="h-full w-full object-contain" />
+              <ProductImg src={src} alt="" className="h-full w-full object-contain" />
             </button>
           ))}
         </div>

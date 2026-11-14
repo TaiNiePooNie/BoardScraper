@@ -90,3 +90,67 @@ describe("pipeline", () => {
     for (const d of res.deals) for (const m of d.matchingSizes) expect(m.size.waist).toBe("wide");
   });
 });
+
+describe("budget view (offers)", async () => {
+  const { budgetStatus, groupDeals, sortGroups } = await import("./offers");
+  const { isFullPrice } = await import("./grading");
+  const locale = { country: "DE", currency: "EUR" as const, source: "default" as const };
+
+  it("budget status incl. 10% 'slightly over' band", () => {
+    const b = { min: 300, max: 500 };
+    expect(budgetStatus(250, b)).toBe("under");
+    expect(budgetStatus(400, b)).toBe("in");
+    expect(budgetStatus(540, b)).toBe("over");
+    expect(budgetStatus(560, b)).toBe("out");
+    expect(budgetStatus(9999, { min: null, max: null })).toBe("none");
+  });
+
+  it("one group per board; best = cheapest delivered offer", () => {
+    const { deals } = buildDeals(buildMockCatalog(), locale, null);
+    const groups = groupDeals(deals, { min: null, max: null }, null);
+    expect(groups.length).toBe(new Set(deals.map((d) => d.board.id)).size);
+    for (const g of groups) {
+      expect(g.best.landed.total).toBe(Math.min(...g.offers.map((o) => o.landed.total)));
+      expect(g.value.score).toBeGreaterThanOrEqual(0);
+      expect(g.value.score).toBeLessThanOrEqual(100);
+    }
+    const byPrice = sortGroups(groups, "price");
+    expect(byPrice[0].best.landed.total).toBeLessThanOrEqual(byPrice.at(-1)!.best.landed.total);
+  });
+
+  it("over-budget boards score lower than the same board in budget", () => {
+    const { deals } = buildDeals(buildMockCatalog(), locale, null);
+    const total = deals[0].landed.total;
+    const [inB] = groupDeals([deals[0]], { min: null, max: total + 1 }, null);
+    const [over] = groupDeals([deals[0]], { min: null, max: total / 1.05 }, null);
+    expect(over.budget).toBe("over");
+    expect(over.value.score).toBeLessThan(inB.value.score);
+  });
+
+  it("links last season's cheaper version of the same model", () => {
+    const cat = buildMockCatalog();
+    const board = cat.boards[0];
+    const listing = cat.listings.find((l) => l.boardId === board.id)!;
+    const old = { ...board, id: "old", season: "2024/25", model: `${board.model} 2025` };
+    const oldListing = { ...listing, id: "old-l", boardId: "old", price: { ...listing.price, amount: listing.price.amount * 0.6 } };
+    const { deals } = buildDeals({ ...cat, boards: [board, old], listings: [listing, oldListing] }, locale, null);
+    const g = groupDeals(deals, { min: null, max: null }, null).find((x) => x.id === board.id)!;
+    expect(g.lastSeason?.boardId).toBe("old");
+    expect(g.lastSeason!.savingPct).toBeGreaterThan(0.3);
+  });
+
+  it("full price label", () => {
+    expect(isFullPrice({ discountPct: 0 })).toBe(true);
+    expect(isFullPrice({ discountPct: 0.15 })).toBe(false);
+  });
+});
+
+describe("timezone → country", async () => {
+  const { countryFromTimezone } = await import("./tzCountry");
+  it("maps common zones and ignores unknown ones", () => {
+    expect(countryFromTimezone("Europe/Amsterdam")).toBe("NL");
+    expect(countryFromTimezone("Europe/London")).toBe("GB");
+    expect(countryFromTimezone("America/Denver")).toBe("US");
+    expect(countryFromTimezone("Asia/Kolkata")).toBeNull();
+  });
+});

@@ -106,6 +106,9 @@ export function gradeDeal(price: number, msrp: number, stats: PriceStats | null)
   return { tier, score, discountPct, vsAllTimeLowPct, vsMedianPct, reasons };
 }
 
+/** Not on sale at all (< 2 % below MSRP). Graded "bad" for tiering, but labelled "Full price" in the UI. */
+export const isFullPrice = (g: Pick<DealGrade, "discountPct">) => g.discountPct < 0.02;
+
 export const TIER_LABELS: Record<DealTier, string> = {
   "extremely-good": "Extremely Good",
   "very-good": "Very Good",
