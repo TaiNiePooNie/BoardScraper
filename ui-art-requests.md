@@ -1,6 +1,6 @@
-# BoardBuddy — UI Art Requests (v1)
+# BoardBuddy — UI Art Requests
 
-> **ChatGPT / Codex: read this whole file, then execute the "How to execute" steps.**
+> **ChatGPT / Codex: the v1 pack is delivered and merged. Your current job is the "v1.1 revisions" section at the end of this file. Read the Style Bible first, then execute only the v1.1 section.**
 > This file replaces all earlier art requests. Snowboard *product* photos are scraped by the app — do **not** generate those.
 
 ---
@@ -382,3 +382,51 @@
 - **Dimensions:** 1000x700, transparent.
 - **Style/Theme:** Small sticker scene.
 - **Specific Instructions:** An empty slatwall rack with two empty hooks, Buddy (shrug pose) standing in front holding a magnifying glass. No text.
+
+---
+
+## v1.1 revisions
+
+> **Codex: execute only this section.** Regenerate each asset below, overwriting the existing file in `/public/assets/` with the **same filename, format and dimensions**. Keep the Style Bible and all general rules from "How to execute" (originality, file-size limits, sticker treatment). Update `manifest.json` only if the alt text changes. Work on branch **`art/boardbuddy-v1.1`**, open a PR titled **"BoardBuddy UI art v1.1"** with a before/after image for each file, and do not merge.
+
+### Asset Required: rank-s.svg
+- **Purpose:** Rank badge for the **Extremely Good** tier. Rendered 20–64 px, so the letter must be unmistakable.
+- **Dimensions:** viewBox 256x256.
+- **Style/Theme:** Same shield, colours, border and sparkles as v1.
+- **Specific Instructions:** **Fix: the v1 "S" reads as the number 5.** Redraw it as a clearly curved **S** with rounded top and bottom bowls (no flat top bar, no sharp corner at the top-left). Check it at 20 px: it must not resemble a 5 or a $.
+
+### Asset Required: logo-wordmark.svg
+- **Purpose:** Main logo, top-left of every screen. Rendered 32–64 px tall.
+- **Dimensions:** viewBox 1200x300.
+- **Style/Theme:** Sticker-treated wordmark from the Style Bible: chunky **hand-cut / stencil-graffiti** letters, slanted ~10°, slightly uneven baseline like letters cut from vinyl.
+- **Specific Instructions:** **Fixes:** (1) remove the gap that makes it read "Boar dBuddy": even letter spacing, "BoardBuddy" reads as one word; (2) replace the plain italic typeface with custom hand-cut lettering (varied letter angles, chunky strokes, a few cut corners). Keep: Sticker White letters, Asphalt outline, Acid on the two "B"s, one Hot Pink spray drip, one die-cut white border around the whole word. Convert lettering to paths.
+
+### Asset Required: logo-wordmark.png
+- **Purpose:** Raster fallback of the logo.
+- **Dimensions:** 1200x300, transparent.
+- **Style/Theme:** Identical to the revised logo-wordmark.svg.
+- **Specific Instructions:** Export of the revised logo-wordmark.svg.
+
+### Asset Required: snow-spray-sprite.png
+- **Purpose:** Burst animation when a board is picked off the rack; plays at 256x256 per frame.
+- **Dimensions:** 1536x256 (6 frames of 256x256 in one row), transparent.
+- **Style/Theme:** Illustrated snow spray with sticker outlines (Asphalt outline, Sticker White and Ice fills).
+- **Specific Instructions:** **Fix: v1 is tiny faint dots and doesn't read as spray.** Draw a bold, chunky spray cloud: frame 1 a small puff (~25 % of the frame), frames 2–4 a fan-shaped plume growing to fill ~80 % of the frame width, with big outlined snow clumps, frames 5–6 breaking into large outlined dots that fade (lower opacity). Bottom-centre anchor stays fixed in every frame.
+
+### Asset Required: shop-wall-concrete.webp
+- **Purpose:** Seamless background behind the board racks; it fills most of the screen.
+- **Dimensions:** 1024x1024, opaque, must tile seamlessly on all four edges.
+- **Style/Theme:** Dark concrete wall at night, illustrated.
+- **Specific Instructions:** **Fix: v1 is nearly flat.** Add visible but low-contrast texture: concrete pores and speckle, two faint form-tie holes (small circles), a subtle horizontal formwork seam, faint roller marks, and 3–4 faded, unreadable spray tags and a few old torn sticker remnants in muted Acid/Hot Pink/Ice at 15–20 % opacity. Overall it should still sit around `#2A2C31` so text stays readable. Target 80–250 KB.
+
+### Asset Required: mascot-shrug.png
+- **Purpose:** Empty results and errors.
+- **Dimensions:** 800x800, transparent.
+- **Style/Theme:** Mascot sticker, identical character to v1.
+- **Specific Instructions:** **Fix:** remove the stray white mark at the right edge of v1. Everything else stays the same.
+
+### Asset Required: favicon.png
+- **Purpose:** Browser tab icon; must read at 16x16.
+- **Dimensions:** 64x64, transparent.
+- **Style/Theme:** Simplified logo-mark.
+- **Specific Instructions:** **Fix: v1 reads as a lime blob.** Show Buddy's face recognisably: round brown marmot head, two white front teeth, lime beanie on top with pink pom, cyan goggle band across the beanie. Max 4 colours + Asphalt outline, no white sticker border (too small).
