@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { DealExplorer, type DealsLoader } from "@/components/DealExplorer";
 import { buildDeals } from "@/lib/deals";
 import { currencyForCountry } from "@/lib/pricing/vat";
+import { countryFromTimezone } from "@/lib/tzCountry";
 import type { BuyerLocale } from "@/lib/types";
 import type { Catalog } from "@/lib/data/repository";
 
@@ -15,7 +16,10 @@ interface Snapshot extends Catalog {
 
 const snapshot: Snapshot = JSON.parse(document.getElementById("catalog")!.textContent!);
 
+/** No IP geolocation in a static page: device timezone first (tracks physical location), then language region. */
 function browserLocale(): BuyerLocale {
+  const tzCountry = countryFromTimezone();
+  if (tzCountry) return { country: tzCountry, currency: currencyForCountry(tzCountry), source: "timezone" };
   for (const tag of navigator.languages ?? [navigator.language]) {
     const region = tag.match(/-([A-Z]{2})\b/i)?.[1]?.toUpperCase();
     if (region) return { country: region, currency: currencyForCountry(region), source: "accept-language" };

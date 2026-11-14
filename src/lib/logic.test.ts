@@ -144,3 +144,13 @@ describe("budget view (offers)", async () => {
     expect(isFullPrice({ discountPct: 0.15 })).toBe(false);
   });
 });
+
+describe("timezone → country", async () => {
+  const { countryFromTimezone } = await import("./tzCountry");
+  it("maps common zones and ignores unknown ones", () => {
+    expect(countryFromTimezone("Europe/Amsterdam")).toBe("NL");
+    expect(countryFromTimezone("Europe/London")).toBe("GB");
+    expect(countryFromTimezone("America/Denver")).toBe("US");
+    expect(countryFromTimezone("Asia/Kolkata")).toBeNull();
+  });
+});
