@@ -1,43 +1,192 @@
 @import "tailwindcss";
 
-/* Dark mode follows the OS unless an explicit data-theme is set on <html> (light or dark). */
-@custom-variant dark {
-  @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
-      @slot;
-    }
-  }
-  &:where([data-theme="dark"], [data-theme="dark"] *) {
-    @slot;
-  }
-}
+/* BoardBuddy commits to one look: a night-time streetwear snowboard shop. Always dark. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-snow: #f6f8fb;
-  --color-ink: #0b1220;
-  --color-glacier: #38bdf8;
+  /* Brand palette (ui-art-requests.md Style Bible) */
+  --color-asphalt: #15161a;
+  --color-concrete: #2a2c31;
+  --color-paper: #fafaf7;
+  --color-acid: #d4ff3a;
+  --color-pink: #ff3d8b;
+  --color-ice: #33d6ff;
+  --color-orange: #ff6a1a;
+  /* Legacy names used by Pro-mode components */
+  --color-snow: #fafaf7;
+  --color-ink: #15161a;
+  --color-glacier: #d4ff3a;
+  /* Deal tiers */
   --color-tier-xg: #10b981;
   --color-tier-vg: #22c55e;
   --color-tier-g: #0ea5e9;
   --color-tier-n: #94a3b8;
   --color-tier-b: #f43f5e;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-marker: "Permanent Marker", "Comic Sans MS", cursive;
 }
 
+:root {
+  color-scheme: dark;
+}
+html,
 body {
-  @apply bg-snow text-ink antialiased dark:bg-ink dark:text-slate-100;
+  background: var(--color-asphalt);
+  color: var(--color-paper);
+}
+body {
+  @apply antialiased;
 }
 .app-gutter {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
+/* Concrete shop wall behind the racks. */
+.shop-wall {
+  background-color: var(--color-concrete);
+  background-image: var(--wall-url);
+  background-size: 512px 512px;
+}
+
+/* Game-style headings: condensed, heavy, slanted. */
+.headline {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+.marker {
+  font-family: var(--font-marker);
+}
+
+/* Sticker: white die-cut edge + soft drop shadow. */
+.sticker {
+  @apply rounded-2xl border-[3px] border-paper bg-asphalt shadow-[0_6px_0_rgba(0,0,0,0.35)];
+}
+.btn-acid {
+  @apply rounded-xl border-[3px] border-asphalt bg-acid px-5 py-3 font-bold text-asphalt shadow-[0_4px_0_#15161a] transition active:translate-y-[2px] active:shadow-[0_2px_0_#15161a] disabled:opacity-50;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+}
+.btn-ghost {
+  @apply rounded-xl border-2 border-paper/30 px-4 py-2.5 font-semibold text-paper transition hover:border-paper/70;
+}
+
+/* Pro-mode panels keep the earlier component styles, retuned for the dark shop. */
 .panel {
-  @apply rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/70;
+  @apply rounded-2xl border border-white/10 bg-asphalt/85 shadow-sm backdrop-blur;
 }
 .input {
-  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-glacier focus:ring-2 focus:ring-glacier/30 dark:border-slate-700 dark:bg-slate-950;
+  @apply w-full rounded-lg border border-white/15 bg-asphalt px-3 py-2 text-sm text-paper outline-none focus:border-acid focus:ring-2 focus:ring-acid/30;
 }
 .chip {
   @apply whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-acid);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes spray {
+  from { background-position-x: 0; }
+  to { background-position-x: -1536px; }
+}
+.spray {
+  width: 256px;
+  height: 256px;
+  background-repeat: no-repeat;
+  animation: spray 0.45s steps(6) 1 forwards;
+}
+
+/* Range sliders: concrete track, acid sticker thumb. */
+.bb-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 36px;
+  background: transparent;
+  touch-action: pan-y;
+}
+.bb-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-acid) var(--fill, 0%), rgba(250, 250, 247, 0.15) var(--fill, 0%));
+  border: 2px solid var(--color-asphalt);
+}
+.bb-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(250, 250, 247, 0.15);
+}
+.bb-range::-moz-range-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-acid);
+}
+.bb-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: var(--color-acid);
+  border: 4px solid var(--color-paper);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  cursor: grab;
+}
+.bb-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-acid);
+  border: 4px solid var(--color-paper);
+  cursor: grab;
+}
+/* Dual-thumb budget slider: two stacked ranges, only thumbs take pointer events. */
+.bb-dual {
+  position: relative;
+  height: 36px;
+}
+.bb-dual .bb-range {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bb-dual .bb-range::-webkit-slider-runnable-track {
+  background: transparent;
+  border-color: transparent;
+}
+.bb-dual .bb-range::-webkit-slider-thumb {
+  pointer-events: auto;
+}
+.bb-dual .bb-range::-moz-range-thumb {
+  pointer-events: auto;
+}
+.bb-dual .bb-range::-moz-range-track,
+.bb-dual .bb-range::-moz-range-progress {
+  background: transparent;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

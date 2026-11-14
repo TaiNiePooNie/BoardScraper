@@ -1,6 +1,6 @@
-# BoardScraper
+# BoardBuddy (repo: BoardScraper)
 
-Snowboard deal aggregator: computes a rider's ideal board from weight/boots/style, scrapes retailer listings, grades each deal against MSRP and price history, and shows localized delivered cost.
+Snowboard deal finder that feels like browsing a streetwear snowboard shop: a short rider setup (size, boots, style, skill, budget) picks your ideal board, then live deals from real shops hang on shop walls. Every deal is graded against MSRP and price history and priced to your door (shipping, VAT, duties).
 
 Stack: Next.js 15 (App Router) · React 19 · Tailwind v4 · TanStack Table · Recharts · Zod · Drizzle ORM (Postgres / PGlite) · Vitest.
 
@@ -27,6 +27,16 @@ npm test                        # unit + ingest tests (in-memory PGlite)
 | `glisshop` | glisshop.com | FR → EU (EUR incl. VAT) | Sitemap → schema.org ProductGroup JSON-LD; RRP from embedded `advicePrice` |
 
 Every path used is allowed by the shop's robots.txt; the fetcher checks robots.txt at runtime, waits ≥ 2.5 s between requests per host, and stops on 403/429/bot challenges instead of evading them. Excluded after review (blocking or disallowed): Snowleader, Sport Conrad, Absolute-Snow, The House, Snowboard Asylum; Bergzeit and Tradeinn need different discovery/parsing (see `src/lib/retailers.ts`). Shipping rules in `src/lib/retailers.ts` are estimates — verify each season.
+
+## App
+
+- **Setup flow** (`src/components/shop/setup/`): fit preference, height/weight sliders with a to-scale size preview, boot-size wheel, style and skill cards, budget range. Every number can be typed. Saved on the device.
+- **Shop walls** (`src/lib/walls.ts`, `ShopWall`, `RackBoard`): picks for you, sale rack, last season corner, full price wall, slightly over budget, holds, whole shop.
+- **Board detail** (`BoardDetail`): pick-up transition, callouts around the board, game-style stats (`src/lib/stats.ts`), delivered price breakdown, other shops, price history, riders and reviews. Swipe or arrow keys to browse.
+- **Pro mode**: ship-to and currency, filters, list and deal-tier view.
+- **Restock** (`/api/restock`): owner-only button that starts the scrape workflow. Needs Vercel env vars `RESTOCK_PASSCODE` and `GITHUB_TOKEN` (fine-grained token for this repo with *Actions: read and write*).
+- **Live price check** (`/api/live/[id]`): opening a board re-checks that one listing at the shop (at most every 15 min per listing).
+- **Static test build**: `DATABASE_URL=pglite:./data/pglite npm run build:static -- out.html` makes one self-contained page (art and one photo per board embedded, deals computed in the browser). `--no-photos` skips photos.
 
 ## Database & scheduled scraping
 

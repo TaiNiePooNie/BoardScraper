@@ -8,12 +8,21 @@ export type RidingStyle = z.infer<typeof RidingStyle>;
 export const BootSizeSystem = z.enum(["US", "EU"]);
 export type BootSizeSystem = z.infer<typeof BootSizeSystem>;
 
+export const SkillLevel = z.enum(["beginner", "intermediate", "advanced", "expert"]);
+export type SkillLevel = z.infer<typeof SkillLevel>;
+
+/** Which boards to show: men's/unisex, women's-specific, or everything. */
+export const FitPreference = z.enum(["any", "mens", "womens"]);
+export type FitPreference = z.infer<typeof FitPreference>;
+
 export const RiderInput = z.object({
   weightKg: z.coerce.number().min(25).max(160),
   heightCm: z.coerce.number().min(100).max(230),
   bootSize: z.coerce.number().min(3).max(52),
   bootSystem: BootSizeSystem.default("US"),
   style: RidingStyle,
+  skill: SkillLevel.optional(), // default: intermediate
+  fit: FitPreference.optional(), // default: any
 });
 export type RiderInput = z.infer<typeof RiderInput>;
 

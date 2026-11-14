@@ -19,7 +19,7 @@ export function PriceHistoryChart({ history, msrp, stats, currency, height = 180
           <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.08} vertical={false} />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d: string) => d.slice(5)} minTickGap={28} stroke="currentColor" strokeOpacity={0.4} />
           <YAxis tick={{ fontSize: 10 }} width={52} tickFormatter={fmt} domain={["auto", "auto"]} stroke="currentColor" strokeOpacity={0.4} />
-          <Tooltip formatter={(v) => [fmt(Number(v)), "Price"]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+          <Tooltip formatter={(v) => [fmt(Number(v)), "Price"]} contentStyle={{ fontSize: 12, borderRadius: 8, background: "#15161a", border: "2px solid #fafaf7", color: "#fafaf7" }} />
           <ReferenceLine y={msrp} stroke="#94a3b8" strokeDasharray="4 4" label={{ value: "MSRP", fontSize: 10, position: "insideTopRight" }} />
           {stats && <ReferenceLine y={stats.allTimeLow} stroke="var(--color-tier-xg)" strokeDasharray="4 4" label={{ value: "Low", fontSize: 10, position: "insideBottomRight" }} />}
           <Area type="stepAfter" dataKey="price" stroke="var(--color-glacier)" strokeWidth={2} fill="url(#ph)" />

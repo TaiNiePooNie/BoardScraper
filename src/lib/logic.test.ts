@@ -154,3 +154,37 @@ describe("timezone → country", async () => {
     expect(countryFromTimezone("Asia/Kolkata")).toBeNull();
   });
 });
+
+describe("skill, fit and stats", async () => {
+  const { boardStats } = await import("./stats");
+  const { fitAllows, isWomensBoard } = await import("./sizing");
+  const base = { weightKg: 75, heightCm: 178, bootSize: 9, bootSystem: "US" as const, style: "all-mountain" as const };
+
+  it("skill shifts length and flex", () => {
+    const beg = recommend({ ...base, skill: "beginner" });
+    const exp = recommend({ ...base, skill: "expert" });
+    expect(beg.idealLengthCm).toBeLessThan(exp.idealLengthCm);
+    expect(beg.flexRange[1]).toBeLessThan(exp.flexRange[1]);
+    expect(recommend(base).idealLengthCm).toBe(recommend({ ...base, skill: "intermediate" }).idealLengthCm);
+  });
+
+  it("fit preference", () => {
+    expect(isWomensBoard("Feelgood Women's")).toBe(true);
+    expect(isWomensBoard("Custom")).toBe(false);
+    expect(fitAllows("womens", "Feelgood Women's")).toBe(true);
+    expect(fitAllows("womens", "Custom")).toBe(false);
+    expect(fitAllows("mens", "Feelgood Women's")).toBe(false);
+    expect(fitAllows("any", "Feelgood Women's")).toBe(true);
+  });
+
+  it("stats: soft rocker twin is forgiving, stiff directional camber is fast", () => {
+    const park = boardStats({ flex: 3, profile: "rocker", shape: "true-twin" });
+    const charger = boardStats({ flex: 9, profile: "directional-camber", shape: "tapered" });
+    expect(park.forgiveness).toBeGreaterThan(charger.forgiveness);
+    expect(charger.speed).toBeGreaterThan(park.speed);
+    expect(charger.float).toBeGreaterThan(park.float);
+    expect(park.estimated).toBe(false);
+    expect(boardStats({ flex: null, profile: null, shape: null }).estimated).toBe(true);
+    for (const v of Object.values(charger).filter((x) => typeof x === "number")) expect(v).toBeGreaterThanOrEqual(1);
+  });
+});

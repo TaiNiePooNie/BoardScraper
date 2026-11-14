@@ -108,8 +108,21 @@ export function parseJsonLdProduct(node: Json, url: string, defaultCurrency: Cur
 }
 
 export function sitemapJsonLdAdapter(cfg: SitemapJsonLdConfig): RetailerAdapter {
+  const parsePage = (text: string, url: string) => {
+    const node = findProductNode(text);
+    const parsed = node && parseJsonLdProduct(node, url, cfg.retailer.currency, new Date().toISOString(), cfg.titlePrefix);
+    if (parsed && parsed.listPrice === null) {
+      const rrp = cfg.listPriceFromHtml?.(text, parsed.price) ?? ogListPrice(text);
+      if (rrp && rrp > parsed.price) parsed.listPrice = Math.round(rrp * 100) / 100;
+    }
+    return parsed ?? null;
+  };
   return {
     retailer: cfg.retailer,
+    async fetchOne(http, url) {
+      const { text, url: finalUrl } = await http.get(url);
+      return parsePage(text, finalUrl);
+    },
     async *crawl(ctx: CrawlContext) {
       // 1. Discover product URLs.
       const queue = [...cfg.sitemaps];
@@ -132,12 +145,7 @@ export function sitemapJsonLdAdapter(cfg: SitemapJsonLdConfig): RetailerAdapter 
         if (yielded >= ctx.limit) break;
         try {
           const { text, url: finalUrl } = await ctx.http.get(url);
-          const node = findProductNode(text);
-          const parsed = node && parseJsonLdProduct(node, finalUrl, cfg.retailer.currency, new Date().toISOString(), cfg.titlePrefix);
-          if (parsed && parsed.listPrice === null) {
-            const rrp = cfg.listPriceFromHtml?.(text, parsed.price) ?? ogListPrice(text);
-            if (rrp && rrp > parsed.price) parsed.listPrice = Math.round(rrp * 100) / 100;
-          }
+          const parsed = parsePage(text, finalUrl);
           if (parsed) {
             yielded++;
             yield parsed;

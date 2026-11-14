@@ -1,4 +1,4 @@
-import type { BoardModel, BoardProfile, BoardSize, RiderInput, RidingStyle, SizeMatch } from "./types";
+import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RidingStyle, SizeMatch, SkillLevel } from "./types";
 
 /**
  * Weight → base board length (cm), all-mountain reference.
@@ -80,15 +80,30 @@ function heightNudge(weightKg: number, heightCm: number): number {
   return 0;
 }
 
+/**
+ * Skill shifts length and flex: beginners get a slightly shorter, softer board
+ * (easier to turn, more forgiving); experts a longer, stiffer one (stability at speed).
+ */
+export const SKILL_ADJUST: Record<SkillLevel, { lengthCm: number; flex: number }> = {
+  beginner: { lengthCm: -2, flex: -2 },
+  intermediate: { lengthCm: 0, flex: 0 },
+  advanced: { lengthCm: 1, flex: 1 },
+  expert: { lengthCm: 2, flex: 2 },
+};
+
+const clampFlex = (n: number) => Math.min(10, Math.max(1, n));
+
 export function recommend(input: RiderInput): Recommendation {
   const spec = STYLE_SPECS[input.style];
+  const skill = SKILL_ADJUST[input.skill ?? "intermediate"];
   const base = lengthFromWeight(input.weightKg);
-  const ideal = Math.round(base + spec.lengthOffsetCm + heightNudge(input.weightKg, input.heightCm));
+  const ideal = Math.round(base + spec.lengthOffsetCm + skill.lengthCm + heightNudge(input.weightKg, input.heightCm));
   const wide = requiresWide(input.bootSize, input.bootSystem);
   const bootUS = toUSBootSize(input.bootSize, input.bootSystem);
 
   const notes = [`Length from weight (${input.weightKg} kg) → ${Math.round(base)} cm base`];
   if (spec.lengthOffsetCm) notes.push(`${input.style}: ${spec.lengthOffsetCm > 0 ? "+" : ""}${spec.lengthOffsetCm} cm`);
+  if (skill.lengthCm) notes.push(`${input.skill}: ${skill.lengthCm > 0 ? "+" : ""}${skill.lengthCm} cm, flex ${skill.flex > 0 ? "+" : ""}${skill.flex}`);
   if (wide) notes.push(`Boot US ${bootUS} ≥ US ${WIDE_THRESHOLD_US}: Wide (W) boards only`);
 
   return {
@@ -96,7 +111,7 @@ export function recommend(input: RiderInput): Recommendation {
     lengthRangeCm: [ideal - LENGTH_TOLERANCE_CM, ideal + LENGTH_TOLERANCE_CM],
     requiresWide: wide,
     bootSizeUS: bootUS,
-    flexRange: spec.flex,
+    flexRange: [clampFlex(spec.flex[0] + skill.flex), clampFlex(spec.flex[1] + skill.flex)],
     profiles: spec.profiles,
     notes,
   };
@@ -124,4 +139,12 @@ export function styleFit(board: Pick<BoardModel, "flex" | "profile" | "styles">,
   const profileScore = profileIdx === -2 ? 0.5 : profileIdx === -1 ? 0 : 1 - profileIdx * 0.15;
   const tagScore = board.styles.includes(style) ? 1 : 0.4;
   return Math.round((flexScore * 0.4 + profileScore * 0.4 + tagScore * 0.2) * 100) / 100;
+}
+
+/** Women's-specific board, detected from the model name (shops tag these consistently in titles). */
+export const isWomensBoard = (model: string) => /\b(women'?s?|womens|wmns|ladies|damen|femme|femmes|für frauen|fur frauen|w's)\b/i.test(model);
+
+export function fitAllows(fit: FitPreference | undefined, model: string): boolean {
+  if (!fit || fit === "any") return true;
+  return fit === "womens" ? isWomensBoard(model) : !isWomensBoard(model);
 }

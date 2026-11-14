@@ -18,7 +18,38 @@ mkdirSync(tmp, { recursive: true });
 const h = await openDb();
 const catalog = await new DbRepository(async () => h.db).getCatalog();
 await h.close();
+// 1b. Product photos: the artifact sandbox blocks shop image servers, so embed one small
+// photo per board (first image, resized to WebP). Skip with --no-photos.
+if (!process.argv.includes("--no-photos")) {
+  const sharp = (await import("sharp")).default;
+  let ok = 0;
+  const queue = [...catalog.boards];
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    for (let b = queue.shift(); b; b = queue.shift()) {
+      const src = b.images[0];
+      if (!src) continue;
+      try {
+        const res = await fetch(src.startsWith("//") ? `https:${src}` : src, { signal: AbortSignal.timeout(20_000), headers: { "user-agent": "Mozilla/5.0 BoardBuddy-static-build" } });
+        if (!res.ok) throw new Error(String(res.status));
+        const img = await sharp(Buffer.from(await res.arrayBuffer())).resize({ height: 420, width: 260, fit: "inside", withoutEnlargement: true }).webp({ quality: 68 }).toBuffer();
+        b.images = [`data:image/webp;base64,${img.toString("base64")}`];
+        ok++;
+      } catch {
+        b.images = []; // placeholder art in the UI
+      }
+    }
+  }));
+  console.log(`  photos: ${ok}/${catalog.boards.length} embedded`);
+} else {
+  for (const b of catalog.boards) b.images = [];
+}
 const json = JSON.stringify({ ...catalog, exportedAt: new Date().toISOString() }).replace(/</g, "\\u003c");
+
+// 1c. UI art: inline every file referenced in src/lib/assets.ts as a data URI.
+const MIME: Record<string, string> = { png: "image/png", svg: "image/svg+xml", webp: "image/webp", jpg: "image/jpeg" };
+const SKIP = new Set(["og-image.png", "app-icon-512.png", "favicon.png"]);
+const assetNames = [...readFileSync("src/lib/assets.ts", "utf8").matchAll(/a\("([^"]+)"\)/g)].map((m) => m[1]).filter((f) => !SKIP.has(f));
+const inlined = Object.fromEntries(assetNames.map((f) => [f, `data:${MIME[f.split(".").pop()!]};base64,${readFileSync(path.join("public/assets", f)).toString("base64")}`]));
 
 // 2. JS bundle (React + app), minified.
 await build({
@@ -39,18 +70,17 @@ execFileSync("npx", ["@tailwindcss/cli", "-i", "src/app/globals.css", "-o", path
 
 const js = readFileSync(path.join(tmp, "app.js"), "utf8").replace(/<\/script/gi, "<\\/script");
 const css = readFileSync(path.join(tmp, "app.css"), "utf8");
-const html = `<title>BoardScraper</title>
+const html = `<title>BoardBuddy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,800;1,700;1,800;1,900&family=Inter:wght@400;500;600;700&family=Permanent+Marker&display=swap">
 <style>
-:root { --page-bg: #f6f8fb; --page-fg: #0b1220; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page-bg: #0b1220; --page-fg: #f1f5f9; color-scheme: dark; } }
-:root[data-theme="dark"] { --page-bg: #0b1220; --page-fg: #f1f5f9; color-scheme: dark; }
-body { background: var(--page-bg); color: var(--page-fg); }
+:root { color-scheme: dark; }
+body { background: #15161a; color: #fafaf7; }
 ${css}
 </style>
 <div id="root"></div>
+<script>window.__BB_ASSETS=${JSON.stringify(inlined)}</script>
 <script type="application/json" id="catalog">${json}</script>
 <script>${js}</script>
 `;

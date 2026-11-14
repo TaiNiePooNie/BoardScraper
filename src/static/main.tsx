@@ -1,9 +1,10 @@
 /**
- * Static build entry: the same UI, with deals computed in the browser from an
+ * Static build entry: the same shop, with deals computed in the browser from an
  * embedded catalog snapshot (no server/API). Used for the artifact / static hosting.
  */
 import { createRoot } from "react-dom/client";
-import { DealExplorer, type DealsLoader } from "@/components/DealExplorer";
+import { ShopApp } from "@/components/shop/ShopApp";
+import type { ShopServices } from "@/components/shop/services";
 import { buildDeals } from "@/lib/deals";
 import { currencyForCountry } from "@/lib/pricing/vat";
 import { countryFromTimezone } from "@/lib/tzCountry";
@@ -27,27 +28,13 @@ function browserLocale(): BuyerLocale {
   return { country: "DE", currency: "EUR", source: "default" };
 }
 
-const loadDeals: DealsLoader = async ({ country, currency, rider }) => ({
-  ...buildDeals(snapshot, { country, currency, source: "override" }, rider),
-  source: "db",
-  updatedAt: snapshot.exportedAt,
-});
+const services: ShopServices = {
+  loadDeals: async ({ country, currency, rider }) => ({
+    ...buildDeals(snapshot, { country, currency, source: "override" }, rider),
+    source: "db",
+    updatedAt: snapshot.exportedAt,
+  }),
+};
 
-function App() {
-  return (
-    <main>
-      <header className="app-gutter mx-auto max-w-7xl pb-8 pt-8">
-        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-glacier">BoardScraper · test build</div>
-        <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-5xl" style={{ textWrap: "balance" }}>
-          Snowboard deals, sized for <span className="text-glacier">you</span>.
-        </h1>
-        <p className="mt-3 max-w-xl text-slate-600 dark:text-slate-300">
-          Enter your weight, height and boot size. We pick your ideal length, waist and flex, then grade every live deal against MSRP and its price history.
-        </p>
-      </header>
-      <DealExplorer initialLocale={browserLocale()} loadDeals={loadDeals} />
-    </main>
-  );
-}
-
-createRoot(document.getElementById("root")!).render(<App />);
+document.documentElement.classList.add("dark");
+createRoot(document.getElementById("root")!).render(<ShopApp initialLocale={browserLocale()} services={services} />);

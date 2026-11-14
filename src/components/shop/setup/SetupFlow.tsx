@@ -1,0 +1,192 @@
+"use client";
+import clsx from "clsx";
+import { AnimatePresence, motion } from "motion/react";
+import { ChevronLeft, X } from "lucide-react";
+import { useState } from "react";
+import { ASSETS } from "@/lib/assets";
+import type { Profile } from "@/lib/profile";
+import { recommend, requiresWide, WIDE_THRESHOLD_EU, WIDE_THRESHOLD_US } from "@/lib/sizing";
+import type { CurrencyCode, FitPreference, RiderInput, RidingStyle, SkillLevel } from "@/lib/types";
+import { BudgetRange } from "./BudgetRange";
+import { ChoiceCards } from "./ChoiceCards";
+import { SizePreview } from "./SizePreview";
+import { SliderField } from "./SliderField";
+import { SlotPicker } from "./SlotPicker";
+
+const US_SIZES = Array.from({ length: 23 }, (_, i) => 4 + i * 0.5); // 4–15
+const EU_SIZES = Array.from({ length: 31 }, (_, i) => 35 + i * 0.5); // 35–50
+
+const STEPS = [
+  { key: "rider", title: "Who's riding?", mascot: ASSETS.mascot.wave },
+  { key: "boots", title: "Boot size", mascot: ASSETS.mascot.point },
+  { key: "style", title: "How do you ride?", mascot: ASSETS.mascot.ride },
+  { key: "skill", title: "Your level", mascot: ASSETS.mascot.thinking },
+  { key: "budget", title: "Your budget", mascot: ASSETS.mascot.celebrate },
+] as const;
+
+/** Lean, step-by-step rider setup. Sliders, a wheel and cards; every number can also be typed. */
+export function SetupFlow({ initial, currency, onDone, onClose }: {
+  initial: Profile;
+  currency: CurrencyCode;
+  onDone: (p: Profile) => void;
+  onClose?: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState(1);
+  const [rider, setRider] = useState<RiderInput>(initial.rider);
+  const [budget, setBudget] = useState(initial.budget);
+  const set = <K extends keyof RiderInput>(k: K, v: RiderInput[K]) => setRider((r) => ({ ...r, [k]: v }));
+  const rec = recommend(rider);
+  const wide = requiresWide(rider.bootSize, rider.bootSystem);
+  const last = step === STEPS.length - 1;
+  const go = (d: number) => {
+    setDir(d);
+    setStep((s) => Math.min(STEPS.length - 1, Math.max(0, s + d)));
+  };
+
+  const switchSystem = (sys: "US" | "EU") => {
+    if (sys === rider.bootSystem) return;
+    const converted = sys === "EU" ? Math.round((rider.bootSize + 33.5) * 2) / 2 : Math.round((rider.bootSize - 33.5) * 2) / 2;
+    setRider((r) => ({ ...r, bootSystem: sys, bootSize: converted }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 overflow-y-auto bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
+      <img src={ASSETS.heroShopfront} alt="" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-55" />
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-r from-asphalt via-asphalt/80 to-asphalt/20" />
+      <img src={ASSETS.mountains} alt="" className="pointer-events-none fixed inset-x-0 bottom-0 w-full opacity-70" />
+
+      <div className="app-gutter relative mx-auto flex min-h-full max-w-6xl flex-col py-6">
+        <div className="flex items-center justify-between">
+          <img src={ASSETS.logo} alt="BoardBuddy" className="h-10 w-auto sm:h-12" />
+          {onClose && (
+            <button type="button" onClick={onClose} className="rounded-full bg-asphalt/70 p-2 text-paper" aria-label="Close setup">
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+
+        <div className="mt-6 w-full max-w-md md:mt-12">
+          <div className="sticker relative p-5 pt-6 sm:p-6">
+            <img src={STEPS[step].mascot} alt="" className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />
+            <div className="mb-1 flex gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+              {STEPS.map((s, i) => (
+                <span key={s.key} className={clsx("h-1.5 rounded-full transition-all", i === step ? "w-8 bg-acid" : i < step ? "w-4 bg-acid/60" : "w-4 bg-paper/20")} />
+              ))}
+            </div>
+            <h1 className="headline mb-5 text-4xl">{STEPS[step].title}</h1>
+
+            <AnimatePresence mode="wait" custom={dir} initial={false}>
+              <motion.div
+                key={step}
+                custom={dir}
+                initial={{ opacity: 0, x: dir * 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: dir * -40 }}
+                transition={{ duration: 0.18 }}
+                className="flex flex-col gap-5"
+              >
+                {step === 0 && (
+                  <>
+                    <ChoiceCards<FitPreference>
+                      name="Boards to show"
+                      value={rider.fit ?? "any"}
+                      onChange={(v) => set("fit", v)}
+                      choices={[
+                        { id: "any", label: "All boards" },
+                        { id: "mens", label: "Men's & unisex" },
+                        { id: "womens", label: "Women's" },
+                      ]}
+                    />
+                    <div className="grid grid-cols-[1fr_auto] items-center gap-4">
+                      <div className="flex flex-col gap-4">
+                        <SliderField id="height" label="Height" unit="cm" min={130} max={210} value={rider.heightCm} onChange={(v) => set("heightCm", v)} />
+                        <SliderField id="weight" label="Weight" unit="kg" min={35} max={140} step={0.5} value={rider.weightKg} onChange={(v) => set("weightKg", v)} />
+                      </div>
+                      <SizePreview heightCm={rider.heightCm} weightKg={rider.weightKg} boardCm={rec.idealLengthCm} wide={wide} />
+                    </div>
+                    <p className="text-xs text-paper/60">Weight decides your board length; height only fine-tunes it.</p>
+                  </>
+                )}
+
+                {step === 1 && (
+                  <>
+                    <div className="flex justify-center gap-2" role="radiogroup" aria-label="Size system">
+                      {(["US", "EU"] as const).map((sys) => (
+                        <button key={sys} type="button" role="radio" aria-checked={rider.bootSystem === sys} onClick={() => switchSystem(sys)}
+                          className={clsx("headline rounded-full border-2 px-5 py-1.5 text-lg", rider.bootSystem === sys ? "border-acid bg-acid text-asphalt" : "border-paper/25 text-paper")}>
+                          {sys}
+                        </button>
+                      ))}
+                    </div>
+                    <SlotPicker
+                      id="boot"
+                      label={`Boot size (${rider.bootSystem})`}
+                      values={rider.bootSystem === "US" ? US_SIZES : EU_SIZES}
+                      value={rider.bootSize}
+                      onChange={(v) => set("bootSize", v)}
+                      format={(v) => (Number.isInteger(v) ? String(v) : v.toFixed(1))}
+                    />
+                    <p className={clsx("rounded-xl px-3 py-2 text-center text-sm font-semibold", wide ? "bg-orange/15 text-orange" : "bg-paper/5 text-paper/70")}>
+                      {wide
+                        ? `Big feet! Wide (W) boards only, so your toes don't drag.`
+                        : `Regular width boards. Wide kicks in at US ${WIDE_THRESHOLD_US} / EU ${WIDE_THRESHOLD_EU}.`}
+                    </p>
+                  </>
+                )}
+
+                {step === 2 && (
+                  <ChoiceCards<RidingStyle>
+                    name="Riding style"
+                    value={rider.style}
+                    onChange={(v) => set("style", v)}
+                    choices={[
+                      { id: "park", label: "Park", hint: "Rails, jumps, butters", icon: ASSETS.style.park },
+                      { id: "all-mountain", label: "All-Mountain", hint: "A bit of everything", icon: ASSETS.style["all-mountain"] },
+                      { id: "freeride", label: "Freeride", hint: "Powder, steeps, speed", icon: ASSETS.style.freeride },
+                    ]}
+                  />
+                )}
+
+                {step === 3 && (
+                  <ChoiceCards<SkillLevel>
+                    name="Skill level"
+                    columns={2}
+                    value={rider.skill ?? "intermediate"}
+                    onChange={(v) => set("skill", v)}
+                    choices={[
+                      { id: "beginner", label: "Beginner", hint: "First weeks on snow", icon: ASSETS.skill.beginner },
+                      { id: "intermediate", label: "Intermediate", hint: "Linking turns on reds", icon: ASSETS.skill.intermediate },
+                      { id: "advanced", label: "Advanced", hint: "Any run, some park", icon: ASSETS.skill.advanced },
+                      { id: "expert", label: "Expert", hint: "Steeps, big air, speed", icon: ASSETS.skill.expert },
+                    ]}
+                  />
+                )}
+
+                {step === 4 && <BudgetRange value={budget} onChange={setBudget} currency={currency} />}
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="mt-6 flex items-center gap-3">
+              {step > 0 && (
+                <button type="button" onClick={() => go(-1)} className="btn-ghost flex items-center gap-1" aria-label="Back">
+                  <ChevronLeft className="h-4 w-4" />Back
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-acid ml-auto flex-1"
+                onClick={() => (last ? onDone({ rider, budget }) : go(1))}
+              >
+                {last ? "Open the shop" : "Next"}
+              </button>
+            </div>
+          </div>
+          <p className="mt-3 text-center text-xs text-paper/60">
+            Your board: <b className="text-paper">{rec.idealLengthCm}{rec.requiresWide ? "W" : ""} cm</b> · flex {rec.flexRange[0]}–{rec.flexRange[1]} · saved on this device
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
