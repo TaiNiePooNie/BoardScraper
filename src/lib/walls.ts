@@ -17,7 +17,7 @@ export interface Wall {
 
 const PICKS = 10;
 
-export function buildWalls(groups: BoardGroup[], holds: string[] = []): Wall[] {
+export function buildWalls(groups: BoardGroup[], holds: string[] = [], opts: { browse?: boolean } = {}): Wall[] {
   const inBudget = groups.filter((g) => g.budget === "in" || g.budget === "none");
   const seasons = inBudget.map((g) => g.board.season).sort();
   const current = seasons.at(-1);
@@ -33,8 +33,8 @@ export function buildWalls(groups: BoardGroup[], holds: string[] = []): Wall[] {
     },
     {
       id: "picks",
-      title: "Picks for you",
-      subtitle: "Best mix of fit, deal and reviews in your budget",
+      title: opts.browse ? "Staff picks" : "Picks for you",
+      subtitle: opts.browse ? "The best deals in the shop right now" : "Best mix of fit, deal and reviews in your budget",
       tone: "acid",
       groups: sortGroups(inBudget, "value").slice(0, PICKS),
     },
@@ -55,7 +55,7 @@ export function buildWalls(groups: BoardGroup[], holds: string[] = []): Wall[] {
     {
       id: "full-price",
       title: "Full price wall",
-      subtitle: "Not on sale right now, but they fit you",
+      subtitle: opts.browse ? "Not on sale right now" : "Not on sale right now, but they fit you",
       tone: "paper",
       groups: sortGroups(inBudget.filter((g) => isFullPrice(g.best.grade)), "value"),
     },
@@ -69,7 +69,7 @@ export function buildWalls(groups: BoardGroup[], holds: string[] = []): Wall[] {
     {
       id: "all",
       title: "The whole shop",
-      subtitle: "Everything that fits you, cheapest first",
+      subtitle: opts.browse ? "Every board, cheapest first" : "Everything that fits you, cheapest first",
       tone: "paper",
       groups: sortGroups(inBudget, "price"),
     },

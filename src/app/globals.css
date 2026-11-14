@@ -105,16 +105,6 @@ body {
   }
 }
 
-@keyframes spray {
-  from { background-position-x: 0; }
-  to { background-position-x: -1536px; }
-}
-.spray {
-  width: 256px;
-  height: 256px;
-  background-repeat: no-repeat;
-  animation: spray 0.45s steps(6) 1 forwards;
-}
 
 /* Range sliders: concrete track, acid sticker thumb. */
 .bb-range {
@@ -189,4 +179,33 @@ body {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Logo morph (logo-full.svg: #bb-icon in x 0–300, #bb-word to the right). */
+.bb-logo {
+  display: inline-block;
+  overflow: hidden;
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.bb-logo svg {
+  height: 100%;
+  width: auto;
+  overflow: visible;
+}
+.bb-logo #bb-word,
+.bb-logo [id^="bb-l"] {
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-box: fill-box;
+}
+.bb-logo.is-compact #bb-word {
+  opacity: 0;
+  transform: translateX(-12%) scale(0.9);
+}
+.bb-logo #bb-icon {
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.bb-logo.is-compact #bb-icon {
+  transform: rotate(-8deg);
 }

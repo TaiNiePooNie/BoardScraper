@@ -1,4 +1,4 @@
-import type { DealTier, RidingStyle, SkillLevel } from "./types";
+import type { DealTier, FitPreference, RidingStyle, SkillLevel } from "./types";
 import type { StatKey } from "./stats";
 
 /**
@@ -72,6 +72,26 @@ export const ASSETS = {
   scribble: a("scribble-underline.svg"),
   doodleArrow: a("doodle-arrow.svg"),
   emptyNoBoards: a("empty-no-boards.png"),
+  // v2 art (ui-art-requests.md "v2"); components fall back gracefully until delivered
+  logoFull: a("logo-full.svg"),
+  logoIcon: a("logo-icon.svg"),
+  logoFullPng: a("logo-full.png"),
+  fit: {
+    any: a("fit-all.svg"),
+    mens: a("fit-men.svg"),
+    womens: a("fit-women.svg"),
+    kids: a("fit-kids.svg"),
+  } satisfies Record<FitPreference, string>,
+  styleAny: a("style-any.svg"),
+  rider: {
+    man: { slim: a("rider-man-slim.svg"), regular: a("rider-man-regular.svg"), broad: a("rider-man-broad.svg") },
+    woman: { slim: a("rider-woman-slim.svg"), regular: a("rider-woman-regular.svg"), broad: a("rider-woman-broad.svg") },
+    kid: { slim: a("rider-kid-slim.svg"), regular: a("rider-kid-regular.svg"), broad: a("rider-kid-broad.svg") },
+  },
+  previewBoard: a("preview-board.svg"),
+  avatars: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => a(`avatar-${n}.png`)),
+  mascotCard: a("mascot-card.png"),
+  emailHeader: a("email-header.png"),
 } as const;
 
 /** Rank letter shown next to each tier (game-style), keeping the five tier names. */

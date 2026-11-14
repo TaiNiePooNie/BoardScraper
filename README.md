@@ -36,6 +36,10 @@ Every path used is allowed by the shop's robots.txt; the fetcher checks robots.t
 - **Pro mode**: ship-to and currency, filters, list and deal-tier view.
 - **Restock** (`/api/restock`): owner-only button that starts the scrape workflow. Needs Vercel env vars `RESTOCK_PASSCODE` and `GITHUB_TOKEN` (fine-grained token for this repo with *Actions: read and write*).
 - **Live price check** (`/api/live/[id]`): opening a board re-checks that one listing at the shop (at most every 15 min per listing).
+- **Riders & buddies**: several rider profiles (you + buddies) with a header switcher; "Browse everything" shows the whole shop without size or budget filters. Kids / Men / Women / All fit filter.
+- **Accounts** (Better Auth, optional): Google, Apple and email sign-in links; profile page with riders, deal-email settings, log out and delete account. Guests keep everything on the device.
+- **Deal alert emails** (`npm run alerts`, runs after the daily scrape): opt-in weekly roundup on a chosen day or "when a new board fits", plus price drops on held boards. One-click unsubscribe.
+- **Image proxy** (`/api/img`): trims the shops' white canvas, resizes and caches product photos (allow-listed hosts only).
 - **Static test build**: `DATABASE_URL=pglite:./data/pglite npm run build:static -- out.html` makes one self-contained page (art and one photo per board embedded, deals computed in the browser). `--no-photos` skips photos.
 
 ## Database & scheduled scraping
@@ -70,3 +74,16 @@ Every path used is allowed by the shop's robots.txt; the fetcher checks robots.t
 - The scraper does not solve CAPTCHAs or circumvent access controls; it backs off when blocked. Review each retailer's robots.txt/ToS before adding one.
 - Specs (profile/shape/flex/style) are keyword-extracted from shop copy and can be missing; unknown specs score neutral in style fit.
 - Pro-rider (ambassador) data isn't scraped yet — tables exist; needs brand team pages as sources.
+
+## Environment variables (Vercel unless noted)
+
+| Variable | Needed for |
+|---|---|
+| `DATABASE_URL` | Everything live (also a GitHub Actions secret) |
+| `BETTER_AUTH_SECRET` | Accounts (any long random string) |
+| `BETTER_AUTH_URL` / `APP_URL` | Your site URL, e.g. `https://board-buddy-xi.vercel.app` (`APP_URL` also a GitHub secret for email links) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | "Continue with Google" (redirect URI `<site>/api/auth/callback/google`) |
+| `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET` | "Continue with Apple" (needs an Apple Developer account) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Email sign-in links and deal emails (also GitHub secrets for the alerts job) |
+| `RESTOCK_PASSCODE`, `GITHUB_TOKEN` | Owner Restock button |
+| `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` | Faster builds |

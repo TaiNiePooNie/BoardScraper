@@ -24,7 +24,8 @@ describe("size labels", () => {
     expect(parseSizeLabel(label)).toMatchObject({ lengthCm: len, waist, label: norm });
   });
   it("rejects kids / non-sizes", () => {
-    expect(parseSizeLabel("100")).toBeNull();
+    expect(parseSizeLabel("60")).toBeNull();
+    expect(parseSizeLabel("100")).toMatchObject({ lengthCm: 100 });
     expect(parseSizeLabel("Uni")).toBeNull();
   });
   it("merges colorways: in stock if any, cheapest in-stock price", () => {

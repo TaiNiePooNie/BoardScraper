@@ -5,7 +5,7 @@
  */
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { DbRepository } from "../src/lib/data/repository";
 import { openDb } from "../src/db/client";
@@ -31,7 +31,12 @@ if (!process.argv.includes("--no-photos")) {
       try {
         const res = await fetch(src.startsWith("//") ? `https:${src}` : src, { signal: AbortSignal.timeout(20_000), headers: { "user-agent": "Mozilla/5.0 BoardBuddy-static-build" } });
         if (!res.ok) throw new Error(String(res.status));
-        const img = await sharp(Buffer.from(await res.arrayBuffer())).resize({ height: 420, width: 260, fit: "inside", withoutEnlargement: true }).webp({ quality: 68 }).toBuffer();
+        const img = await sharp(Buffer.from(await res.arrayBuffer()))
+          .flatten({ background: "#ffffff" })
+          .trim({ background: "#ffffff", threshold: 18 }) // drop the shop's white canvas, like /api/img
+          .resize({ height: 440, width: 360, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 68 })
+          .toBuffer();
         b.images = [`data:image/webp;base64,${img.toString("base64")}`];
         ok++;
       } catch {
@@ -48,7 +53,11 @@ const json = JSON.stringify({ ...catalog, exportedAt: new Date().toISOString() }
 // 1c. UI art: inline every file referenced in src/lib/assets.ts as a data URI.
 const MIME: Record<string, string> = { png: "image/png", svg: "image/svg+xml", webp: "image/webp", jpg: "image/jpeg" };
 const SKIP = new Set(["og-image.png", "app-icon-512.png", "favicon.png"]);
-const assetNames = [...readFileSync("src/lib/assets.ts", "utf8").matchAll(/a\("([^"]+)"\)/g)].map((m) => m[1]).filter((f) => !SKIP.has(f));
+const avatarNames = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `avatar-${n}.png`);
+const assetNames = [...readFileSync("src/lib/assets.ts", "utf8").matchAll(/a\("([^"]+)"\)/g)]
+  .map((m) => m[1])
+  .concat(avatarNames)
+  .filter((f) => !SKIP.has(f) && existsSync(path.join("public/assets", f))); // art not delivered yet → UI fallback
 const inlined = Object.fromEntries(assetNames.map((f) => [f, `data:${MIME[f.split(".").pop()!]};base64,${readFileSync(path.join("public/assets", f)).toString("base64")}`]));
 
 // 2. JS bundle (React + app), minified.

@@ -1,6 +1,6 @@
 import type { CurrencyCode, Retailer } from "@/lib/types";
 import { BlockedError, sitemapLocs } from "../http";
-import { displayModel, hasModelYear, KIDS, NOT_A_BOARD, seasonFrom } from "../parse/normalize";
+import { displayModel, hasModelYear, NOT_A_BOARD, seasonFrom } from "../parse/normalize";
 import { headlinePrice, mergeSizes, parseSizeLabel } from "../parse/sizes";
 import { extractSpecs } from "../parse/specs";
 import { htmlToText, parsePrice } from "../parse/text";
@@ -57,7 +57,7 @@ const sizeName = (s: unknown) => (typeof s === "string" ? s : (s as Json)?.name 
 export function parseJsonLdProduct(node: Json, url: string, defaultCurrency: CurrencyCode, scrapedAt: string, titlePrefix?: RegExp): ScrapedProduct | null {
   const brand = typeof node.brand === "string" ? node.brand : node.brand?.name ?? "";
   const rawTitle = String(node.name ?? "").replace(titlePrefix ?? /^$/, "").trim();
-  if (!brand || !rawTitle || NOT_A_BOARD.test(rawTitle) || KIDS.test(rawTitle)) return null;
+  if (!brand || !rawTitle || NOT_A_BOARD.test(rawTitle)) return null; // kids boards are kept (Kids filter)
 
   const variants: Json[] = node.hasVariant?.length ? node.hasVariant : [node];
   let currency = defaultCurrency;

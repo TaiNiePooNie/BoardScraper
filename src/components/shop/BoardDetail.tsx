@@ -1,8 +1,8 @@
 "use client";
 import clsx from "clsx";
-import { motion, type PanInfo } from "motion/react";
+import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, ExternalLink, Star, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ASSETS, TIER_RANK } from "@/lib/assets";
 import { effectiveMsrp } from "@/lib/deals";
 import { flexWord, PROFILE_INFO, PROFILE_PATH, SHAPE_INFO } from "@/lib/explain";
@@ -74,10 +74,23 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prevOverflow; };
   }, [zoom, prev, next, onClose, onNavigate]);
 
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.x < -80 && next) onNavigate(next.id);
-    else if (info.offset.x > 80 && prev) onNavigate(prev.id);
+  // Swipe left/right on the photo to browse. Plain touch tracking (no drag
+  // transform on the shared-layout element, which broke the photo before).
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY });
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const t = touch.current;
+    touch.current = null;
+    if (!t) return;
+    const dx = e.changedTouches[0].clientX - t.x;
+    const dy = e.changedTouches[0].clientY - t.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swipedRef.current = true; // don't treat the swipe's tap as "zoom"
+    setTimeout(() => (swipedRef.current = false), 350);
+    if (dx < 0 && next) onNavigate(next.id);
+    if (dx > 0 && prev) onNavigate(prev.id);
   };
+  const swipedRef = useRef(false);
 
   return (
     <motion.div
@@ -102,24 +115,22 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
         </div>
       </div>
 
-      <div className="app-gutter mx-auto max-w-6xl pb-16">
+      <div className="app-gutter mx-auto max-w-6xl pb-32">
         <div className="grid grid-cols-[minmax(0,42%)_minmax(0,1fr)] gap-x-4 gap-y-6 [grid-template-areas:'board_callouts''info_info'] md:grid-cols-[minmax(0,1fr)_260px_minmax(0,1fr)] md:gap-x-8 md:[grid-template-areas:'callouts_board_info']">
           {/* the board */}
           <div className="relative [grid-area:board] md:pt-4">
-            <motion.div
-              layoutId={boardLayoutId(wallId, group.id)}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.35}
-              onDragEnd={onDragEnd}
-              transition={{ type: "spring", stiffness: 210, damping: 26 }}
-              className="relative mx-auto h-[min(62vh,560px)] w-full max-w-[260px] cursor-grab overflow-hidden rounded-[36px] border-[5px] border-paper bg-paper shadow-[0_14px_0_rgba(0,0,0,0.45)] active:cursor-grabbing"
-            >
-              <button type="button" onClick={() => setZoom(true)} className="block h-full w-full cursor-zoom-in" aria-label="Zoom photos">
-                <ProductImg src={images[0]} alt={`${board.brand} ${board.model}`} className="h-full w-full object-contain p-2" />
-              </button>
-            </motion.div>
-            <div key={group.id} className="spray pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2" style={{ backgroundImage: `url(${ASSETS.snowSpray})` }} aria-hidden />
+            {/* fixed box: the frame hugs the photo inside it, so other UI never shifts */}
+            <div className="flex h-[min(58vh,520px)] w-full items-center justify-center" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+              <motion.div
+                layoutId={boardLayoutId(wallId, group.id)}
+                transition={{ type: "spring", stiffness: 210, damping: 26 }}
+                className="relative inline-flex max-h-full max-w-full overflow-hidden rounded-[28px] border-[5px] border-paper bg-paper shadow-[0_14px_0_rgba(0,0,0,0.45)]"
+              >
+                <button type="button" onClick={() => !swipedRef.current && setZoom(true)} className="block cursor-zoom-in" aria-label="Zoom photos">
+                  <ProductImg key={group.id} src={images[0]} alt={`${board.brand} ${board.model}`} size={1200} className="block max-h-[calc(min(58vh,520px)-10px)] w-auto max-w-full object-contain p-1.5" />
+                </button>
+              </motion.div>
+            </div>
             <img src={ASSETS.rank[group.tier]} alt="" className="absolute -left-1 top-2 h-14 w-14 -rotate-12 drop-shadow md:top-6" />
             <p className="mt-3 text-center text-[11px] text-paper/50">Swipe for the next board · tap to zoom</p>
           </div>
@@ -191,8 +202,8 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
             </div>
 
             {/* price */}
-            <div className="flex flex-wrap items-start gap-5">
-              <PriceTag group={group} size="lg" className="shrink-0 -rotate-3" />
+            <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+              <PriceTag group={group} size="lg" className="-rotate-3" />
               <div className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
                 {pct > 0 && (
                   <div>
@@ -212,9 +223,6 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
                 {live && (
                   <p className={clsx("text-xs", live.status === "updated" ? "font-semibold text-acid" : live.status === "failed" ? "text-orange" : "text-paper/60")}>{live.message}</p>
                 )}
-                <a href={best.listing.url} target="_blank" rel="noopener noreferrer nofollow" className="btn-acid mt-1 flex items-center justify-center gap-2">
-                  Buy at {cleanName(best.retailer.name)}<ExternalLink className="h-4 w-4" />
-                </a>
               </div>
             </div>
 
@@ -267,6 +275,22 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
               </p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* always-visible buy bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-paper/15 bg-asphalt/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="app-gutter mx-auto flex max-w-6xl items-center gap-3 py-2.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2">
+              <span className="marker text-2xl leading-none tabular-nums text-paper">{formatMoney(best.landed.total, best.landed.currency)}</span>
+              {pct > 0 && <span className="rounded-md bg-acid px-1.5 py-0.5 text-xs font-bold text-asphalt">-{pct}%</span>}
+            </div>
+            <div className="truncate text-[11px] text-paper/60">delivered · {board.brand} {board.model}</div>
+          </div>
+          <a href={best.listing.url} target="_blank" rel="noopener noreferrer nofollow" className="btn-acid flex shrink-0 items-center gap-2 !px-4 !py-2.5 !text-base">
+            {cleanName(best.retailer.name)}<ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </div>
 

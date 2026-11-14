@@ -14,11 +14,13 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:stats": "tsx src/db/stats.ts",
     "retailers": "tsx src/scraper/list.ts",
-    "build:static": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/build-static.ts"
+    "build:static": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/build-static.ts",
+    "alerts": "tsx src/alerts/run.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
     "@tanstack/react-table": "^8.21.3",
+    "better-auth": "1.7",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.72.0",
@@ -27,8 +29,10 @@
     "postgres": "^4.1.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-is": "^19.3.1",
     "recharts": "^3.10.1",
     "robots-parser": "^3.0.1",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -41,11 +45,10 @@
     "esbuild": "^0.28.2",
     "playwright": "^1.65.0",
     "postcss": "^8.5.32",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "postcss": "^8.5.32"

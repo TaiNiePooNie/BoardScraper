@@ -38,6 +38,5 @@ export async function openDb(url = process.env.DATABASE_URL): Promise<DbHandle> 
   return { db: db as unknown as DB, migrate: () => migrate(db, { migrationsFolder }), close: () => client.end() };
 }
 
-let shared: Promise<DbHandle> | null = null;
-/** Process-wide handle for the web app. */
-export const getDb = async () => (await (shared ??= openDb())).db;
+/** Process-wide handle for the web app (shared with Better Auth). */
+export const getDb = async (): Promise<DB> => (await import("./server")).serverDb();

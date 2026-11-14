@@ -1,5 +1,5 @@
 import { brandKey, modelKey } from "@/scraper/parse/normalize";
-import type { BoardModel, CurrencyCode, Deal, DealTier, RidingStyle } from "./types";
+import type { BoardModel, CurrencyCode, Deal, DealTier, RiderStyle, RidingStyle } from "./types";
 
 /**
  * Board-level view: one group per board model with all its shop offers,
@@ -58,7 +58,8 @@ const STYLE_LABEL: Record<RidingStyle, string> = { park: "park", "all-mountain":
  * Weighted, explainable score:
  *   35 % style fit · 30 % deal quality · 15 % reviews (shrunk toward 3.8★) · 20 % budget fit
  */
-export function valueScore(best: Deal, offers: number, status: BudgetStatus, max: number | null, style: RidingStyle | null): ValueScore {
+export function valueScore(best: Deal, offers: number, status: BudgetStatus, max: number | null, rawStyle: RiderStyle | null): ValueScore {
+  const style: RidingStyle | null = rawStyle === "any" ? null : rawStyle;
   const parts: Array<[weight: number, value: number, reason: string | null]> = [];
 
   const fit = best.styleFit;
@@ -88,7 +89,7 @@ export function valueScore(best: Deal, offers: number, status: BudgetStatus, max
 export const lineageKey = (b: Pick<BoardModel, "brand" | "model">) =>
   `${brandKey(b.brand)}|${modelKey(b.model.replace(/\b20\d{2}(\s*\/\s*(20)?\d{2})?\b/g, " "))}`;
 
-export function groupDeals(deals: Deal[], budget: Budget, style: RidingStyle | null): BoardGroup[] {
+export function groupDeals(deals: Deal[], budget: Budget, style: RiderStyle | null): BoardGroup[] {
   const byBoard = new Map<string, Deal[]>();
   for (const d of deals) byBoard.set(d.board.id, [...(byBoard.get(d.board.id) ?? []), d]);
 
