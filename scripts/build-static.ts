@@ -5,7 +5,7 @@
  */
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { DbRepository } from "../src/lib/data/repository";
 import { openDb } from "../src/db/client";
@@ -57,6 +57,7 @@ const avatarNames = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `avatar-${n}.png`);
 const assetNames = [...readFileSync("src/lib/assets.ts", "utf8").matchAll(/a\("([^"]+)"\)/g)]
   .map((m) => m[1])
   .concat(avatarNames)
+  .concat(readdirSync("public/assets").filter((f) => /^preview-buddy-.*\.webp$/.test(f))) // size-preview sprite sheets
   .filter((f) => !SKIP.has(f) && existsSync(path.join("public/assets", f))); // art not delivered yet → UI fallback
 const inlined = Object.fromEntries(assetNames.map((f) => [f, `data:${MIME[f.split(".").pop()!]};base64,${readFileSync(path.join("public/assets", f)).toString("base64")}`]));
 
