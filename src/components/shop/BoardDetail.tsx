@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, ExternalLink, Star, Users, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ASSETS, TIER_RANK } from "@/lib/assets";
 import { effectiveMsrp } from "@/lib/deals";
 import { flexWord, PROFILE_INFO, PROFILE_PATH, SHAPE_INFO } from "@/lib/explain";
@@ -52,6 +53,8 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
 }) {
   const { board, best } = group;
   const [zoom, setZoom] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const idx = siblings.findIndex((g) => g.id === group.id);
   const prev = idx > 0 ? siblings[idx - 1] : null;
   const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
@@ -278,8 +281,10 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
         </div>
       </div>
 
-      {/* always-visible buy bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-paper/15 bg-asphalt/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      {/* always-visible buy bar: portalled to <body> so it stays pinned to the screen
+          (inside the blurred, scrolling panel "fixed" would scroll with the content) */}
+      {mounted && !zoom && createPortal(
+      <div className="fixed inset-x-0 bottom-0 z-[52] border-t-2 border-paper/15 bg-asphalt/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="app-gutter mx-auto flex max-w-6xl items-center gap-3 py-2.5">
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
@@ -293,6 +298,7 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
           </a>
         </div>
       </div>
+      , document.body)}
 
       {zoom && <ZoomModal images={images} alt={`${board.brand} ${board.model}`} startIndex={0} onClose={() => setZoom(false)} />}
     </motion.div>

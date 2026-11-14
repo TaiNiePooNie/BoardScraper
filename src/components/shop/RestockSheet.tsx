@@ -78,7 +78,7 @@ export function RestockSheet({ services, onClose, onFinished }: { services: Shop
   const running = status?.state === "queued" || status?.state === "in_progress";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-asphalt/70 p-4 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-label="Restock the shop" onClick={onClose}>
+    <div className="fixed inset-0 z-[65] flex items-end justify-center bg-asphalt/70 p-4 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-label="Restock the shop" onClick={onClose}>
       <div className="sticker relative w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
         <button type="button" onClick={onClose} className="absolute right-3 top-3 rounded-full p-1" aria-label="Close"><X className="h-5 w-5" /></button>
         <img src={running ? ASSETS.mascot.ride : ASSETS.mascot.point} alt="" className="mx-auto -mt-16 h-28 w-auto" />

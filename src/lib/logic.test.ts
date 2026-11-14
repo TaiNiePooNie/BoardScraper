@@ -214,3 +214,15 @@ describe("kids, fit categories and all styles", async () => {
     expect(styleFit({ flex: 9, profile: "camber", styles: ["freeride"] }, any, "any")).toBe(1);
   });
 });
+
+describe("flex follows weight", () => {
+  it("lighter riders get softer, heavier riders stiffer", () => {
+    const base = { heightCm: 178, bootSize: 9, bootSystem: "US" as const, style: "all-mountain" as const, skill: "intermediate" as const };
+    const light = recommend({ ...base, weightKg: 50 }).flexRange;
+    const mid = recommend({ ...base, weightKg: 75 }).flexRange;
+    const heavy = recommend({ ...base, weightKg: 105 }).flexRange;
+    expect(light[0]).toBeLessThan(mid[0]);
+    expect(heavy[1]).toBeGreaterThan(mid[1]);
+    expect(mid).toEqual([4, 7]);
+  });
+});

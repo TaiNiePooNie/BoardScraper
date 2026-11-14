@@ -85,7 +85,7 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
   };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
       <img src={ASSETS.heroShopfront} alt="" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-55" />
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-r from-asphalt via-asphalt/80 to-asphalt/20" />
       <img src={ASSETS.mountains} alt="" className="pointer-events-none fixed inset-x-0 bottom-0 w-full opacity-70" />
