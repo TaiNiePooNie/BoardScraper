@@ -14,4 +14,4 @@ export function LegalPage({ title, updated, children }: { title: string; updated
   );
 }
 
-export const contactEmail = () => process.env.CONTACT_EMAIL ?? "boardbuddy.app@gmail.com";
+export const contactEmail = () => process.env.CONTACT_EMAIL ?? "boardbuddysupport@googlegroups.com";
