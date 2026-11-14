@@ -38,7 +38,7 @@ export default function Privacy() {
       <p>Links to shops take you to their own websites, which have their own privacy policies. Prices and product details come from the shops&apos; public pages.</p>
 
       <h2>Deleting your data</h2>
-      <p>Open your profile and tap <b>Delete account</b>. This permanently deletes your account, riders, holds and email settings straight away. You can also email us and we&apos;ll delete it for you.</p>
+      <p>Open your profile and tap <b>Delete account</b>. This permanently deletes your account, riders, holds and email settings straight away. If you can&apos;t sign in anymore, email us and we&apos;ll help.</p>
 
       <h2>Your rights</h2>
       <p>You can ask to see, correct, export or delete your data. If you&apos;re in the EU or UK, you also have the rights described in the GDPR, including the right to complain to your data protection authority.</p>
