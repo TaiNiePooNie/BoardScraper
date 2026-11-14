@@ -25,15 +25,30 @@ export interface AccountUser {
   name: string;
   email: string;
   image?: string | null;
+  emailVerified?: boolean;
+}
+
+export interface Providers {
+  google: boolean;
+  apple: boolean;
+  /** passwordless sign-in links */
+  email: boolean;
+  /** email + password accounts */
+  password: boolean;
+  /** "forgot password" emails */
+  passwordReset: boolean;
 }
 
 export interface AccountServices {
-  config: () => Promise<{ enabled: boolean; providers: { google: boolean; apple: boolean; email: boolean } }>;
+  config: () => Promise<{ enabled: boolean; providers: Providers }>;
   /** Signed-in user + their saved data (null data = nothing saved yet), or null when signed out. */
   me: () => Promise<{ user: AccountUser; data: MePayload | null } | null>;
   save: (data: MePayload) => Promise<void>;
   signInSocial: (provider: "google" | "apple") => Promise<void>;
   sendMagicLink: (email: string) => Promise<void>;
+  signUpEmail: (email: string, password: string, name: string) => Promise<void>;
+  signInEmail: (email: string, password: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -51,10 +66,21 @@ export interface ShopServices {
 
 const callback = () => `${location.pathname}?signedin=1`;
 
+/** Better Auth error → short, human message. */
+function friendly(e: { code?: string; message?: string; status?: number }): string {
+  const code = e.code ?? "";
+  if (code.includes("USER_ALREADY_EXISTS")) return "There's already an account with this email. Sign in instead.";
+  if (code.includes("INVALID_EMAIL_OR_PASSWORD") || e.status === 401) return "Email or password doesn't match.";
+  if (code.includes("PASSWORD_TOO_SHORT")) return "Use at least 8 characters for your password.";
+  if (code.includes("INVALID_EMAIL")) return "That doesn't look like an email address.";
+  if (e.status === 429) return "Too many tries. Wait a minute and try again.";
+  return e.message ?? "Something went wrong. Try again.";
+}
+
 const accountServices: AccountServices = {
   async config() {
     const r = await fetch("/api/account-config", { cache: "no-store" });
-    return r.ok ? r.json() : { enabled: false, providers: { google: false, apple: false, email: false } };
+    return r.ok ? r.json() : { enabled: false, providers: { google: false, apple: false, email: false, password: false, passwordReset: false } };
   },
   async me() {
     const r = await fetch("/api/me", { cache: "no-store" });
@@ -74,6 +100,21 @@ const accountServices: AccountServices = {
     const { authClient } = await import("@/lib/auth-client");
     const r = await authClient.signIn.magicLink({ email, callbackURL: callback() });
     if (r.error) throw new Error(r.error.message ?? "Couldn't send the link.");
+  },
+  async signUpEmail(email, password, name) {
+    const { authClient } = await import("@/lib/auth-client");
+    const r = await authClient.signUp.email({ email, password, name: name || email.split("@")[0] });
+    if (r.error) throw new Error(friendly(r.error));
+  },
+  async signInEmail(email, password) {
+    const { authClient } = await import("@/lib/auth-client");
+    const r = await authClient.signIn.email({ email, password });
+    if (r.error) throw new Error(friendly(r.error));
+  },
+  async requestPasswordReset(email) {
+    const { authClient } = await import("@/lib/auth-client");
+    const r = await authClient.requestPasswordReset({ email, redirectTo: "/reset-password" });
+    if (r.error) throw new Error(friendly(r.error));
   },
   async signOut() {
     const { authClient } = await import("@/lib/auth-client");

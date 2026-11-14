@@ -6,14 +6,14 @@ import type { AlertSettings } from "@/lib/account";
 import { ASSETS } from "@/lib/assets";
 import type { Buddy } from "@/lib/profile";
 import { Logo } from "../Logo";
-import type { AccountServices, AccountUser } from "../services";
+import type { AccountServices, AccountUser, Providers } from "../services";
 import { AlertSettingsForm } from "./AlertSettingsForm";
 import { Avatar } from "./Avatar";
 import { SignInOptions } from "./SignInOptions";
 
 export interface AccountState {
   available: boolean;
-  providers: { google: boolean; apple: boolean; email: boolean };
+  providers: Providers;
   user: AccountUser | null;
 }
 
@@ -65,7 +65,7 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
   };
 
   return (
-    <div className="fixed inset-0 z-[55] overflow-y-auto bg-asphalt" role="dialog" aria-modal="true" aria-label="Your profile">
+    <div className="fixed inset-0 z-[55] overflow-y-auto overflow-x-hidden bg-asphalt" role="dialog" aria-modal="true" aria-label="Your profile">
       <div className="app-gutter mx-auto flex max-w-2xl flex-col gap-6 pb-16 pt-4">
         <div className="flex items-center gap-3">
           <button type="button" onClick={onClose} className="rounded-full border-2 border-paper/30 p-2" aria-label="Back to the shop"><X className="h-5 w-5" /></button>
@@ -88,7 +88,7 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
             <h2 className="headline pr-24 text-3xl">Join the crew</h2>
             <p className="mb-4 mt-1 pr-20 text-sm text-paper/70">Keep your setup and buddies on every device and get deals that fit you by email. Free, and you can delete it any time.</p>
             {state.available && account ? (
-              <SignInOptions account={account} providers={state.providers} />
+              <SignInOptions account={account} providers={state.providers} defaultName={me?.name === "Me" ? "" : me?.name} />
             ) : (
               <p className="rounded-xl bg-paper/5 p-3 text-sm text-paper/70">Accounts aren&apos;t switched on here yet. You can keep using BoardBuddy as a guest: your setup is saved on this device.</p>
             )}
@@ -136,7 +136,14 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
         <section className="sticker p-5">
           <h2 className="headline mb-3 text-3xl">Deals in your inbox</h2>
           {signedIn ? (
-            <AlertSettingsForm value={alerts} onChange={onAlerts} buddies={buddies} />
+            <>
+              {alerts.enabled && state.user?.emailVerified === false && (
+                <p className="mb-3 rounded-xl bg-orange/15 px-3 py-2 text-sm font-semibold text-orange">
+                  Confirm your email first: we sent a link to {state.user.email}. Deal emails start once it&apos;s confirmed.
+                </p>
+              )}
+              <AlertSettingsForm value={alerts} onChange={onAlerts} buddies={buddies} />
+            </>
           ) : (
             <p className="text-sm text-paper/70">Sign in above to get boards that fit you by email: a weekly roundup on a day you choose, or as soon as a new board fits. Off by default, one tap to unsubscribe.</p>
           )}

@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const [data] = await db.select().from(userData).where(eq(userData.userId, u.id));
   const [prefs] = await db.select().from(alertPrefs).where(eq(alertPrefs.userId, u.id));
   return NextResponse.json({
-    user: { id: u.id, name: u.name, email: u.email, image: u.image },
+    user: { id: u.id, name: u.name, email: u.email, image: u.image, emailVerified: u.emailVerified },
     data: data
       ? {
           buddies: data.buddies,

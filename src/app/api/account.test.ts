@@ -78,13 +78,45 @@ describe("accounts", () => {
     expect(after.enabled).toBe(false);
   });
 
+  it("email + password: sign up, wrong password is refused, sign in, reset email", async () => {
+    const a = await auth();
+    const signUp = await a.handler(new Request(`${BASE}/api/auth/sign-up/email`, {
+      method: "POST", headers: { origin: BASE, "content-type": "application/json" },
+      body: JSON.stringify({ email: "pw@test.dev", password: "correct horse", name: "Pat" }),
+    }));
+    expect(signUp.status).toBe(200);
+    expect(sentLink).toContain("/api/auth/verify-email"); // confirmation email sent on sign-up
+
+    const wrong = await a.handler(new Request(`${BASE}/api/auth/sign-in/email`, {
+      method: "POST", headers: { origin: BASE, "content-type": "application/json" },
+      body: JSON.stringify({ email: "pw@test.dev", password: "nope nope" }),
+    }));
+    expect(wrong.status).toBe(401);
+
+    const ok = await a.handler(new Request(`${BASE}/api/auth/sign-in/email`, {
+      method: "POST", headers: { origin: BASE, "content-type": "application/json" },
+      body: JSON.stringify({ email: "pw@test.dev", password: "correct horse" }),
+    }));
+    expect(ok.status).toBe(200);
+    expect((ok.headers.getSetCookie?.() ?? []).join(";")).toContain("session_token");
+
+    sentLink = "";
+    const reset = await a.handler(new Request(`${BASE}/api/auth/request-password-reset`, {
+      method: "POST", headers: { origin: BASE, "content-type": "application/json" },
+      body: JSON.stringify({ email: "pw@test.dev", redirectTo: "/reset-password" }),
+    }));
+    expect(reset.status).toBe(200);
+    expect(sentLink).toContain("/api/auth/reset-password/");
+  });
+
   it("deletes the account and everything attached", async () => {
     const a = await auth();
     const res = await a.handler(req("/api/auth/delete-user", { method: "POST", body: JSON.stringify({}) }));
     expect(res.status).toBe(200);
     const { serverDb } = await import("@/db/server");
     const s = await import("@/db/schema");
-    expect(await serverDb().select().from(s.user)).toHaveLength(0);
+    const users = await serverDb().select().from(s.user);
+    expect(users.map((u) => u.email)).not.toContain("rider@test.dev");
     expect(await serverDb().select().from(s.userData)).toHaveLength(0);
     expect(await serverDb().select().from(s.alertPrefs)).toHaveLength(0);
   });

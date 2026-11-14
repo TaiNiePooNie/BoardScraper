@@ -13,14 +13,19 @@ import { magicLink } from "better-auth/plugins";
 import * as schema from "@/db/schema";
 import { serverDb } from "@/db/server";
 import { appUrl, emailEnabled, sendEmail } from "./email/send";
-import { magicLinkEmail } from "./email/templates";
+import { magicLinkEmail, resetPasswordEmail, verifyEmail } from "./email/templates";
 
 export const authConfigured = () => !!process.env.BETTER_AUTH_SECRET && !!process.env.DATABASE_URL;
 
 export const providers = () => ({
   google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
   apple: !!process.env.APPLE_CLIENT_ID && !!process.env.APPLE_CLIENT_SECRET,
+  /** Passwordless sign-in links (needs email sending). */
   email: emailEnabled(),
+  /** Email + password accounts: always on once accounts are configured. */
+  password: true,
+  /** Password reset + email confirmation (needs email sending). */
+  passwordReset: emailEnabled(),
 });
 
 function create() {
@@ -38,6 +43,34 @@ function create() {
       ...(p.apple ? { apple: { clientId: process.env.APPLE_CLIENT_ID!, clientSecret: process.env.APPLE_CLIENT_SECRET! } } : {}),
     },
     account: { accountLinking: { enabled: true, trustedProviders: ["google", "apple"] } },
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 8,
+      autoSignIn: true,
+      // Don't block sign-in on confirmation; deal emails only go to confirmed addresses.
+      requireEmailVerification: false,
+      ...(p.email
+        ? {
+            resetPasswordTokenExpiresIn: 3600,
+            sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+              const m = resetPasswordEmail(url);
+              await sendEmail({ to: user.email, subject: m.subject, html: m.html, text: m.text });
+            },
+          }
+        : {}),
+    },
+    ...(p.email
+      ? {
+          emailVerification: {
+            sendOnSignUp: true,
+            autoSignInAfterVerification: true,
+            sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
+              const m = verifyEmail(url);
+              await sendEmail({ to: user.email, subject: m.subject, html: m.html, text: m.text });
+            },
+          },
+        }
+      : {}),
     user: { deleteUser: { enabled: true } },
     session: { expiresIn: 60 * 60 * 24 * 60, updateAge: 60 * 60 * 24 }, // 60 days, refreshed daily
     plugins: [

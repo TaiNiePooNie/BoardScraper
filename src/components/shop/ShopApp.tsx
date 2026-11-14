@@ -47,7 +47,7 @@ export function ShopApp({ initialLocale, services }: { initialLocale: BuyerLocal
   const [ready, setReady] = useState(false);
   const [setup, setSetup] = useState<SetupState | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [acct, setAcct] = useState<AccountState>({ available: false, providers: { google: false, apple: false, email: false }, user: null });
+  const [acct, setAcct] = useState<AccountState>({ available: false, providers: { google: false, apple: false, email: false, password: false, passwordReset: false }, user: null });
   const [toast, setToast] = useState<string | null>(null);
   const [locale, setLocale] = useState({ country: initialLocale.country, currency: initialLocale.currency });
   const [result, setResult] = useState<DealsResult | null>(null);

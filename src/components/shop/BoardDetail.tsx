@@ -97,7 +97,7 @@ export function BoardDetail({ group, wallId, siblings, rec, budget, held, onTogg
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 overflow-y-auto bg-asphalt/85 backdrop-blur-md"
+      className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden bg-asphalt/85 backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

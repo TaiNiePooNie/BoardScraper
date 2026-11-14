@@ -13,7 +13,7 @@ import { AvatarPicker } from "../account/Avatar";
 import { SignInOptions } from "../account/SignInOptions";
 import { AssetImg } from "../../AssetImg";
 import { Logo } from "../Logo";
-import type { AccountServices } from "../services";
+import type { AccountServices, Providers } from "../services";
 import { BudgetRange } from "./BudgetRange";
 import { ChoiceCards } from "./ChoiceCards";
 import { SizePreview } from "./SizePreview";
@@ -35,7 +35,7 @@ const INBOX_STEP = { key: "inbox", title: "Deals in your inbox?", mascot: ASSETS
 /** Optional last step on first setup: opt in to deal emails (needs an account). */
 export interface InboxStep {
   account: AccountServices;
-  providers: { google: boolean; apple: boolean; email: boolean };
+  providers: Providers;
   signedIn: boolean;
   alerts: AlertSettings;
   onAlerts: (a: AlertSettings) => void;
@@ -85,7 +85,7 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
   };
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
+    <div className="fixed inset-0 z-[60] overflow-y-auto overflow-x-hidden bg-asphalt" role="dialog" aria-modal="true" aria-label="Rider setup">
       <img src={ASSETS.heroShopfront} alt="" className="pointer-events-none fixed inset-0 h-full w-full object-cover opacity-55" />
       <div className="pointer-events-none fixed inset-0 bg-gradient-to-r from-asphalt via-asphalt/80 to-asphalt/20" />
       <img src={ASSETS.mountains} alt="" className="pointer-events-none fixed inset-x-0 bottom-0 w-full opacity-70" />
@@ -106,8 +106,8 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
               key={step}
               src={STEPS[step].mascot}
               alt=""
-              className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36"
-              fallback={<img src={ASSETS.mascot.celebrate} alt="" className="pointer-events-none absolute -right-6 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />}
+              className="pointer-events-none absolute -right-2 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36"
+              fallback={<img src={ASSETS.mascot.celebrate} alt="" className="pointer-events-none absolute -right-2 -top-16 h-28 w-28 rotate-6 sm:-right-14 sm:h-36 sm:w-36" />}
             />
             <div className="mb-1 flex gap-1.5" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
               {STEPS.map((s, i) => (
@@ -225,7 +225,7 @@ export function SetupFlow({ initial, name: initialName, avatar: initialAvatar, c
                     {inbox.alerts.enabled && !inbox.signedIn && (
                       <div className="rounded-2xl border-2 border-paper/15 p-3">
                         <p className="mb-3 text-sm font-semibold">Sign in so we know where to send them:</p>
-                        <SignInOptions account={inbox.account} providers={inbox.providers} beforeSignIn={() => inbox.onPersist({ rider, budget }, { name: name.trim() || "Me", avatar })} />
+                        <SignInOptions account={inbox.account} providers={inbox.providers} defaultName={name.trim() === "Me" ? "" : name.trim()} beforeSignIn={() => inbox.onPersist({ rider, budget }, { name: name.trim() || "Me", avatar })} />
                       </div>
                     )}
                   </div>

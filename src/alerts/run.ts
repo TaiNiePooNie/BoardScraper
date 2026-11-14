@@ -2,7 +2,7 @@
  * npm run alerts — send due deal-alert emails. Runs after the daily scrape.
  * Needs DATABASE_URL, RESEND_API_KEY, EMAIL_FROM, APP_URL. Without email config it exits quietly.
  */
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { openDb } from "@/db/client";
 import { alertLog, alertPrefs, user, userData } from "@/db/schema";
 import { Buddy } from "@/lib/account";
@@ -26,7 +26,7 @@ async function main() {
       .from(alertPrefs)
       .innerJoin(user, eq(user.id, alertPrefs.userId))
       .leftJoin(userData, eq(userData.userId, alertPrefs.userId))
-      .where(eq(alertPrefs.enabled, true));
+      .where(and(eq(alertPrefs.enabled, true), eq(user.emailVerified, true))); // only confirmed addresses
     const due = rows.filter((r) => isDue(r.prefs.mode, r.prefs.weekday, r.prefs.lastSentAt));
     console.log(`Deal alerts: ${rows.length} subscribed, ${due.length} due now.`);
     if (!due.length) return;
