@@ -53,10 +53,38 @@ export function parseShopifyProduct(p: ShopifyProduct, origin: string, scrapedAt
   };
 }
 
+/** Shopify's per-product `/products/<handle>.js` feed: prices in cents, options as names. */
+interface ShopifyJsProduct {
+  title: string; handle: string; description?: string; vendor: string; type: string; tags: string[] | string;
+  options: Array<string | { name: string; position?: number }>;
+  variants: Array<{ title: string; price: number; compare_at_price: number | null; available: boolean; option1: string | null; option2: string | null; option3: string | null }>;
+  images: string[];
+}
+
+export function fromShopifyJs(p: ShopifyJsProduct): ShopifyProduct {
+  const cents = (n: number | null) => (n === null || n === undefined ? null : (n / 100).toFixed(2));
+  return {
+    title: p.title,
+    handle: p.handle,
+    body_html: p.description ?? null,
+    vendor: p.vendor,
+    product_type: p.type,
+    tags: Array.isArray(p.tags) ? p.tags : String(p.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean),
+    options: p.options.map((o, i) => (typeof o === "string" ? { name: o, position: i + 1 } : { name: o.name, position: o.position ?? i + 1 })),
+    variants: p.variants.map((v) => ({ ...v, price: cents(v.price) ?? "0", compare_at_price: cents(v.compare_at_price) })),
+    images: p.images.map((src) => ({ src: src.startsWith("//") ? `https:${src}` : src })),
+  };
+}
+
 export function evoAdapter(retailer: Retailer): RetailerAdapter {
   const origin = retailer.homepage.replace(/\/$/, "");
   return {
     retailer,
+    async fetchOne(http, url) {
+      const handleUrl = url.replace(/[?#].*$/, "").replace(/\/$/, "");
+      const p = await http.getJson<ShopifyJsProduct>(`${handleUrl}.js`);
+      return parseShopifyProduct(fromShopifyJs(p), origin, new Date().toISOString());
+    },
     async *crawl(ctx: CrawlContext) {
       let yielded = 0;
       for (let page = 1; page <= 40 && yielded < ctx.limit; page++) {

@@ -29,7 +29,7 @@ export function DealTabs({ value, onChange, counts }: { value: TabValue; onChang
               active ? (t.id === "all" ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink" : TIER_STYLES[t.id as DealTier]) : "border-transparent text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800",
             )}
           >
-            {t.id !== "all" && <AssetImg src={ASSETS.tierIcon[t.id as DealTier]} alt="" className="h-5 w-5" />}
+            {t.id !== "all" && <AssetImg src={ASSETS.rank[t.id as DealTier]} alt="" className="h-5 w-5" />}
             {t.label}
             <span className="rounded-full bg-black/5 px-2 text-xs dark:bg-white/10">{t.n}</span>
           </button>

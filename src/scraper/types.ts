@@ -39,4 +39,6 @@ export interface CrawlContext {
 export interface RetailerAdapter {
   retailer: Retailer;
   crawl(ctx: CrawlContext): AsyncGenerator<ScrapedProduct>;
+  /** Re-check one product page (live price check). */
+  fetchOne(http: PoliteFetcher, url: string): Promise<ScrapedProduct | null>;
 }

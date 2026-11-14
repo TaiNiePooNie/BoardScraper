@@ -19,7 +19,7 @@ export function TierBadge({ tier, score, fullPrice = false }: { tier: DealTier; 
   }
   return (
     <span className={clsx("chip inline-flex items-center gap-1.5", TIER_STYLES[tier])}>
-      <AssetImg src={ASSETS.tierIcon[tier]} alt="" className="h-4 w-4" />
+      <AssetImg src={ASSETS.rank[tier]} alt="" className="h-4 w-4" />
       {TIER_LABELS[tier]}
       {score !== undefined && <span className="opacity-70">· {score}</span>}
     </span>
