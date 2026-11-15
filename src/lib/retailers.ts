@@ -1,3 +1,4 @@
+import { SHOPIFY_SHOPS } from "./retailers-shopify";
 import type { Retailer } from "./types";
 
 /**
@@ -61,4 +62,5 @@ export const RETAILERS: Record<string, Retailer> = {
       { destinations: ["CH", "GB"], cost: 19.9, etaDays: [5, 10] },
     ],
   },
+  ...Object.fromEntries(SHOPIFY_SHOPS.map((x) => [x.retailer.id, x.retailer])),
 };
