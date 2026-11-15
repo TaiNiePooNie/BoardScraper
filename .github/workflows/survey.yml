@@ -32,6 +32,13 @@ jobs:
         run: |
           npx tsx scripts/survey-deep.ts survey-deep.json $SITES | tee deep.txt
           { echo '```'; cat deep.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Print shipping details (one line per Shopify site)
+        run: |
+          node -e '
+            const r = require("./survey-deep.json");
+            for (const x of r.filter((x) => x.shopify)) {
+              console.log("SHIP " + JSON.stringify({ id: x.id, cur: x.meta?.currency, country: x.meta?.country, to: x.meta?.shipsTo, policy: (x.shippingPolicy || "").slice(0, 900) }));
+            }'
       - uses: actions/upload-artifact@v4
         with:
           name: survey
