@@ -89,6 +89,8 @@ export function buildMockCatalog() {
   const r = rng(42);
   const boards: BoardModel[] = MODELS.map(([brand, model, profile, shape, flex, styles, msrp, riderIds], i) => ({
     id: `b${i}`,
+    sport: "snow" as const,
+    category: styles.includes("park") ? ("freestyle" as const) : styles.includes("freeride") ? ("powder" as const) : ("all-mountain" as const),
     brand, model, season: "2025/26", profile, shape, flex, styles,
     msrp: { amount: msrp, currency: "EUR" },
     images: [0, 1, 2].map((v) => boardImage((i * 37) % 360, v)),

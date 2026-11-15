@@ -70,6 +70,8 @@ export class DbRepository implements CatalogRepository {
       if (!boards.has(id)) {
         boards.set(id, {
           id,
+          sport: "snow", // TODO(multi-sport): read boards.sport / boards.category
+          category: null,
           brand: b.brand,
           model: b.model,
           season: b.season,

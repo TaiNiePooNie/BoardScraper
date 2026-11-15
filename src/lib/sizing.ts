@@ -1,4 +1,4 @@
-import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RiderStyle, RidingStyle, SizeMatch, SkillLevel } from "./types";
+import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RiderStyle, RidingStyle, SizeMatch, SkillLevel, Sport } from "./types";
 
 /**
  * Weight → base board length (cm), all-mountain reference.
@@ -182,4 +182,89 @@ export function fitAllows(fit: FitPreference | undefined, model: string): boolea
   if (fit === "kids") return kids;
   if (kids) return false;
   return fit === "womens" ? isWomensBoard(model) : !isWomensBoard(model);
+}
+
+/* ───────────────────────── Multi-sport fit ───────────────────────── */
+
+/** One sport's size recommendation, in that sport's natural unit. */
+export interface SportFit {
+  sport: Sport;
+  /** snow: board length cm · skate: deck width in · surf: volume L */
+  unit: "cm" | "in" | "L";
+  ideal: number;
+  range: [number, number];
+  /** Short display label, e.g. "156 cm", '8.25"', "34 L". */
+  label: string;
+  notes: string[];
+  /** Snow only: the full snowboard recommendation (wide rule, flex, profiles). */
+  snow?: Recommendation;
+  /** Surf only: suggested board length range (cm), used when a shop lists no volume. */
+  lengthRangeCm?: [number, number];
+}
+
+const round = (n: number, step: number) => Math.round(n / step) * step;
+export const fmtIn = (n: number) => `${Number(n.toFixed(3))}"`;
+export function fmtFeet(cm: number): string {
+  const totalIn = Math.round(cm / 2.54);
+  return `${Math.floor(totalIn / 12)}'${totalIn % 12}"`;
+}
+
+/** Skate deck width (in) from US shoe size; style shifts it, kids get narrow decks. */
+export function skateFit(input: RiderInput): SportFit {
+  const us = toUSBootSize(input.bootSize, input.bootSystem);
+  const kids = input.fit === "kids";
+  const base = kids ? (us <= 3 ? 7.0 : 7.375) : us <= 6 ? 7.75 : us <= 8.5 ? 7.875 : us <= 10.5 ? 8.125 : us <= 12 ? 8.375 : 8.625;
+  const style = input.skateStyle ?? "street";
+  const shift = { street: -0.125, park: 0, transition: 0.25, cruise: 0.5, any: 0 }[style];
+  const tol = style === "any" ? 0.5 : 0.25;
+  const ideal = round(base + shift, 0.125);
+  const notes = [`Shoe US ${us} → ${fmtIn(base)} base`];
+  if (shift) notes.push(`${style}: ${shift > 0 ? "+" : ""}${shift}"`);
+  return { sport: "skate", unit: "in", ideal, range: [ideal - tol, ideal + tol], label: fmtIn(ideal), notes };
+}
+
+/** Surf volume from weight × skill factor (the "guild factor"), nudged by wave size; length from height + skill. */
+export const SURF_GUILD: Record<SkillLevel, number> = { beginner: 0.7, intermediate: 0.45, advanced: 0.39, expert: 0.36 };
+const SURF_LENGTH_ADD_CM: Record<SkillLevel, number> = { beginner: 75, intermediate: 35, advanced: 12, expert: 3 };
+export function surfFit(input: RiderInput): SportFit {
+  const skill = input.skill ?? "intermediate";
+  const waves = input.waves ?? "small";
+  const waveMul = { small: 1.08, medium: 1, big: 0.94 }[waves];
+  const ideal = Math.round(input.weightKg * SURF_GUILD[skill] * waveMul * 2) / 2;
+  const tol = Math.max(2, ideal * 0.1);
+  const len = input.heightCm + SURF_LENGTH_ADD_CM[skill] + { small: 8, medium: 0, big: -5 }[waves];
+  const notes = [`${input.weightKg} kg × ${SURF_GUILD[skill]} (${skill}) → ${Math.round(input.weightKg * SURF_GUILD[skill])} L`, `${waves} waves: ×${waveMul}`];
+  return {
+    sport: "surf", unit: "L", ideal, range: [ideal - tol, ideal + tol], label: `${ideal} L`, notes,
+    lengthRangeCm: [Math.round(len - 15), Math.round(len + 15)],
+  };
+}
+
+export function snowFit(input: RiderInput): SportFit {
+  const r = recommend(input);
+  return { sport: "snow", unit: "cm", ideal: r.idealLengthCm, range: r.lengthRangeCm, label: `${r.idealLengthCm}${r.requiresWide ? "W" : ""} cm`, notes: r.notes, snow: r };
+}
+
+export function recommendFor(sport: Sport, input: RiderInput): SportFit {
+  return sport === "skate" ? skateFit(input) : sport === "surf" ? surfFit(input) : snowFit(input);
+}
+
+/** Sizes of a listing that fit, best first. Skate by width, surf by volume (else length), snow as before. */
+export function matchSizesFor(sizes: BoardSize[], fit: SportFit): SizeMatch[] {
+  if (fit.sport === "snow" && fit.snow) return matchSizes(sizes, fit.snow);
+  const [lo, hi] = fit.range;
+  const out: SizeMatch[] = [];
+  for (const size of sizes) {
+    if (fit.sport === "skate") {
+      if (size.widthIn === undefined) continue;
+      out.push({ size, deltaCm: Math.abs(size.widthIn - fit.ideal), fits: size.widthIn >= lo - 1e-6 && size.widthIn <= hi + 1e-6 });
+    } else if (size.volumeL !== undefined) {
+      out.push({ size, deltaCm: Math.abs(size.volumeL - fit.ideal), fits: size.volumeL >= lo && size.volumeL <= hi });
+    } else if (fit.lengthRangeCm && size.lengthCm > 0) {
+      const [a, b] = fit.lengthRangeCm;
+      const mid = (a + b) / 2;
+      out.push({ size, deltaCm: Math.abs(size.lengthCm - mid) / 10, fits: size.lengthCm >= a && size.lengthCm <= b });
+    }
+  }
+  return out.filter((m) => m.fits).sort((a, b) => a.deltaCm - b.deltaCm);
 }
