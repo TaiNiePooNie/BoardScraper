@@ -19,6 +19,39 @@ export type FitPreference = z.infer<typeof FitPreference>;
 export const RiderStyle = z.enum(["park", "all-mountain", "freeride", "any"]);
 export type RiderStyle = z.infer<typeof RiderStyle>;
 
+/** Which board sport a catalog entry / shopper belongs to. */
+export const Sport = z.enum(["snow", "skate", "surf"]);
+export type Sport = z.infer<typeof Sport>;
+export const SPORTS: readonly Sport[] = Sport.options;
+
+/** Board type within a sport (drives "Shop by type" tiles and the Type filter). */
+export const BoardCategory = z.enum([
+  // snow
+  "all-mountain", "freestyle", "powder", "splitboard",
+  // skate
+  "deck", "complete", "cruiser", "longboard",
+  // surf
+  "shortboard", "fish", "midlength", "longboard-surf", "foamie",
+]);
+export type BoardCategory = z.infer<typeof BoardCategory>;
+export const CATEGORIES_BY_SPORT: Record<Sport, readonly BoardCategory[]> = {
+  snow: ["all-mountain", "freestyle", "powder", "splitboard"],
+  skate: ["deck", "complete", "cruiser", "longboard"],
+  surf: ["shortboard", "fish", "midlength", "longboard-surf", "foamie"],
+};
+
+/** Skate: what the rider mostly does (drives deck width). */
+export const SkateStyle = z.enum(["street", "park", "transition", "cruise", "any"]);
+export type SkateStyle = z.infer<typeof SkateStyle>;
+
+/** Surf: the waves the rider usually surfs (drives volume/length). */
+export const SurfWaves = z.enum(["small", "medium", "big"]);
+export type SurfWaves = z.infer<typeof SurfWaves>;
+
+/**
+ * One rider, all sports. Snow uses weight/height/boot/style/skill; skate uses
+ * bootSize as shoe size + skateStyle; surf uses weight/height/skill + waves.
+ */
 export const RiderInput = z.object({
   weightKg: z.coerce.number().min(15).max(160),
   heightCm: z.coerce.number().min(80).max(230),
@@ -27,6 +60,8 @@ export const RiderInput = z.object({
   style: RiderStyle,
   skill: SkillLevel.optional(), // default: intermediate
   fit: FitPreference.optional(), // default: any
+  skateStyle: SkateStyle.optional(), // default: street
+  waves: SurfWaves.optional(), // default: small
 });
 export type RiderInput = z.infer<typeof RiderInput>;
 
@@ -53,8 +88,12 @@ export const BoardSize = z.object({
   lengthCm: z.number(),
   waist: WaistClass,
   waistWidthMm: z.number().optional(),
-  label: z.string(), // normalized: "156", "156W", "157MW"
+  label: z.string(), // normalized: "156", "156W", "157MW", '8.25"', "5'10\""
   inStock: z.boolean(),
+  /** Skate: deck width in inches. */
+  widthIn: z.number().optional(),
+  /** Surf: board volume in litres (when the shop lists it). */
+  volumeL: z.number().optional(),
   /** Per-size price when the retailer prices sizes/colorways differently. */
   price: z.number().optional(),
 });
@@ -155,6 +194,8 @@ export type Retailer = z.infer<typeof Retailer>;
 /** Canonical board model (brand + model + season), shared across retailers. */
 export const BoardModel = z.object({
   id: z.string(),
+  sport: Sport.default("snow"),
+  category: BoardCategory.nullable().default(null),
   brand: z.string(),
   model: z.string(),
   season: z.string(), // "2025/26"
@@ -204,7 +245,7 @@ export type LandedCost = z.infer<typeof LandedCost>;
 
 export const SizeMatch = z.object({
   size: BoardSize,
-  /** Absolute distance (cm) from the rider's ideal length. */
+  /** Absolute distance from the rider's ideal size, in the sport's unit (snow/surf: cm or L, skate: in). */
   deltaCm: z.number(),
   fits: z.boolean(),
 });

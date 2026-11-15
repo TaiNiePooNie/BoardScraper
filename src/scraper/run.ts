@@ -4,6 +4,10 @@
  *   npm run scrape                          # all retailers
  *   npm run scrape -- --retailer=evo --limit=20
  *   npm run scrape -- --retailer=glisshop --dry-run   # parse only, print, no DB
+ *   npm run scrape -- --retailer=evo --sport=skate,surf --dry-run --limit=5
+ *
+ * --limit caps products per sport per retailer. --sport limits the run to those
+ * sports (and then never deactivates listings, since the run is partial).
  *
  * Exit code is non-zero if any retailer errored (not if it was merely blocked),
  * so the scheduled workflow surfaces breakage.
@@ -14,6 +18,7 @@ import { scrapeRuns } from "@/db/schema";
 import { BlockedError, PoliteFetcher } from "./http";
 import { deactivateMissing, ingestProduct, refreshBoards, upsertRetailer } from "./ingest";
 import { ADAPTERS } from "./retailers";
+import { Sport } from "@/lib/types";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => {
   const [k, v] = a.replace(/^--/, "").split("=");
@@ -22,16 +27,19 @@ const args = Object.fromEntries(process.argv.slice(2).map((a) => {
 const ids = args.retailer ? String(args.retailer).split(",") : Object.keys(ADAPTERS);
 const limit = args.limit ? Number(args.limit) : Infinity;
 const dryRun = args["dry-run"] === "true";
+const sports = args.sport ? String(args.sport).split(",").map((s) => Sport.parse(s.trim())) : undefined;
 
 async function main() {
   for (const id of ids) if (!ADAPTERS[id]) throw new Error(`Unknown retailer "${id}". Known: ${Object.keys(ADAPTERS).join(", ")}`);
+  // Retailers that sell none of the requested sports are skipped.
+  const runIds = sports ? ids.filter((id) => ADAPTERS[id].sports.some((s) => sports.includes(s))) : ids;
 
   const handle = dryRun ? null : await openDb();
   if (handle) await handle.migrate();
   let failed = false;
 
   try {
-    for (const id of ids) {
+    for (const id of runIds) {
       const adapter = ADAPTERS[id];
       const http = new PoliteFetcher();
       const log = (m: string) => console.log(`[${id}] ${m}`);
@@ -54,10 +62,10 @@ async function main() {
       };
 
       try {
-        for await (const p of adapter.crawl({ http, limit, log })) {
+        for await (const p of adapter.crawl({ http, limit, log, sports })) {
           seen++;
           if (!handle) {
-            console.log(JSON.stringify({ brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
+            console.log(JSON.stringify({ sport: p.sport, category: p.category, brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.volumeL ? ` ${s.volumeL}L` : ""}${s.lengthCm && p.sport === "skate" ? ` (${s.lengthCm}cm)` : ""}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
             continue;
           }
           const r = await ingestProduct(handle.db, id, p);
@@ -66,7 +74,7 @@ async function main() {
         }
         if (handle) {
           await refreshBoards(handle.db, [...boardIds]);
-          const off = Number.isFinite(limit) ? 0 : await deactivateMissing(handle.db, id, listingIds);
+          const off = Number.isFinite(limit) || sports ? 0 : await deactivateMissing(handle.db, id, listingIds);
           log(`deactivated ${off} stale listings`);
         }
         await finish("ok");

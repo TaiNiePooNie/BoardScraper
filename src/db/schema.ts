@@ -2,8 +2,9 @@ import { relations } from "drizzle-orm";
 import {
   boolean, date, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, real, serial, text, timestamp, uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { ShippingRule } from "@/lib/types";
+import type { BoardCategory, ShippingRule } from "@/lib/types";
 
+export const sport = pgEnum("sport", ["snow", "skate", "surf"]);
 export const ridingStyle = pgEnum("riding_style", ["park", "all-mountain", "freeride"]);
 export const boardProfile = pgEnum("board_profile", ["camber", "rocker", "flat", "hybrid-camber", "hybrid-rocker", "directional-camber"]);
 export const boardShape = pgEnum("board_shape", ["true-twin", "directional-twin", "directional", "tapered"]);
@@ -28,6 +29,9 @@ export const retailers = pgTable("retailers", {
 export const boards = pgTable("boards", {
   id: serial("id").primaryKey(),
   key: text("key").notNull(),
+  sport: sport("sport").notNull().default("snow"),
+  /** Board type within the sport (BoardCategory); null when unknown. */
+  category: text("category").$type<BoardCategory>(),
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   season: text("season").notNull(),
@@ -41,7 +45,7 @@ export const boards = pgTable("boards", {
   reviewAvg: real("review_avg"),
   reviewCount: integer("review_count"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [uniqueIndex("boards_key_uq").on(t.key)]);
+}, (t) => [uniqueIndex("boards_key_uq").on(t.key), index("boards_sport_idx").on(t.sport)]);
 
 export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
@@ -86,10 +90,15 @@ export const listings = pgTable("listings", {
 export const listingSizes = pgTable("listing_sizes", {
   listingId: integer("listing_id").notNull().references(() => listings.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
+  /** Snow/surf length; skate deck length when known, else 0. */
   lengthCm: integer("length_cm").notNull(),
   waist: waistClass("waist").notNull(),
   inStock: boolean("in_stock").notNull(),
   price: money("price"),
+  /** Skate: deck width (inches). */
+  widthIn: real("width_in"),
+  /** Surf: volume (litres). */
+  volumeL: real("volume_l"),
 }, (t) => [primaryKey({ columns: [t.listingId, t.label] }), index("sizes_len_idx").on(t.lengthCm, t.waist)]);
 
 /** One point per listing per day (lowest price seen that day). */

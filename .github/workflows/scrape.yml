@@ -9,7 +9,10 @@ on:
         description: "Retailer id (blank = all)"
         required: false
       limit:
-        description: "Max products per retailer (blank = no limit)"
+        description: "Max products per sport per retailer (blank = no limit)"
+        required: false
+      sport:
+        description: "Sports, comma-separated: snow,skate,surf (blank = all)"
         required: false
 
 permissions:
@@ -49,7 +52,7 @@ jobs:
   scrape:
     needs: migrate
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150 # Blue Tomato: ~1,400 board pages (snow + skate + surf) at >= 2.5 s each
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +68,8 @@ jobs:
           SCRAPER_MIN_DELAY_MS: "2500"
           RETAILER: ${{ matrix.retailer }}
           LIMIT: ${{ inputs.limit }}
-        run: npm run scrape -- --retailer="$RETAILER" ${LIMIT:+--limit="$LIMIT"}
+          SPORT: ${{ inputs.sport }}
+        run: npm run scrape -- --retailer="$RETAILER" ${LIMIT:+--limit="$LIMIT"} ${SPORT:+--sport="$SPORT"}
 
   report:
     needs: [migrate, scrape]

@@ -3,7 +3,7 @@
  * embedded catalog snapshot (no server/API). Used for the artifact / static hosting.
  */
 import { createRoot } from "react-dom/client";
-import { ShopApp } from "@/components/shop/ShopApp";
+import { StoreApp } from "@/components/store/StoreApp";
 import type { ShopServices } from "@/components/shop/services";
 import { buildDeals } from "@/lib/deals";
 import { currencyForCountry } from "@/lib/pricing/vat";
@@ -37,4 +37,4 @@ const services: ShopServices = {
 };
 
 document.documentElement.classList.add("dark");
-createRoot(document.getElementById("root")!).render(<ShopApp initialLocale={browserLocale()} services={services} />);
+createRoot(document.getElementById("root")!).render(<StoreApp initialLocale={browserLocale()} services={services} />);

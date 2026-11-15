@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   openGraph: { images: [ASSETS.ogImage] },
 };
 
-export const viewport: Viewport = { themeColor: "#15161a", viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#ffffff", viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

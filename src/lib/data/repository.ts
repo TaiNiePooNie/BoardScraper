@@ -1,6 +1,6 @@
 import { eq, gte } from "drizzle-orm";
 import type { DB } from "@/db/client";
-import type { BoardModel, CurrencyCode, Listing, Retailer } from "../types";
+import { BoardCategory, type BoardModel, type CurrencyCode, type Listing, type Retailer } from "../types";
 import { buildMockCatalog } from "./mock";
 import { RETAILERS } from "../retailers";
 
@@ -70,6 +70,8 @@ export class DbRepository implements CatalogRepository {
       if (!boards.has(id)) {
         boards.set(id, {
           id,
+          sport: b.sport,
+          category: b.category && BoardCategory.safeParse(b.category).success ? b.category : null,
           brand: b.brand,
           model: b.model,
           season: b.season,
@@ -93,8 +95,13 @@ export class DbRepository implements CatalogRepository {
         price: { amount: l.priceAmount, currency: l.priceCurrency as CurrencyCode },
         listPrice: l.listPrice,
         sizes: l.sizes
-          .map((z) => ({ lengthCm: z.lengthCm, waist: z.waist, label: z.label, inStock: z.inStock, ...(z.price !== null ? { price: z.price } : {}) }))
-          .sort((a, b) => a.lengthCm - b.lengthCm),
+          .map((z) => ({
+            lengthCm: z.lengthCm, waist: z.waist, label: z.label, inStock: z.inStock,
+            ...(z.price !== null ? { price: z.price } : {}),
+            ...(z.widthIn !== null ? { widthIn: z.widthIn } : {}),
+            ...(z.volumeL !== null ? { volumeL: z.volumeL } : {}),
+          }))
+          .sort((a, b) => a.lengthCm - b.lengthCm || (a.widthIn ?? 0) - (b.widthIn ?? 0)),
         history: l.history.map((h) => ({ date: h.date, price: h.price, inStock: h.inStock })),
         lastScrapedAt: l.lastScrapedAt.toISOString(),
       });

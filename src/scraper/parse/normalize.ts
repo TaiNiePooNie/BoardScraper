@@ -1,3 +1,5 @@
+import type { BoardCategory, Sport } from "@/lib/types";
+
 /**
  * Canonical board identity across retailers: brand + model + season.
  * Titles vary per shop ("Burton Custom Snowboard 2026", "Custom 2026 Snowboard",
@@ -5,7 +7,7 @@
  * but keep a readable display model.
  */
 
-const BRAND_NOISE = /\b(snowboards?|snowboarding|boards?|co\.?|inc\.?|mfg)\b/gi;
+const BRAND_NOISE = /\b(snowboards?|snowboarding|skateboards?|surfboards?|boards?|co\.?|inc\.?|mfg)\b/gi;
 const ALIASES: Record<string, string> = { "yes": "yes", "yes.": "yes", "lib tech": "lib tech", "libtech": "lib tech", "gnu": "gnu", "dc shoes": "dc" };
 
 export function cleanBrand(brand: string): string {
@@ -58,8 +60,43 @@ export function modelKey(model: string): string {
 
 export const boardKey = (brand: string, model: string, season: string) => `${brandKey(brand)}|${modelKey(model)}|${season}`;
 
+/**
+ * Board key including the sport, so a snowboard and a surfboard sharing a model
+ * name never merge. Snow keeps the original 3-part key (existing rows stay valid);
+ * skate also keys on the category (a deck and a complete of the same graphic differ).
+ */
+export function sportBoardKey(sport: Sport, category: BoardCategory | null, brand: string, model: string, season: string): string {
+  const base = boardKey(brand, model, season);
+  if (sport === "snow") return base;
+  return `${sport === "skate" && category ? `skate:${category}` : sport}|${base}`;
+}
+
+/** Size tokens that belong to one variant, not the model: 8.25", 8.5 x 32, 5'10", 32.5L. */
+const SKATE_SIZE_TOKEN = /(?<![\w.])\d{1,2}(?:[.,]\d{1,3})?\s*(?:"|″|”|in\b)?(?:\s*[x×]\s*\d{1,2}(?:[.,]\d{1,3})?\s*(?:"|″|”|in\b)?)?(?![\w.])/gi;
+const SURF_SIZE_TOKEN = /(?<![\d.])\d{1,2}\s*(?:'|′|’|ft\.?)\s*(?:\d{1,2}(?:[.,]\d{1,2})?\s*(?:"|″|”|''|in\b)?)?|\b\d{1,3}(?:[.,]\d{1,2})?\s*-?\s*(?:l|liters?|litres?)\b|\b\d{2,3}\s*(?:''|"|″)/gi;
+const SKATE_NOUNS = /\s*\b(skateboard|skate|deck|complete|cruiser|surfskate|surf ?skate|longboard)s?\b\s*$/i;
+const SURF_NOUNS = /\s*\b(surfboard|surfb\w*|surf|shortboard|longboard|board)s?\b\s*$/i;
+
+/** Display model per sport: snow as displayModel; skate/surf also drop variant sizes and trailing product nouns. */
+export function displayModelFor(sport: Sport, title: string, brand: string): string {
+  if (sport === "snow") return displayModel(title, brand);
+  // Full vendor name first ("Santa Cruz Skateboards …"), then the cleaned one.
+  const full = new RegExp(`^${brand.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i");
+  let m = displayModel(title.replace(full, ""), brand);
+  const isSkate = sport === "skate";
+  m = m.replace(isSkate ? SKATE_SIZE_TOKEN : SURF_SIZE_TOKEN, (tok) => {
+    if (!isSkate) return " ";
+    const n = Number(tok.replace(",", ".").match(/[\d.]+/)?.[0]);
+    return (n >= 5.5 && n <= 11) || (n >= 20 && n <= 60) || /[x×]/i.test(tok) ? " " : tok;
+  });
+  const nouns = isSkate ? SKATE_NOUNS : SURF_NOUNS;
+  for (let i = 0; i < 3; i++) m = m.replace(/\s*[-–|,]\s*$/, "").replace(/\s+$/, "").replace(nouns, "");
+  m = m.replace(/\s*[-–|]\s*$/g, "").replace(/\s+/g, " ").trim();
+  return m || displayModel(title, brand);
+}
+
 /** Kids' boards: out of scope for adult sizing. */
 export const KIDS = /\b(kids?|youth|junior|jr|boys?|girls?|enfants?|kinder|grom|chopper|riglet|mini)\b/i;
 
-/** Things that match "snowboard" in a title but aren't boards. */
-export const NOT_A_BOARD = /\b(split ?board|bag|tasche|housse|leash|reel|stomp|pad|wax|bindings?|fixations?|boots?|chaussures?|helmet|jacket|pants|cover|lock|tool|kit|pack)\b/i;
+/** Things that match "snowboard" in a title but aren't boards (splitboards are boards: category "splitboard"). */
+export const NOT_A_BOARD = /\b(skins?|bag|tasche|housse|leash|reel|stomp|pad|wax|bindings?|fixations?|boots?|chaussures?|helmet|jacket|pants|cover|lock|tool|kit|pack)\b/i;

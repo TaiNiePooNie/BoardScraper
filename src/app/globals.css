@@ -1,22 +1,31 @@
 @import "tailwindcss";
 
-/* BoardBuddy commits to one look: a night-time streetwear snowboard shop. Always dark. */
+/* BoardBuddy v3: a light, modern web store. Sticker art (Buddy) adds personality.
+ * Legacy token names are remapped for light: "paper" = ink text, "asphalt" = white surface. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Brand palette (ui-art-requests.md Style Bible) */
-  --color-asphalt: #15161a;
-  --color-concrete: #2a2c31;
-  --color-paper: #fafaf7;
+  /* Brand accents (ui-art-requests.md Style Bible) */
   --color-acid: #d4ff3a;
+  --color-acid-deep: #a8d400;
   --color-pink: #ff3d8b;
   --color-ice: #33d6ff;
   --color-orange: #ff6a1a;
-  /* Legacy names used by Pro-mode components */
-  --color-snow: #fafaf7;
+  /* Light store neutrals */
   --color-ink: #15161a;
+  --color-muted: #6b6f76;
+  --color-line: #e6e7e3;
+  --color-surface: #f5f6f3;
+  --color-white: #ffffff;
+  --color-sale: #e5145f;
+  --color-ok: #138a4b;
+  /* Legacy names (account panel, size sheet parts) mapped to the light theme */
+  --color-paper: #15161a;
+  --color-asphalt: #ffffff;
+  --color-concrete: #f5f6f3;
+  --color-snow: #ffffff;
   --color-glacier: #d4ff3a;
-  /* Deal tiers */
+  /* Deal tiers (emails only) */
   --color-tier-xg: #10b981;
   --color-tier-vg: #22c55e;
   --color-tier-g: #0ea5e9;
@@ -28,12 +37,12 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 html,
 body {
-  background: var(--color-asphalt);
-  color: var(--color-paper);
+  background: var(--color-white);
+  color: var(--color-ink);
 }
 body {
   @apply antialiased;
@@ -45,14 +54,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-/* Concrete shop wall behind the racks. */
-.shop-wall {
-  background-color: var(--color-concrete);
-  background-image: var(--wall-url);
-  background-size: 512px 512px;
-}
-
-/* Game-style headings: condensed, heavy, slanted. */
+/* Display headings: condensed and heavy, used sparingly (hero, sheet titles). */
 .headline {
   font-family: var(--font-display);
   font-weight: 800;
@@ -66,34 +68,36 @@ body {
   font-family: var(--font-marker);
 }
 
-/* Sticker: white die-cut edge + soft drop shadow. */
+/* Card surface (legacy name kept for the account panel). */
 .sticker {
-  @apply rounded-2xl border-[3px] border-paper bg-asphalt shadow-[0_6px_0_rgba(0,0,0,0.35)];
+  @apply rounded-2xl border border-line bg-white shadow-[0_8px_30px_rgba(21,22,26,0.08)];
 }
-.btn-acid {
-  @apply rounded-xl border-[3px] border-asphalt bg-acid px-5 py-3 font-bold text-asphalt shadow-[0_4px_0_#15161a] transition active:translate-y-[2px] active:shadow-[0_2px_0_#15161a] disabled:opacity-50;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1.2rem;
-  text-transform: uppercase;
+.btn-acid,
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-black active:scale-[0.98] disabled:opacity-50;
+}
+.btn-lime {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-acid px-5 py-3 text-[15px] font-semibold text-ink transition hover:brightness-95 active:scale-[0.98] disabled:opacity-50;
 }
 .btn-ghost {
-  @apply rounded-xl border-2 border-paper/30 px-4 py-2.5 font-semibold text-paper transition hover:border-paper/70;
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-ink;
 }
-
-/* Pro-mode panels keep the earlier component styles, retuned for the dark shop. */
 .panel {
-  @apply rounded-2xl border border-white/10 bg-asphalt/85 shadow-sm backdrop-blur;
+  @apply rounded-2xl border border-line bg-white;
 }
 .input {
-  @apply w-full rounded-lg border border-white/15 bg-asphalt px-3 py-2 text-sm text-paper outline-none focus:border-acid focus:ring-2 focus:ring-acid/30;
+  @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10;
 }
 .chip {
-  @apply whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition;
+  @apply whitespace-nowrap rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:border-ink;
+}
+.chip[aria-pressed="true"],
+.chip[aria-checked="true"] {
+  @apply border-ink bg-ink text-white;
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-acid);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 
@@ -108,7 +112,7 @@ body {
 }
 
 
-/* Range sliders: concrete track, acid sticker thumb. */
+/* Range sliders: light track, ink fill, white thumb. */
 .bb-range {
   -webkit-appearance: none;
   appearance: none;
@@ -120,28 +124,28 @@ body {
 .bb-range::-webkit-slider-runnable-track {
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-acid) var(--fill, 0%), rgba(250, 250, 247, 0.15) var(--fill, 0%));
-  border: 2px solid var(--color-asphalt);
+  background: linear-gradient(90deg, var(--color-ink) var(--fill, 0%), var(--color-line) var(--fill, 0%));
+  border: 0;
 }
 .bb-range::-moz-range-track {
   height: 10px;
   border-radius: 999px;
-  background: rgba(250, 250, 247, 0.15);
+  background: var(--color-line);
 }
 .bb-range::-moz-range-progress {
   height: 10px;
   border-radius: 999px;
-  background: var(--color-acid);
+  background: var(--color-ink);
 }
 .bb-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 30px;
-  height: 30px;
-  margin-top: -12px;
+  width: 28px;
+  height: 28px;
+  margin-top: -9px;
   border-radius: 50%;
   background: var(--color-acid);
-  border: 4px solid var(--color-paper);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  border: 3px solid var(--color-ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   cursor: grab;
 }
 .bb-range::-moz-range-thumb {
@@ -149,7 +153,7 @@ body {
   height: 24px;
   border-radius: 50%;
   background: var(--color-acid);
-  border: 4px solid var(--color-paper);
+  border: 3px solid var(--color-ink);
   cursor: grab;
 }
 /* Dual-thumb budget slider: two stacked ranges, only thumbs take pointer events. */
@@ -231,4 +235,17 @@ body {
 .legal a {
   color: var(--color-acid);
   text-decoration: underline;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+}
+@keyframes sheet-left {
+  from { transform: translateX(100%); }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(16px); }
 }

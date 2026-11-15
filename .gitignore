@@ -10,3 +10,4 @@ data/*.json
 playwright-report/
 data/pglite/
 dist/
+.claude/worktrees/

@@ -4,7 +4,7 @@ import { boards, listingSizes, listings, pricePoints, retailers, reviewSources }
 import { computeStats, gradeDeal } from "@/lib/grading";
 import { convert } from "@/lib/pricing/currency";
 import type { CurrencyCode, Retailer } from "@/lib/types";
-import { boardKey, cleanBrand } from "./parse/normalize";
+import { cleanBrand, sportBoardKey } from "./parse/normalize";
 import type { ScrapedProduct } from "./types";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -17,7 +17,7 @@ export async function upsertRetailer(db: DB, r: Retailer) {
 /** Upsert one scraped product: board (canonical), listing, sizes, today's price point, review source. */
 export async function ingestProduct(db: DB, retailerId: string, p: ScrapedProduct): Promise<{ boardId: number; listingId: number }> {
   return db.transaction(async (tx) => {
-    let key = boardKey(p.brand, p.model, p.season);
+    let key = sportBoardKey(p.sport, p.category, p.brand, p.model, p.season);
     if (!p.seasonKnown) {
       // No model year in the title: attach to the newest season we already know for this brand+model.
       const prefix = key.slice(0, key.lastIndexOf("|") + 1);
@@ -29,6 +29,8 @@ export async function ingestProduct(db: DB, retailerId: string, p: ScrapedProduc
       .insert(boards)
       .values({
         key,
+        sport: p.sport,
+        category: p.category,
         brand: cleanBrand(p.brand),
         model: p.model,
         season: key.slice(key.lastIndexOf("|") + 1),
@@ -42,6 +44,7 @@ export async function ingestProduct(db: DB, retailerId: string, p: ScrapedProduc
         target: boards.key,
         // Fill gaps only: the first retailer with a spec wins, later ones can't flip it.
         set: {
+          category: sql`coalesce(${boards.category}, excluded.category)`,
           profile: sql`coalesce(${boards.profile}, excluded.profile)`,
           shape: sql`coalesce(${boards.shape}, excluded.shape)`,
           flex: sql`coalesce(${boards.flex}, excluded.flex)`,
@@ -73,7 +76,10 @@ export async function ingestProduct(db: DB, retailerId: string, p: ScrapedProduc
     await tx.delete(listingSizes).where(eq(listingSizes.listingId, listing.id));
     if (p.sizes.length) {
       await tx.insert(listingSizes).values(
-        p.sizes.map((s) => ({ listingId: listing.id, label: s.label, lengthCm: s.lengthCm, waist: s.waist, inStock: s.inStock, price: s.price ?? null })),
+        p.sizes.map((s) => ({
+          listingId: listing.id, label: s.label, lengthCm: Math.round(s.lengthCm), waist: s.waist, inStock: s.inStock, price: s.price ?? null,
+          widthIn: s.widthIn ?? null, volumeL: s.volumeL ?? null,
+        })),
       );
     }
 

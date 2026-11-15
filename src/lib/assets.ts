@@ -1,4 +1,4 @@
-import type { DealTier, FitPreference, RidingStyle, SkillLevel } from "./types";
+import type { BoardCategory, DealTier, FitPreference, RidingStyle, SkillLevel, Sport } from "./types";
 import type { StatKey } from "./stats";
 
 /**
@@ -92,6 +92,19 @@ export const ASSETS = {
   avatars: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => a(`avatar-${n}.png`)),
   mascotCard: a("mascot-card.png"),
   emailHeader: a("email-header.png"),
+  // v3 store art (CHATGPT_CALL_store-v3.md); every use has a fallback until delivered
+  sport: { snow: a("sport-snow.svg"), skate: a("sport-skate.svg"), surf: a("sport-surf.svg") } satisfies Record<Sport, string>,
+  type: {
+    "all-mountain": a("type-all-mountain.svg"), freestyle: a("type-freestyle.svg"), powder: a("type-powder.svg"), splitboard: a("type-splitboard.svg"),
+    deck: a("type-deck.svg"), complete: a("type-complete.svg"), cruiser: a("type-cruiser.svg"), longboard: a("type-longboard.svg"),
+    shortboard: a("type-shortboard.svg"), fish: a("type-fish.svg"), midlength: a("type-midlength.svg"), "longboard-surf": a("type-longboard-surf.svg"), foamie: a("type-foamie.svg"),
+  } satisfies Record<BoardCategory, string>,
+  hero: { snow: a("hero-snow.webp"), skate: a("hero-skate.webp"), surf: a("hero-surf.webp") } satisfies Record<Sport, string>,
+  heroMobile: { snow: a("hero-snow-mobile.webp"), skate: a("hero-skate-mobile.webp"), surf: a("hero-surf-mobile.webp") } satisfies Record<Sport, string>,
+  mascotSport: { snow: a("mascot-ride.png"), skate: a("mascot-skate.png"), surf: a("mascot-surf.png") } satisfies Record<Sport, string>,
+  emptySearch: a("empty-search.png"),
+  emptySaved: a("empty-saved.png"),
+  placeholder: { snow: a("placeholder-snow.png"), skate: a("placeholder-skate.png"), surf: a("placeholder-surf.png") } satisfies Record<Sport, string>,
 } as const;
 
 /** Rank letter shown next to each tier (game-style), keeping the five tier names. */
