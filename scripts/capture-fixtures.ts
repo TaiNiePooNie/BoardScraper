@@ -5,11 +5,12 @@
  * when it answers, a small /products.json sample. Only robots-allowed URLs are fetched,
  * with the scraper's PoliteFetcher (≥ 2.5 s/host, stops on 403/429/challenges).
  *
- *   npx tsx scripts/capture-fixtures.ts outDir id,id,…
+ *   npx tsx scripts/capture-fixtures.ts outDir id,id,…   (per-site hints: scripts/fixture-targets.ts)
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { PoliteFetcher, sitemapLocs } from "../src/scraper/http";
+import { FIXTURE_TARGETS } from "./fixture-targets";
 import { CANDIDATES } from "./survey-retailers";
 
 const BOARD = /snowboard|splitboard|skateboard|skate-?deck|\bdecks?\b|complete|cruiser|longboard|surfboard|surf-?board|softboard|foamie|\bboards?\b|planche|tabla|deck|tavola/i;
@@ -17,7 +18,8 @@ const GEAR = /binding|boot|wheel|truck|bearing|griptape|grip-tape|wetsuit|leash|
 const MAX_HTML = 700_000;
 
 async function capture(id: string, out: string) {
-  const c = CANDIDATES.find((x) => x.id === id);
+  const t = FIXTURE_TARGETS[id] ?? {};
+  const c = t.origin ? { url: t.origin } : CANDIDATES.find((x) => x.id === id);
   if (!c) return console.log(`${id}: unknown id`);
   const dir = path.join(out, id);
   mkdirSync(dir, { recursive: true });
@@ -39,12 +41,12 @@ async function capture(id: string, out: string) {
   } catch { /* none */ }
 
   // Sitemaps: robots "Sitemap:" lines, else /sitemap.xml; follow index → product-ish children.
-  const roots = [...robots.matchAll(/^\s*sitemap:\s*(\S+)/gim)].map((m) => m[1]);
+  const roots = t.sitemaps ?? [...robots.matchAll(/^\s*sitemap:\s*(\S+)/gim)].map((m) => m[1]);
   if (!roots.length) roots.push(`${origin}/sitemap.xml`);
   const urls = new Set<string>();
   const queue = [...roots];
   let fetched = 0;
-  while (queue.length && fetched < 8 && urls.size < 20000) {
+  while (queue.length && fetched < (t.maxSitemaps ?? 8) && urls.size < 50000) {
     const sm = queue.shift()!;
     try {
       const x = await http.get(sm, "application/xml,text/xml;q=0.9,*/*;q=0.5");
@@ -52,26 +54,49 @@ async function capture(id: string, out: string) {
       const locs = sitemapLocs(x.text);
       if (/<sitemapindex/i.test(x.text)) {
         const kids = locs.sort((a, b) => Number(/product|prod|catalog|item/i.test(b)) - Number(/product|prod|catalog|item/i.test(a)));
-        queue.push(...kids.slice(0, 6));
+        queue.push(...kids.slice(0, t.maxSitemaps ? t.maxSitemaps - 2 : 6));
       } else locs.forEach((u) => urls.add(u));
     } catch (e) {
       note.push(`sitemap ${sm}: ${(e as Error).message.slice(0, 80)}`);
     }
   }
   const list = [...urls];
-  writeFileSync(path.join(dir, "urls.txt"), list.slice(0, 20000).join("\n"));
+  writeFileSync(path.join(dir, "urls.txt"), list.slice(0, 50000).join("\n"));
 
-  // Pick likely board pages, spread over different keywords.
+  // Extra pages (category / shipping) first; links from them matching `follow` become samples.
+  const max = t.max ?? 5;
   const picks: string[] = [];
-  const seenKey = new Set<string>();
-  for (const u of list) {
-    if (picks.length >= 5) break;
-    const p = decodeURIComponent(new URL(u).pathname).toLowerCase();
-    if (!BOARD.test(p) || GEAR.test(p)) continue;
-    const key = (BOARD.exec(p)?.[0] ?? "").replace(/s$/, "");
-    if (seenKey.has(key) && picks.length >= 3) continue;
-    seenKey.add(key);
-    picks.push(u);
+  for (const [i, u] of (t.urls ?? []).entries()) {
+    try {
+      const r = await http.get(u);
+      writeFileSync(path.join(dir, `page-${i + 1}.html`), `<!-- ${u} -->\n` + r.text.slice(0, MAX_HTML));
+      if (t.follow) {
+        const links = [...r.text.matchAll(/href="([^"#]+)"/g)].map((m) => new URL(m[1].replace(/&amp;/g, "&"), r.url).href);
+        for (const l of new Set(links)) if (t.follow.test(l) && !picks.includes(l) && picks.length < max) picks.push(l);
+      }
+    } catch (e) {
+      note.push(`page ${u}: ${(e as Error).message.slice(0, 80)}`);
+    }
+  }
+  if (t.match) {
+    const hits = list.filter((u) => t.match!.test(u));
+    note.push(`match ${hits.length}`);
+    // Spread over the list (sitemaps are often grouped by brand / age).
+    for (let k = 0; k < max && picks.length < max && hits.length; k++) {
+      const u = hits[Math.floor((k * hits.length) / max)];
+      if (!picks.includes(u)) picks.push(u);
+    }
+  } else if (!t.follow) {
+    const seenKey = new Set<string>();
+    for (const u of list) {
+      if (picks.length >= max) break;
+      const p = decodeURIComponent(new URL(u).pathname).toLowerCase();
+      if (!BOARD.test(p) || GEAR.test(p)) continue;
+      const key = (BOARD.exec(p)?.[0] ?? "").replace(/s$/, "");
+      if (seenKey.has(key) && picks.length >= 3) continue;
+      seenKey.add(key);
+      picks.push(u);
+    }
   }
   for (const [i, u] of picks.entries()) {
     try {
@@ -79,6 +104,14 @@ async function capture(id: string, out: string) {
       writeFileSync(path.join(dir, `product-${i + 1}.html`), `<!-- ${u} -->\n` + r.text.slice(0, MAX_HTML));
     } catch (e) {
       note.push(`product ${u}: ${(e as Error).message.slice(0, 80)}`);
+    }
+  }
+  for (const [i, j] of (t.json ?? []).entries()) {
+    try {
+      const r = await http.get(`${origin}${j}`, "application/json");
+      writeFileSync(path.join(dir, `json-${i + 1}.json`), `${r.status} ${origin}${j}\n` + r.text.slice(0, 400_000));
+    } catch (e) {
+      note.push(`json ${j}: ${(e as Error).message.slice(0, 80)}`);
     }
   }
   try {
