@@ -23,7 +23,8 @@ export function Price({ p, size = "md" }: { p: Product; size?: "md" | "lg" }) {
   return (
     <span className="flex flex-wrap items-baseline gap-x-2">
       <span className={clsx("font-bold tabular-nums", sale && "text-sale", size === "lg" ? "text-3xl" : "text-[15px]")}>{formatMoney(p.total, p.currency)}</span>
-      {sale && <s className={clsx("tabular-nums text-muted", size === "lg" ? "text-base" : "text-xs")}>{formatMoney(p.wasTotal!, p.currency)}</s>}
+      {sale && <s className={clsx("tabular-nums text-muted", size === "lg" ? "text-base" : "text-xs")} title={p.wasSource === "rrp" ? "Recommended retail price" : "Highest price we've seen"}>{formatMoney(p.wasTotal!, p.currency)}</s>}
+      {sale && size === "lg" && <span className="text-xs text-muted">{p.wasSource === "rrp" ? "vs. recommended retail price" : "vs. the highest price we've seen"}</span>}
     </span>
   );
 }

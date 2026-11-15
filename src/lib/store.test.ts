@@ -40,11 +40,29 @@ describe("store view model", () => {
     expect(activeFilterCount({ ...EMPTY_FILTERS, saleOnly: true, brands: ["a", "b"] })).toBe(3);
   });
 
-  it("discount badges reflect at least 10% off", () => {
+  it("discount badges match the computed discount", () => {
     const { products } = buildProducts(deals, "snow", null);
     for (const p of products) {
       const has = p.badges.some((b) => b.kind === "discount");
-      expect(has).toBe(p.discountPct >= 0.1);
+      expect(has).toBe(p.discountPct >= 0.03);
+    }
+  });
+});
+
+describe("discount without a shop RRP", () => {
+  it("falls back to the highest recorded price and labels any real discount", async () => {
+    const { referencePrice, MIN_DISCOUNT } = await import("./store");
+    const { products } = buildProducts(deals, "snow", null);
+    const p = products[0];
+    const noRrp = { ...p.best, board: { ...p.best.board, msrp: { amount: 0, currency: p.best.listing.price.currency } }, listing: { ...p.best.listing, listPrice: null, price: { ...p.best.listing.price, amount: 80 }, history: [{ date: "2026-10-01", price: 100, inStock: true }, { date: "2026-11-01", price: 80, inStock: true }] }, stats: null };
+    expect(referencePrice(noRrp as never, [noRrp as never])).toEqual({ price: 100, source: "history" });
+    const withRrp = { ...noRrp, listing: { ...noRrp.listing, listPrice: 120 } };
+    expect(referencePrice(withRrp as never, [withRrp as never])).toEqual({ price: 120, source: "rrp" });
+    const flat = { ...noRrp, listing: { ...noRrp.listing, history: [{ date: "2026-11-01", price: 80, inStock: true }] } };
+    expect(referencePrice(flat as never, [flat as never])).toBeNull();
+    for (const q of products) {
+      expect(q.badges.some((b) => b.kind === "discount")).toBe(q.discountPct >= MIN_DISCOUNT);
+      if (q.wasTotal !== null) expect(q.wasSource).not.toBeNull();
     }
   });
 });
