@@ -141,7 +141,7 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
   return { products, fit };
 }
 
-const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
 export function filterProducts(products: Product[], f: StoreFilters): Product[] {
   const words = norm(f.q).split(/\s+/).filter(Boolean);
