@@ -8,7 +8,8 @@ import { SizePreview } from "@/components/shop/setup/SizePreview";
 import { SliderField } from "@/components/shop/setup/SliderField";
 import { ASSETS } from "@/lib/assets";
 import type { Buddy } from "@/lib/profile";
-import { recommendFor } from "@/lib/sizing";
+import { AUDIENCE_CHOICES, choiceMembers, fitFromSet, kidsOnly, recommendFor, riderFits } from "@/lib/sizing";
+import { AUDIENCE_LABEL } from "./FilterSheet";
 import { SPORT_SHORT } from "@/lib/store";
 import { SPORTS, type FitPreference, type RiderInput, type RiderStyle, type SkateStyle, type SkillLevel, type Sport, type SurfWaves } from "@/lib/types";
 import { Sheet } from "./Sheet";
@@ -78,7 +79,10 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
   // The picture follows the range the rider picked (its middle), so a huge range shows a straining Buddy.
   const mid = (fit.range[0] + fit.range[1]) / 2;
   const value = sport === "skate" ? mid : sport === "surf" ? (fit.lengthRangeCm![0] + fit.lengthRangeCm![1]) / 2 / r.heightCm : mid / r.heightCm;
-  const kidsOk = r.fit === "kids";
+  const kidsOk = kidsOnly(r);
+  // Size picture persona: kid only → kid Buddy; women only (snow) → woman Buddy; else Buddy.
+  const sel = riderFits(r);
+  const picFit = kidsOk ? "kids" : sel.length && sel.every((x) => x === "womens") ? "womens" : "mens";
 
   const body = (
     <div className="flex flex-col gap-4">
@@ -108,14 +112,28 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
       </div>
 
       {/* fit */}
-      <div role="radiogroup" aria-label="Who's it for" className="grid grid-cols-4 gap-1.5">
-        {(["kids", "mens", "womens", "any"] as FitPreference[]).map((f) => (
-          <button key={f} type="button" role="radio" aria-checked={(r.fit ?? "any") === f} onClick={() => set({ fit: f })}
-            className={clsx("flex flex-col items-center gap-0.5 rounded-2xl border px-1 py-1.5 text-xs font-semibold", (r.fit ?? "any") === f ? "border-ink bg-surface" : "border-line text-muted")}>
-            <AssetImg src={ASSETS.pickFit[f]} alt="" className="h-9 w-9" fallback={<AssetImg src={ASSETS.fit[f]} alt="" className="h-7 w-7" />} />
-            {{ kids: "Kids", mens: "Men", womens: "Women", any: "All" }[f]}
-          </button>
-        ))}
+      <div>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">Who&apos;s it for <span className="font-normal normal-case tracking-normal">(pick one or more)</span></p>
+        <div role="group" aria-label="Who's it for" className={clsx("grid gap-1.5", AUDIENCE_CHOICES[sport].length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+          {AUDIENCE_CHOICES[sport].map((c) => {
+            const members = choiceMembers(c);
+            const sel = riderFits(r);
+            const on = members.every((m) => sel.includes(m));
+            const toggle = () => {
+              const next = on ? sel.filter((x) => !members.includes(x)) : [...new Set([...sel, ...members])];
+              set({ fits: next, fit: fitFromSet(next) });
+            };
+            const art = c === "adults" ? "any" : c;
+            return (
+              <button key={c} type="button" aria-pressed={on} onClick={toggle}
+                className={clsx("flex flex-col items-center gap-0.5 rounded-2xl border px-1 py-1.5 text-xs font-semibold", on ? "border-ink bg-surface" : "border-line text-muted")}>
+                <AssetImg src={ASSETS.pickFit[art]} alt="" className="h-9 w-9" fallback={<AssetImg src={ASSETS.fit[art]} alt="" className="h-7 w-7" />} />
+                {AUDIENCE_LABEL[c]}
+              </button>
+            );
+          })}
+        </div>
+        {riderFits(r).length === 0 && <p className="mt-1 text-xs text-muted">Nothing picked: showing boards for everyone.</p>}
       </div>
 
       {/* body + preview */}
@@ -126,7 +144,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
             <SliderField id="weight" label="Weight" unit="kg" min={15} max={140} step={1} value={Math.round(r.weightKg)} onChange={(v) => set({ weightKg: v })} />
           </div>
           <div className="h-[clamp(150px,26dvh,240px)]">
-            <SizePreview sport={sport} heightCm={r.heightCm} weightKg={r.weightKg} value={value} badge={fit.label} fit={r.fit ?? "any"} />
+            <SizePreview sport={sport} heightCm={r.heightCm} weightKg={r.weightKg} value={value} badge={fit.label} fit={picFit} />
           </div>
         </div>
       ) : (
@@ -135,7 +153,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
             <ShoeSize rider={r} onChange={set} label="Shoe size" />
           </div>
           <div className="h-[clamp(150px,26dvh,240px)]">
-            <SizePreview sport="skate" heightCm={r.heightCm} weightKg={r.weightKg} value={value} badge={fit.label} fit={r.fit ?? "any"} />
+            <SizePreview sport="skate" heightCm={r.heightCm} weightKg={r.weightKg} value={value} badge={fit.label} fit={picFit} />
           </div>
         </div>
       )}

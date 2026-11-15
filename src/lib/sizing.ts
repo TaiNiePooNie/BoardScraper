@@ -1,4 +1,4 @@
-import type { BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RiderStyle, RidingStyle, SizeMatch, SkillLevel, Sport } from "./types";
+import type { Audience, BoardModel, BoardProfile, BoardSize, FitPreference, RiderInput, RiderStyle, RidingStyle, SizeMatch, SkillLevel, Sport } from "./types";
 
 /**
  * Weight → base board length (cm), all-mountain reference.
@@ -176,6 +176,28 @@ export const isWomensBoard = (model: string) => /\b(women'?s?|womens|wmns|ladies
 /** Kids' board, detected from the model name (kids/youth/junior or well-known kids model names). */
 export const isKidsBoard = (model: string) => /\b(kids?|youth|junior|jr|boys?|girls?|enfants?|kinder|grom|chopper|riglet|mini)\b/i.test(model);
 
+/** Audience choices offered per sport: skate and surf boards aren't sold as men's/women's. */
+export type AudienceChoice = "kids" | "mens" | "womens" | "adults";
+export const AUDIENCE_CHOICES: Record<Sport, AudienceChoice[]> = { snow: ["kids", "mens", "womens"], skate: ["kids", "adults"], surf: ["kids", "adults"] };
+export const choiceMembers = (c: AudienceChoice): Audience[] => (c === "adults" ? ["mens", "womens"] : [c]);
+
+/** The rider's audience set; falls back to the legacy single `fit`. Empty = everyone. */
+export function riderFits(r: Pick<RiderInput, "fit" | "fits">): Audience[] {
+  if (r.fits) return r.fits;
+  return !r.fit || r.fit === "any" ? [] : [r.fit];
+}
+export const kidsOnly = (r: Pick<RiderInput, "fit" | "fits">) => { const f = riderFits(r); return f.length === 1 && f[0] === "kids"; };
+/** Legacy single value that best describes a set (for older code paths and the size picture). */
+export const fitFromSet = (f: Audience[]): FitPreference => (f.length === 1 ? f[0] : "any");
+
+/** Does this board suit the chosen audience? Skate/surf: kids vs adults only. */
+export function audienceAllows(sel: readonly Audience[], sport: Sport, model: string): boolean {
+  if (!sel.length || sel.length === 3) return true;
+  if (isKidsBoard(model)) return sel.includes("kids");
+  if (sport !== "snow") return sel.includes("mens") || sel.includes("womens");
+  return isWomensBoard(model) ? sel.includes("womens") : sel.includes("mens");
+}
+
 export function fitAllows(fit: FitPreference | undefined, model: string): boolean {
   if (!fit || fit === "any") return true;
   const kids = isKidsBoard(model);
@@ -222,7 +244,7 @@ export function fmtFeet(cm: number): string {
 /** Skate deck width (in) from US shoe size; style shifts it, kids get narrow decks. */
 export function skateFit(input: RiderInput): BaseFit {
   const us = toUSBootSize(input.bootSize, input.bootSystem);
-  const kids = input.fit === "kids";
+  const kids = kidsOnly(input);
   const base = kids ? (us <= 3 ? 7.0 : 7.375) : us <= 6 ? 7.75 : us <= 8.5 ? 7.875 : us <= 10.5 ? 8.125 : us <= 12 ? 8.375 : 8.625;
   const style = input.skateStyle ?? "street";
   const shift = { street: -0.125, park: 0, transition: 0.25, cruise: 0.5, any: 0 }[style];

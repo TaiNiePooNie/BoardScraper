@@ -66,3 +66,27 @@ describe("discount without a shop RRP", () => {
     }
   });
 });
+
+describe("audience (kids / men / women, multi-select)", () => {
+  it("skate & surf: women's selection shows adult boards (no men's/women's split there)", async () => {
+    const { audienceAllows, riderFits, kidsOnly } = await import("./sizing");
+    expect(audienceAllows(["womens"], "skate", "Baker Brand Logo Deck")).toBe(true);
+    expect(audienceAllows(["womens"], "surf", "Firewire Seaside")).toBe(true);
+    expect(audienceAllows(["kids"], "skate", "Baker Brand Logo Deck")).toBe(false);
+    expect(audienceAllows(["kids"], "skate", "Mini Logo Youth Complete")).toBe(true);
+    expect(audienceAllows(["womens"], "snow", "Burton Custom")).toBe(false);
+    expect(audienceAllows(["womens", "mens"], "snow", "Burton Custom")).toBe(true);
+    expect(audienceAllows(["kids", "womens"], "snow", "Burton Yeasayer Women's")).toBe(true);
+    expect(audienceAllows([], "snow", "anything")).toBe(true);
+    expect(riderFits({ fit: "kids" })).toEqual(["kids"]);
+    expect(riderFits({ fit: "any", fits: ["mens", "womens"] })).toEqual(["mens", "womens"]);
+    expect(kidsOnly({ fits: ["kids", "mens"] })).toBe(false);
+  });
+  it("every sport has products for a women-only rider", () => {
+    const r = { ...rider, fits: ["womens"] as ("womens")[] };
+    for (const s of ["skate", "surf"] as const) {
+      const { products } = buildProducts(deals, s, r);
+      expect(products.some((p) => p.fits)).toBe(true);
+    }
+  });
+});

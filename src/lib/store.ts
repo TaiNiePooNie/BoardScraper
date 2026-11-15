@@ -1,6 +1,6 @@
 import { convert } from "./pricing/currency";
-import { fitAllows, matchSizesFor, recommendFor, type SportFit } from "./sizing";
-import type { BoardCategory, BoardModel, CurrencyCode, Deal, FitPreference, RiderInput, SizeMatch, Sport } from "./types";
+import { audienceAllows, matchSizesFor, recommendFor, riderFits, type SportFit } from "./sizing";
+import type { Audience, BoardCategory, BoardModel, CurrencyCode, Deal, RiderInput, SizeMatch, Sport } from "./types";
 
 /**
  * Store view model: one product per board model, its offers across shops,
@@ -49,13 +49,14 @@ export interface StoreFilters {
   q: string;
   fitsMe: boolean;
   category: BoardCategory | null;
-  gender: FitPreference;
+  /** Kids / men / women (several allowed; empty = all). Skate & surf: kids vs adults. */
+  audience: Audience[];
   brands: string[];
   shops: string[];
   maxPrice: number | null;
   saleOnly: boolean;
 }
-export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, gender: "any", brands: [], shops: [], maxPrice: null, saleOnly: false };
+export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, audience: [], brands: [], shops: [], maxPrice: null, saleOnly: false };
 
 export const CATEGORY_LABEL: Record<BoardCategory, string> = {
   "all-mountain": "All-mountain",
@@ -137,9 +138,10 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     let fits: boolean | null = null;
     // Skate boards sold by length only (most cruisers/longboards) can't be width-matched: fit unknown, never hidden.
     const sizeless = sport === "skate" && !offers.some((o) => o.listing.sizes.some((sz) => sz.widthIn !== undefined));
-    if (fit && rider && !(sizeless && fitAllows(rider.fit, board.model))) {
+    const forRider = rider ? audienceAllows(riderFits(rider), sport, board.model) : true;
+    if (fit && rider && !(sizeless && forRider)) {
       fits = false;
-      if (fitAllows(rider.fit, board.model)) {
+      if (forRider) {
         for (const o of offers) {
           const m = matchSizesFor(o.listing.sizes.filter((s) => s.inStock), fit);
           if (m.length) {
@@ -179,7 +181,7 @@ export function filterProducts(products: Product[], f: StoreFilters): Product[] 
   return products.filter((p) => {
     if (f.fitsMe && p.fits === false) return false;
     if (f.category && p.board.category !== f.category) return false;
-    if (f.gender !== "any" && !fitAllows(f.gender, p.board.model)) return false;
+    if (f.audience.length && !audienceAllows(f.audience, p.board.sport, p.board.model)) return false;
     if (f.brands.length && !f.brands.includes(p.board.brand)) return false;
     if (f.shops.length && !p.offers.some((o) => f.shops.includes(o.retailer.id))) return false;
     if (f.maxPrice !== null && p.total > f.maxPrice) return false;
@@ -228,4 +230,4 @@ export function storeFacets(products: Product[]) {
 }
 
 export const activeFilterCount = (f: StoreFilters) =>
-  (f.fitsMe ? 1 : 0) + (f.gender !== "any" ? 1 : 0) + f.brands.length + f.shops.length + (f.maxPrice !== null ? 1 : 0) + (f.saleOnly ? 1 : 0);
+  (f.fitsMe ? 1 : 0) + (f.audience.length ? 1 : 0) + f.brands.length + f.shops.length + (f.maxPrice !== null ? 1 : 0) + (f.saleOnly ? 1 : 0);

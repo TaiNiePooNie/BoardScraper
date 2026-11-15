@@ -2,7 +2,7 @@ import type { BoardModel, BuyerLocale, Deal, Listing, Retailer, RiderInput, Size
 import { computeStats, gradeDeal } from "./grading";
 import { landedCost } from "./pricing/landedCost";
 import { convert } from "./pricing/currency";
-import { fitAllows, matchSizesFor, recommend, recommendFor, styleFit, type Recommendation, type SportFit } from "./sizing";
+import { audienceAllows, matchSizesFor, riderFits, recommend, recommendFor, styleFit, type Recommendation, type SportFit } from "./sizing";
 
 export interface DealsResult {
   source?: "db" | "mock";
@@ -52,7 +52,7 @@ export function buildDeals(
     const retailer = retailers.get(base.retailerId);
     if (!board || !retailer) continue;
     if (sport && board.sport !== sport) continue;
-    if (rider && !fitAllows(rider.fit, board.model)) continue;
+    if (rider && !audienceAllows(riderFits(rider), board.sport, board.model)) continue;
 
     const fit = fitFor(board.sport);
     const matchingSizes = fit ? matchSizesFor(base.sizes.filter((s) => s.inStock), fit) : [];
