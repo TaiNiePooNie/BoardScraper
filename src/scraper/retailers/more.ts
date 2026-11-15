@@ -81,6 +81,14 @@ export function pukasTitle(title: string): string {
   return m ? `${unshout(m[1])} ${m[2].trim()} ${m[3].replace(/\s+/g, "")}` : t.replace(/^Pukas Surfboards\s*-\s*/i, "");
 }
 
+/** "8.25in x 31.8in Screaming Hand Santa Cruz Skateboard Deck" → "Screaming Hand Skateboard Deck 8.25in x 31.8in". */
+export function nhsTitle(title: string, vendor: string): string {
+  const m = title.match(/^(\d{1,2}(?:\.\d+)?in\s*x\s*\d{1,2}(?:\.\d+)?in)\s+(.+)$/i);
+  const v = vendor.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const rest = (m ? m[2] : title).replace(v ? new RegExp(`\\s*\\b${v}\\b`, "i") : /$^/, "").replace(/\s+/g, " ").trim();
+  return m ? `${rest} ${m[1]}` : rest;
+}
+
 const reject = (re: RegExp) => (p: ScrapedProduct) => (re.test(p.title) ? null : remodel(p));
 
 const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -142,7 +150,15 @@ export const MORE_ADAPTERS: Record<string, RetailerAdapter> = {
     retailer: R.skatehut,
     sitemaps: ["https://www.skatehut.co.uk/sitemap.xml"],
     productUrls: { skate: /skatehut\.co\.uk\/(?![\w-]*(?:scooter|bmx|fingerboard|tech-deck))[\w-]+-(?:skateboard-deck|deck|complete-skateboard|complete-cruiser|cruiser-skateboard|complete-longboard|longboard-complete|surfskate)(?:-[\w-]*)?\.htm$/ },
-    fixup: reject(/scooter|bmx/i),
+    // Breadcrumbs file small cruisers under "Longboards": the title decides when it says cruiser.
+    fixup: (p) => { const q = reject(/scooter|bmx/i)(p); return q && /\bcruiser\b/i.test(q.title) && !/longboard/i.test(q.title) ? { ...q, category: "cruiser" } : q; },
+  }),
+  skatedeluxe: sitemapJsonLdAdapter({
+    retailer: R.skatedeluxe,
+    sitemaps: ["https://www.skatedeluxe.com/en/sitemap_products_en.xml"],
+    productUrls: { skate: /skatedeluxe\.com\/en\/p\/(?![\w-]*(?:wheels?|trucks?|bearings?|griptape|bushings?|risers?|bag|tee|hood))[\w-]*(?:skateboard-deck|complete-board|cruiser|longboard|surfskate)[\w-]*_p\d+$/ },
+    // Titles end with the colourway in brackets: "… 8.5" Skateboard Deck (multi)".
+    fixup: (p) => remodel({ ...p, title: p.title.replace(/\s*\([^)]*\)\s*$/, "") }),
   }),
   sickboards: sitemapJsonLdAdapter({
     retailer: R.sickboards,
@@ -156,16 +172,16 @@ export const MORE_ADAPTERS: Record<string, RetailerAdapter> = {
   }),
   "boardsports-eu": sitemapJsonLdAdapter({
     retailer: R["boardsports-eu"],
-    sitemaps: [], // robots.txt points at the sister shop's sitemap: category listings instead
+    // robots.txt points at the sister shop's sitemap: category listings instead. Snow only: its longboard
+    // pages state no deck size (dry-run 2026-11-15 parsed none of 6).
+    sitemaps: [],
     listings: [
       { sport: "snow", url: "https://www.boardsports.eu/snowboards" },
       { sport: "snow", url: "https://www.boardsports.eu/splitboards" },
-      { sport: "skate", url: "https://www.boardsports.eu/longboards" },
     ],
     listingPage: (u, n) => `${u}?p=${n}`,
     productUrls: {
       snow: /boardsports\.eu\/[\w.-]+-(?:snowboard|splitboard)-20\d\d$/,
-      skate: /boardsports\.eu\/[\w.-]+-(?:longboard-complete|cruiser-complete|surfskate-complete|surfskate)$/,
     },
     productNodeFromHtml: boardsportsNode,
     variantsFromHtml: boardsportsSizes,
@@ -176,13 +192,8 @@ export const MORE_ADAPTERS: Record<string, RetailerAdapter> = {
   yonex: shopifyAdapter({ retailer: R.yonex, collections: [{ sport: "snow", handle: "snowboards" }], rewrite: (p) => ({ ...p, vendor: "Yonex", title: unshout(p.title) }) }),
   "pukas-shop": shopifyAdapter({ retailer: R["pukas-shop"], collections: [{ sport: "surf", handle: "pukas-surfboards" }], rewrite: (p) => ({ ...p, vendor: "Pukas", title: pukasTitle(p.title) }) }),
   skatemenu: shopifyAdapter({ retailer: R.skatemenu, sports: ["skate"], rewrite: (p) => ({ ...p, vendor: unshout(p.vendor) }) }),
-  "nhs-santa-cruz": shopifyAdapter({
-    retailer: R["nhs-santa-cruz"],
-    collections: [
-      { sport: "skate", handle: "skateboard-decks" },
-      { sport: "skate", handle: "complete-skateboards" },
-      { sport: "skate", handle: "skate-cruisers-longboards" },
-    ],
-  }),
+  // Collection feeds answer empty (2026-11-15), so the catalogue is classified. Titles lead with the size and
+  // carry the brand mid-title: "8.25in x 31.8in Screaming Hand Santa Cruz Skateboard Deck".
+  "nhs-santa-cruz": shopifyAdapter({ retailer: R["nhs-santa-cruz"], sports: ["skate"], rewrite: (p) => ({ ...p, title: nhsTitle(p.title, p.vendor) }) }),
 };
 

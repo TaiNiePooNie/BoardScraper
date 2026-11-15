@@ -1,0 +1,121 @@
+{
+ "products": [
+  {
+   "title": "PRE ORDER | Pukas Surfboards - Solid Mood by David Santos - Nic Von Rupp Dims - FCS II - 6'1\" x 18.88\" x 2.55\" - 30.20L",
+   "handle": "pukas-surfboards-solid-mood-by-david-santos-fcs-ii-61-x-18-88-x-2-55-30-20l-ds02886",
+   "body_html": "<p>Pukas Surfboards - Solid Mood by David Santos - FCS II - 6'1\" x 18.88\" x 2.55\" - 30.20L</p>",
+   "vendor": "PUKAS SURFBOARDS",
+   "product_type": "SURFBOARDS",
+   "tags": [
+    "BF 15% OFF",
+    "gift_guide",
+    "Just In",
+    "PREORDER",
+    "Solid Mood",
+    "swellgift"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "739.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-Solid-Mood-David-Santos-6_1_-DS02886-1.jpg?v=1792672995"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-Solid-Mood-David-Santos-6_1_-DS02886-2.jpg?v=1792672995"
+    }
+   ]
+  },
+  {
+   "title": "Pukas Surfboards - PEGASO by Chris Christenson - FCS II - 5'6\" x 19 x 2 7/16 - 29.66L - PC01154",
+   "handle": "pukas-surfboards-pegaso-by-chris-christenson-56-x-19-x-2-7-16-29-66l-pc01154",
+   "body_html": "<h2> <strong>Pukas PEGASO  by Chris Christenson</strong>\n</h2>\n<p>A more performance based twin fin when compared to the Chris Fish model, the Pukas Pegaso has a slightly more vertical approach to your surfing and handles bigger surf but still has that twin fin mentality. Out of all Chris Christenson’s twin fins, this is his A team’s favorite.</p>\n<div style=\"text-align: left;\" data-mce-style=\"tex",
+   "vendor": "PUKAS SURFBOARDS",
+   "product_type": "SURFBOARDS",
+   "tags": [
+    "BF 15% OFF",
+    "gift_guide",
+    "Just In",
+    "Pegaso"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "853.00",
+     "compare_at_price": "0.00",
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-Pegaso-Chris-Christenson-5_6_-PC01154-1.jpg?v=1783688243"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-Pegaso-Chris-Christenson-5_6_-PC01154-2.jpg?v=1783688243"
+    }
+   ]
+  },
+  {
+   "title": "Pukas Surfboards - Lotus by David Santos - FUT SIDE BITES - 6'4\" x 20.38\" x 2.68\" - 37.40L - DS02255",
+   "handle": "pukas-surfboards-lotus-by-david-santos-64-x-20-38-x-2-68-37-40l-ds02255",
+   "body_html": "",
+   "vendor": "PUKAS SURFBOARDS",
+   "product_type": "SURFBOARDS",
+   "tags": [
+    "BF 15% OFF",
+    "gift_guide",
+    "Just In",
+    "Lotus",
+    "Shortboard"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "814.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-The-Lotus-David-Santos-6_4_-DS02255-1.jpg?v=1780583762"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0424/0673/files/Pukas-Surf-Shop-Pukas-Surfboards-The-Lotus-David-Santos-6_4_-DS02255-2.jpg?v=1780583762"
+    }
+   ]
+  }
+ ]
+}

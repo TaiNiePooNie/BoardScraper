@@ -8,8 +8,9 @@ import type { Retailer } from "./types";
  * should be re-verified each season.
  *
  * Evaluated and excluded:
- *  - snowleader.com, sportconrad.com, absolute-snow.co.uk — 403/429 to automated clients
- *    (snowleader.com and absolute-snow.co.uk re-checked 2026-11-15: robots.txt itself answers 403)
+ *  - snowleader.com, sportconrad.com — 403/429 to automated clients
+ *    (snowleader.com re-checked 2026-11-15: robots.txt itself answers 403; absolute-snow.co.uk answered
+ *    normally from GitHub Actions on 2026-11-15 and is now live — see retailers-more.ts)
  *  - the-house.com — Cloudflare bot challenge
  *  - snowboard-asylum.com — robots.txt disallows /product and /category
  *  - bergzeit.de — board pages not identifiable from sitemap; category pages on another host
@@ -18,7 +19,8 @@ import type { Retailer } from "./types";
  * Candidates not yet surveyed (~75 shops and brand stores, incl. absolutesnow.com): the
  * list lives in scripts/survey-retailers.ts. Run `npm run survey` from a network that
  * can reach them, then add Shopify shops with `shopifyAdapter` (src/scraper/retailers/
- * shopify.ts) and sitemap + JSON-LD shops with `sitemapJsonLdAdapter`.
+ * shopify.ts) and sitemap + JSON-LD shops with `sitemapJsonLdAdapter`. Non-Shopify shops added
+ * from the 2026-11 survey (and the four left out, with reasons): src/lib/retailers-more.ts.
  */
 const EU_EXCEPT_HOME = ["BE", "BG", "CZ", "DK", "EE", "FI", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "ES", "CY", "MT"];
 

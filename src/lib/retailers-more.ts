@@ -27,7 +27,7 @@ const retailer = (id: string, name: string, homepage: string, country: string, c
 export const MORE_RETAILERS: Retailer[] = [
   // ── UK ──
   retailer("absolute-snow-uk", "Absolute-Snow", "https://www.absolute-snow.co.uk", "GB", "GBP", true, [rule(["GB"], 4.95, 50, [1, 3]), rule(EU, 25, undefined, [4, 10])]), // est.
-  retailer("skatehut", "SkateHut", "https://www.skatehut.co.uk", "GB", "GBP", true, [rule(["GB"], 4.99, 50, [1, 3]), rule(EU, 20, undefined, [4, 10])]), // est.
+  retailer("skatehut", "SkateHut", "https://www.skatehut.co.uk", "GB", "GBP", true, [rule(["GB"], 4.99, 100, [2, 4]), rule(EU, 20, undefined, [4, 10])]), // UK economy free over £100 in 2–4 days (delivery page); costs est.
   // ── EU ──
   retailer("skatedeluxe", "skatedeluxe", "https://www.skatedeluxe.com", "DE", "EUR", true, [rule(["DE"], 4.95, 50, [1, 3]), rule(without(EU, "DE"), 9.95, 100, [3, 8]), rule(["CH", "GB", "NO"], 19.95, undefined, [4, 10])], { fixedGrossInEu: true }), // est.
   retailer("sickboards", "Sickboards", "https://www.sickboards.nl", "NL", "EUR", true, [rule(["NL"], 6.95, 100, [1, 3]), rule(["BE", "DE", "LU"], 9.95, 150, [2, 5]), rule(without(EU, "NL", "BE", "DE", "LU"), 17.5, undefined, [3, 8])], { fixedGrossInEu: true }), // est.
