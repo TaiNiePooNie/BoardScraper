@@ -1,35 +1,42 @@
 "use client";
 import clsx from "clsx";
-import { CalendarClock, Heart, Sparkles, TrendingDown } from "lucide-react";
-import { useMemo } from "react";
+import { Bell, CalendarClock, Heart, Sparkles, TrendingDown, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { buyOrWait, salesFor } from "@/lib/sales";
 import type { Product } from "@/lib/store";
 import type { Sport } from "@/lib/types";
 
 const fmtDate = (x: Date) => x.toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" });
 
-/** Shop banner: a sale running now, or the next one within ~6 weeks. */
+const DISMISSED = "boardbuddy.sales-dismissed";
+const readDismissed = (): string[] => { try { return JSON.parse(localStorage.getItem(DISMISSED) ?? "[]"); } catch { return []; } };
+
+/** One-line sale notice (running now, or the next within ~6 weeks). Closable per sale. */
 export function SaleBanner({ sport, country, onShowSale, onAlerts }: { sport: Sport; country: string; onShowSale: () => void; onAlerts: () => void }) {
   const { active, upcoming } = useMemo(() => salesFor(new Date(), country, sport, 45), [country, sport]);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  useEffect(() => setDismissed(readDismissed()), []);
   const now = active[0];
   const next = upcoming[0];
-  if (!now && !next) return null;
-  const e = now ?? next!;
+  const e = now ?? next;
+  if (!e || dismissed.includes(e.id)) return null;
+  const close = () => {
+    const list = [...dismissed, e.id].slice(-20);
+    setDismissed(list);
+    try { localStorage.setItem(DISMISSED, JSON.stringify(list)); } catch { /* private mode */ }
+  };
   const range = `${Math.round(e.typical[0] * 100)}–${Math.round(e.typical[1] * 100)}%`;
   return (
-    <section aria-label="Sale calendar" className={clsx("mt-4 flex items-start gap-3 rounded-2xl border px-4 py-3", now ? "border-sale/30 bg-sale/5" : "border-line bg-surface")}>
-      {now ? <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-sale" /> : <CalendarClock className="mt-0.5 h-5 w-5 shrink-0" />}
-      <div className="min-w-0 flex-1 text-sm">
-        {now ? (
-          <p><b>{now.name} is on</b> until {fmtDate(now.end)}. Boards are usually {range} off.</p>
-        ) : (
-          <p><b>{next!.name} {next!.inDays === 1 ? "starts tomorrow" : `in ${next!.inDays} days`}</b> ({fmtDate(next!.start)}). Prices usually drop {range}. Save boards with ♥ and turn on price-drop emails to hear when they get cheaper.</p>
-        )}
-        {upcoming.length > (now ? 0 : 1) && (
-          <p className="mt-0.5 text-xs text-muted">Also coming up: {upcoming.slice(now ? 0 : 1, now ? 2 : 3).map((u) => `${u.name} (${fmtDate(u.start)})`).join(", ")}</p>
-        )}
-      </div>
-      <button type="button" onClick={now ? onShowSale : onAlerts} className="chip shrink-0 !text-xs">{now ? "Show sale boards" : "Price alerts"}</button>
+    <section aria-label="Sale calendar" className={clsx("mt-3 flex items-center gap-2 rounded-full border py-1.5 pl-3 pr-1.5 text-sm md:mt-4", now ? "border-sale/30 bg-sale/5" : "border-line bg-surface")}>
+      {now ? <Sparkles className="h-4 w-4 shrink-0 text-sale" /> : <CalendarClock className="h-4 w-4 shrink-0" />}
+      <button type="button" onClick={now ? onShowSale : onAlerts} className="min-w-0 flex-1 truncate text-left" title={e.why}>
+        {now ? <><b>{now.name}</b> on now · up to −{Math.round(e.typical[1] * 100)}%</> : <><b>{next!.name}</b> {next!.inDays === 1 ? "tomorrow" : `in ${next!.inDays} days`} · usually −{range}</>}
+        <span className="hidden text-muted md:inline"> · {now ? `until ${fmtDate(now.end)}` : `${fmtDate(next!.start)}. Save boards with ♥ to get price-drop emails.`}</span>
+      </button>
+      <button type="button" onClick={now ? onShowSale : onAlerts} className="shrink-0 rounded-full p-1.5 text-muted hover:bg-white hover:text-ink" aria-label={now ? "Show sale boards" : "Price alert settings"} title={now ? "Show sale boards" : "Price alert settings"}>
+        {now ? <TrendingDown className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+      </button>
+      <button type="button" onClick={close} className="shrink-0 rounded-full p-1.5 text-muted hover:bg-white hover:text-ink" aria-label="Dismiss"><X className="h-4 w-4" /></button>
     </section>
   );
 }
