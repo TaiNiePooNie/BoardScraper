@@ -1,8 +1,7 @@
 "use client";
 import clsx from "clsx";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Heart, Info, Share2, Star, TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ProductImg } from "@/components/ProductImg";
 import { ASSETS } from "@/lib/assets";
 import { formatMoney } from "@/lib/pricing/currency";
@@ -13,6 +12,11 @@ import { effectiveMsrp } from "@/lib/deals";
 import type { Deal } from "@/lib/types";
 import { BadgePill, Price } from "./ProductCard";
 import { BuyOrWait } from "./SaleBanner";
+import { useDialog } from "./useDialog";
+
+// recharts is ~100 kB: only fetched when a product with price history is opened.
+// (React.lazy rather than next/dynamic, so the single-file static build keeps working.)
+const PriceHistoryChart = lazy(() => import("./PriceHistoryChart"));
 
 export interface LiveCheck {
   status: "checking" | "fresh" | "updated" | "failed";
@@ -39,16 +43,11 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
   country: string;
 }) {
   const [offerId, setOfferId] = useState(p.best.listing.id);
+  const [shared, setShared] = useState(false);
   const offer = p.offers.find((o) => o.listing.id === offerId) ?? p.best;
   const top = useRef<HTMLDivElement>(null);
   useEffect(() => { setOfferId(p.best.listing.id); top.current?.scrollTo({ top: 0 }); }, [p.id, p.best.listing.id]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [onClose]);
+  useDialog(top, onClose);
 
   const fittingLabels = new Set(p.fitSizes.map((m) => m.size.label));
   const offerFits = fit ? new Set(offer.listing.sizes.filter((s) => fittingLabels.has(s.label)).map((s) => s.label)) : new Set<string>();
@@ -59,21 +58,25 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
     const url = `${location.origin}${location.pathname}?board=${p.id}`;
     try {
       if (navigator.share) await navigator.share({ title: `${p.board.brand} ${p.board.model}`, url });
-      else await navigator.clipboard.writeText(url);
+      else {
+        await navigator.clipboard.writeText(url);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      }
     } catch { /* cancelled */ }
   };
 
   return (
-    <div ref={top} className="fixed inset-0 z-50 overflow-y-auto bg-white animate-[page-in_.25s_ease-out]" role="dialog" aria-modal="true" aria-label={`${p.board.brand} ${p.board.model}`}>
+    <div ref={top} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-white animate-[page-in_.25s_ease-out]" role="dialog" aria-modal="true" aria-label={`${p.board.brand} ${p.board.model}`}>
       {/* top bar */}
       <div className="sticky top-0 z-10 border-b border-line bg-white/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="app-gutter mx-auto flex h-14 max-w-6xl items-center gap-2">
-          <button type="button" onClick={onClose} className="-ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm font-semibold hover:bg-surface" aria-label="Back to the shop">
+          <button type="button" onClick={onClose} className="-ml-3 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-sm font-semibold transition hover:bg-surface" aria-label="Back to the shop">
             <ArrowLeft className="h-5 w-5" /><span className="hidden sm:inline">Back</span>
           </button>
           <p className="min-w-0 flex-1 truncate text-center text-sm font-semibold sm:hidden">{p.board.brand}</p>
-          <button type="button" onClick={share} className="rounded-full p-2 hover:bg-surface" aria-label="Share"><Share2 className="h-5 w-5" /></button>
-          <button type="button" onClick={onToggleSave} aria-pressed={saved} className="rounded-full p-2 hover:bg-surface" aria-label={saved ? "Remove from saved" : "Save"}>
+          <button type="button" onClick={share} className="icon-btn" aria-label={shared ? "Link copied" : "Share this board"}>{shared ? <Check className="h-5 w-5 text-ok" /> : <Share2 className="h-5 w-5" />}</button>
+          <button type="button" onClick={onToggleSave} aria-pressed={saved} className="icon-btn -mr-2" aria-label={saved ? "Remove from saved" : "Save this board"}>
             <Heart className={clsx("h-5 w-5", saved && "fill-sale text-sale")} />
           </button>
         </div>
@@ -85,14 +88,14 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
         <div className="flex min-w-0 flex-col gap-6">
           <header>
             <p className="text-sm font-semibold text-muted">{p.board.brand}</p>
-            <h1 className="mt-0.5 text-2xl font-bold leading-tight sm:text-3xl">{p.board.model}</h1>
+            <h2 className="mt-0.5 break-words text-2xl font-bold leading-tight sm:text-3xl">{p.board.model}</h2>
             <p className="mt-1 text-sm text-muted">
               {[p.board.category ? CATEGORY_LABEL[p.board.category] : null, p.board.season].filter(Boolean).join(" · ")}
               {p.board.reviews && p.board.reviews.count > 0 && (
                 <span className="ml-2 inline-flex items-center gap-0.5 font-semibold text-ink"><Star className="h-3.5 w-3.5 fill-ink" />{p.board.reviews.average.toFixed(1)} <span className="font-normal text-muted">({p.board.reviews.count})</span></span>
               )}
             </p>
-            {p.badges.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{p.badges.map((b) => <BadgePill key={b.kind} badge={b} className="!text-xs" />)}</div>}
+            {p.badges.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{p.badges.map((b) => <BadgePill key={b.kind} badge={b} className="!px-2.5 !py-1 !text-xs" />)}</div>}
           </header>
 
           <section aria-label="Price">
@@ -105,25 +108,25 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
 
           <section aria-label="Sizes">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-bold">Sizes at {offer.retailer.name}</h2>
-              <button type="button" onClick={onEditSize} className="text-sm font-semibold underline underline-offset-2">{fit ? `Your size: ${fit.rangeLabel}` : "Find my size"}</button>
+              <h3 className="min-w-0 truncate text-sm font-bold">Sizes at {offer.retailer.name}</h3>
+              <button type="button" onClick={onEditSize} className="link shrink-0 py-1.5 text-sm">{fit ? `Your size: ${fit.rangeLabel}` : "Find my size"}</button>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {offer.listing.sizes.map((s) => {
                 const yours = offerFits.has(s.label);
                 return (
                   <span key={s.label} className={clsx(
-                    "relative min-w-[3.25rem] rounded-xl border px-3 py-2 text-center text-sm font-semibold tabular-nums",
+                    "relative min-w-[3.25rem] rounded-control border px-3 py-2 text-center text-sm font-semibold tabular-nums",
                     !s.inStock ? "border-line text-muted line-through" : yours ? "border-ink bg-acid" : "border-line",
                   )}>
-                    {s.label}{s.volumeL ? <span className="block text-[10px] font-medium text-muted">{s.volumeL} L</span> : null}
-                    {yours && <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-white"><Check className="h-3 w-3" /></span>}
+                    {!s.inStock && <span className="sr-only">Sold out: </span>}{yours && <span className="sr-only">Your size: </span>}{s.label}{s.volumeL ? <span className="block text-2xs font-medium text-muted">{s.volumeL} L</span> : null}
+                    {yours && <span aria-hidden className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-white"><Check className="h-3 w-3" /></span>}
                   </span>
                 );
               })}
             </div>
             {p.stock.note && (
-              <p className={clsx("mt-2 flex items-start gap-1.5 rounded-xl px-3 py-2 text-xs font-medium", p.stock.level === "last" ? "bg-orange/10 text-[#a33d00]" : "bg-[#fff6e5] text-[#8a5a00]")} role="status">
+              <p className={clsx("mt-2", p.stock.level === "last" ? "note-alert" : "note-warn")} role="status">
                 <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0" />{p.stock.note}
               </p>
             )}
@@ -132,20 +135,20 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
           </section>
 
           {/* desktop CTA (mobile: sticky bar) */}
-          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary hidden !py-3.5 md:flex">
+          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary hidden min-h-12 md:flex">
             Buy at {offer.retailer.name}<ExternalLink className="h-4 w-4" />
           </a>
 
           {p.offers.length > 1 && (
             <section aria-label="Compare shops">
-              <h2 className="text-sm font-bold">Compare {p.offers.length} offers</h2>
-              <ul className="mt-2 divide-y divide-line rounded-2xl border border-line">
+              <h3 className="text-sm font-bold">Compare {p.offers.length} offers</h3>
+              <ul className="card mt-2 divide-y divide-line overflow-hidden">
                 {p.offers.map((o) => {
                   const sel = o === offer;
                   const n = fit ? o.listing.sizes.filter((s) => s.inStock && fittingLabels.has(s.label)).length : null;
                   return (
                     <li key={o.listing.id}>
-                      <button type="button" onClick={() => setOfferId(o.listing.id)} aria-pressed={sel} className={clsx("flex w-full items-center gap-3 px-4 py-3 text-left", sel && "bg-surface")}>
+                      <button type="button" onClick={() => setOfferId(o.listing.id)} aria-pressed={sel} className={clsx("flex min-h-14 w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-surface focus-visible:outline-offset-[-2px]", sel && "bg-surface")}>
                         <span className={clsx("grid h-4 w-4 shrink-0 place-items-center rounded-full border-2", sel ? "border-ink bg-ink" : "border-line")}>{sel && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-semibold">{o.retailer.name}</span>
@@ -162,9 +165,13 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
 
           {offer.listing.history.length > 1 && (
             <section aria-label="Price history">
-              <h2 className="text-sm font-bold">Price history at {offer.retailer.name}</h2>
+              <h3 className="text-sm font-bold">Price history at {offer.retailer.name}</h3>
               <p className="text-xs text-muted">In {offer.listing.price.currency}, before delivery{offer.stats ? ` · lowest ever ${formatMoney(offer.stats.allTimeLow, offer.listing.price.currency)}` : ""}</p>
-              <div className="mt-2 text-muted"><PriceHistoryChart history={offer.listing.history} msrp={effectiveMsrp(offer.listing, offer.board)} stats={offer.stats} currency={offer.listing.price.currency} height={170} /></div>
+              <div className="mt-2 h-[170px] text-muted">
+                <Suspense fallback={<div className="h-full animate-pulse rounded-card bg-surface" aria-hidden />}>
+                  <PriceHistoryChart history={offer.listing.history} msrp={effectiveMsrp(offer.listing, offer.board)} stats={offer.stats} currency={offer.listing.price.currency} height={170} />
+                </Suspense>
+              </div>
             </section>
           )}
 
@@ -177,9 +184,9 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
         <div className="app-gutter flex items-center gap-3 py-3">
           <div className="min-w-0">
             <p className="text-lg font-bold tabular-nums leading-tight">{formatMoney(offer.landed.total, offer.landed.currency)}</p>
-            <p className="truncate text-xs text-muted">{offer.retailer.name}</p>
+            <p className="truncate text-xs text-muted">delivered · {offer.retailer.name}</p>
           </div>
-          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0">
+          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0" aria-label={`Buy at ${offer.retailer.name} (opens the shop)`}>
             Buy at shop<ExternalLink className="h-4 w-4" />
           </a>
         </div>
@@ -239,12 +246,12 @@ function Gallery({ images, alt, placeholder }: { images: string[]; alt: string; 
   const go = (n: number) => {
     const k = (n + images.length) % images.length;
     setI(k);
-    strip.current?.scrollTo({ left: k * strip.current.clientWidth, behavior: "smooth" });
+    strip.current?.scrollTo({ left: k * strip.current.clientWidth, behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   };
   return (
     <div className="md:sticky md:top-20 md:self-start">
-      <div className="relative overflow-hidden rounded-3xl bg-surface">
-        <div ref={strip} className="no-scrollbar flex aspect-[4/5] snap-x snap-mandatory overflow-x-auto"
+      <div className="relative overflow-hidden rounded-sheet bg-surface">
+        <div ref={strip} className="no-scrollbar flex aspect-[4/5] max-h-[62dvh] w-full snap-x snap-mandatory overflow-x-auto md:max-h-none"
           onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
           {images.map((src, k) => (
             <div key={k} className="h-full w-full shrink-0 snap-center">
@@ -254,10 +261,15 @@ function Gallery({ images, alt, placeholder }: { images: string[]; alt: string; 
         </div>
         {images.length > 1 && (
           <>
-            <button type="button" onClick={() => go(i - 1)} className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white p-2 shadow md:block" aria-label="Previous photo"><ChevronLeft className="h-5 w-5" /></button>
-            <button type="button" onClick={() => go(i + 1)} className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white p-2 shadow md:block" aria-label="Next photo"><ChevronRight className="h-5 w-5" /></button>
-            <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
-              {images.map((_, k) => <button key={k} type="button" onClick={() => go(k)} aria-label={`Photo ${k + 1}`} className={clsx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-ink" : "w-1.5 bg-ink/25")} />)}
+            <button type="button" onClick={() => go(i - 1)} className="icon-btn absolute left-3 top-1/2 !hidden -translate-y-1/2 bg-white shadow-card md:!grid" aria-label="Previous photo"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" onClick={() => go(i + 1)} className="icon-btn absolute right-3 top-1/2 !hidden -translate-y-1/2 bg-white shadow-card md:!grid" aria-label="Next photo"><ChevronRight className="h-5 w-5" /></button>
+            {/* phones swipe the photos; the dots are only buttons where there's a pointer or keyboard */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center md:pointer-events-auto">
+              {images.map((_, k) => (
+                <button key={k} type="button" onClick={() => go(k)} aria-label={`Photo ${k + 1} of ${images.length}`} aria-current={k === i} className="grid h-8 place-items-center px-1">
+                  <span className={clsx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-ink" : "w-1.5 bg-ink/30")} />
+                </button>
+              ))}
             </div>
           </>
         )}
@@ -278,7 +290,7 @@ function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
     <>
       {(rows.length > 0 || stats) && (
         <section aria-label="Details">
-          <h2 className="text-sm font-bold">Details</h2>
+          <h3 className="text-sm font-bold">Details</h3>
           {rows.length > 0 && (
             <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               {rows.map(([k, v]) => <div key={k}><dt className="text-xs text-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
@@ -299,9 +311,9 @@ function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
         </section>
       )}
       {fit && (
-        <details className="rounded-2xl border border-line px-4 py-3 text-sm">
-          <summary className="cursor-pointer font-bold">How we picked your size ({fit.label})</summary>
-          <ul className="mt-2 list-disc pl-5 text-muted">{fit.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+        <details className="card px-4 text-sm">
+          <summary className="cursor-pointer rounded-control py-3 font-bold">How we picked your size ({fit.label})</summary>
+          <ul className="mb-3 list-disc pl-5 text-muted">{fit.notes.map((n) => <li key={n}>{n}</li>)}</ul>
         </details>
       )}
     </>

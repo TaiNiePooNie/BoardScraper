@@ -1,7 +1,7 @@
 import { brandKey, modelKey } from "@/scraper/parse/normalize";
 import { convert } from "./pricing/currency";
 import { audienceAllows, matchSizesFor, recommendFor, riderFits, type SportFit } from "./sizing";
-import type { Audience, BoardCategory, BoardModel, BoardSize, CurrencyCode, Deal, RiderInput, SizeMatch, Sport } from "./types";
+import { Audience as AudienceSchema, BoardCategory as CategorySchema, Sport as SportSchema, type Audience, type BoardCategory, type BoardModel, type BoardSize, type CurrencyCode, type Deal, type RiderInput, type SizeMatch, type Sport } from "./types";
 
 /**
  * Store view model: one product per board model, its offers across shops,
@@ -12,6 +12,8 @@ export type BadgeKind = "discount" | "lowest" | "drop" | "fits" | "last-season" 
 export interface Badge {
   kind: BadgeKind;
   label: string;
+  /** Shorter wording for narrow product cards. */
+  short?: string;
 }
 
 export interface Product {
@@ -30,6 +32,8 @@ export interface Product {
   /** Where the "was" price comes from: a shop's/brand's RRP, or the highest price we've recorded. */
   wasSource: "rrp" | "history" | null;
   discountPct: number;
+  /** How much the shown offer's price fell in the last 14 days (0..1; 0 = no recent drop). */
+  dropPct: number;
   /** Fitting sizes of the shown offer (rider only). */
   fitSizes: SizeMatch[];
   /** null = no rider, true/false = fits the rider. */
@@ -101,12 +105,13 @@ export function productKey(b: Pick<BoardModel, "sport" | "brand" | "model" | "ca
   return `${b.sport}|${kind}|${brandKey(b.brand)}|${modelKey(model)}`;
 }
 
-export type SortMode = "recommended" | "price-asc" | "price-desc" | "discount" | "newest";
+export type SortMode = "recommended" | "price-asc" | "price-desc" | "discount" | "drop" | "newest";
 export const SORT_LABEL: Record<SortMode, string> = {
   recommended: "Recommended",
   "price-asc": "Price: low to high",
   "price-desc": "Price: high to low",
   discount: "Biggest discount",
+  drop: "Biggest price drop",
   newest: "Newest",
 };
 
@@ -119,9 +124,16 @@ export interface StoreFilters {
   brands: string[];
   shops: string[];
   maxPrice: number | null;
-  saleOnly: boolean;
+  /** Least discount off the original price, 0..1 (0 = off; MIN_DISCOUNT = anything "on sale"). */
+  minDiscount: number;
+  /** Price fell in the last 14 days. */
+  priceDrop: boolean;
+  /** At its lowest price in 90 days. */
+  lowest: boolean;
+  /** Selling out ("Few left" / "Last sizes"). */
+  lastSizes: boolean;
 }
-export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, audience: [], brands: [], shops: [], maxPrice: null, saleOnly: false };
+export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, audience: [], brands: [], shops: [], maxPrice: null, minDiscount: 0, priceDrop: false, lowest: false, lastSizes: false };
 
 export const CATEGORY_LABEL: Record<BoardCategory, string> = {
   "all-mountain": "All-mountain",
@@ -143,19 +155,21 @@ export const SPORT_SHORT: Record<Sport, string> = { snow: "Snow", skate: "Skate"
 
 const seasonYear = (s: string) => Number(/(\d{4})/.exec(s)?.[1] ?? 0);
 
-/** Price fell in the last 14 days (last recorded price below the one before it). */
-function recentDrop(d: Deal, now: number): boolean {
+/** How much the price fell in the last 14 days (last recorded price vs. the one before it), 0..1; 0 = no recent drop. */
+function recentDrop(d: Deal, now: number): number {
   const h = d.listing.history.filter((p) => p.inStock);
-  if (h.length < 2) return false;
+  if (h.length < 2) return 0;
   const last = h[h.length - 1];
   const prev = [...h].reverse().find((p) => p.price !== last.price);
-  if (!prev || prev.price <= last.price) return false;
+  if (!prev || prev.price <= last.price) return 0;
   const changedAt = h.find((p) => p.date > prev.date && p.price === last.price)?.date ?? last.date;
-  return now - Date.parse(changedAt) < 14 * 86_400_000;
+  return now - Date.parse(changedAt) < 14 * 86_400_000 ? 1 - last.price / prev.price : 0;
 }
 
 /** Smallest discount we label (rounding noise and tiny currency moves below this). */
 export const MIN_DISCOUNT = 0.03;
+/** Discount steps offered in the filter sheet ("On sale" = any labelled discount). */
+export const DISCOUNT_STEPS = [MIN_DISCOUNT, 0.2, 0.3, 0.5] as const;
 
 /**
  * Original price for the shown offer, in that offer's currency, from everything we know:
@@ -264,8 +278,9 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     if (fits) badges.push({ kind: "fits", label: "Fits you" });
     if (discountPct >= MIN_DISCOUNT) badges.push({ kind: "discount", label: `−${Math.round(discountPct * 100)}%` });
     const s = best.stats;
-    if (s && s.samples >= 5 && best.listing.price.amount <= s.low90d * 1.005 && s.low90d < s.allTimeHigh) badges.push({ kind: "lowest", label: "Lowest in 90 days" });
-    else if (recentDrop(best, now)) badges.push({ kind: "drop", label: "Price dropped" });
+    const dropPct = recentDrop(best, now);
+    if (s && s.samples >= 5 && best.listing.price.amount <= s.low90d * 1.005 && s.low90d < s.allTimeHigh) badges.push({ kind: "lowest", label: "Lowest in 90 days", short: "90-day low" });
+    else if (dropPct > 0) badges.push({ kind: "drop", label: "Price dropped" });
     const lastSeason = !!(newest && seasonYear(best.board.season) && seasonYear(best.board.season) < newest);
     const stock = stockInfo(raw, fit && rider ? new Set(fitSizes.map((m) => m.size.label)) : null, lastSeason);
     if (stock.level !== "ok") badges.splice(fits ? 1 : 0, 0, { kind: "stock", label: stock.level === "last" ? "Last sizes" : "Few left" });
@@ -273,7 +288,7 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
 
     const reviews = board.reviews ? (board.reviews.average - 3.5) * 4 * Math.min(1, board.reviews.count / 20) : 0;
     const rank = (fits ? 100 : 0) + best.grade.score * 0.6 + best.styleFit * 20 + reviews;
-    products.push({ id, boardIds, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, stock, rank });
+    products.push({ id, boardIds, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, dropPct, fitSizes, fits, badges, stock, rank });
   }
   return { products, fit };
 }
@@ -289,7 +304,10 @@ export function filterProducts(products: Product[], f: StoreFilters): Product[] 
     if (f.brands.length && !f.brands.includes(p.board.brand)) return false;
     if (f.shops.length && !p.offers.some((o) => f.shops.includes(o.retailer.id))) return false;
     if (f.maxPrice !== null && p.total > f.maxPrice) return false;
-    if (f.saleOnly && p.discountPct < 0.1) return false;
+    if (f.minDiscount > 0 && p.discountPct < f.minDiscount) return false;
+    if (f.priceDrop && p.dropPct <= 0) return false;
+    if (f.lowest && !p.badges.some((b) => b.kind === "lowest")) return false;
+    if (f.lastSizes && p.stock.level === "ok") return false;
     if (words.length) {
       const hay = norm(`${p.board.brand} ${p.board.model} ${p.board.season} ${p.board.category ?? ""}`);
       if (!words.every((w) => hay.includes(w))) return false;
@@ -303,7 +321,8 @@ export function sortProducts(products: Product[], mode: SortMode): Product[] {
   switch (mode) {
     case "price-asc": return out.sort((a, b) => a.total - b.total);
     case "price-desc": return out.sort((a, b) => b.total - a.total);
-    case "discount": return out.sort((a, b) => b.discountPct - a.discountPct);
+    case "discount": return out.sort((a, b) => b.discountPct - a.discountPct || b.rank - a.rank);
+    case "drop": return out.sort((a, b) => b.dropPct - a.dropPct || b.discountPct - a.discountPct || b.rank - a.rank);
     case "newest": return out.sort((a, b) => seasonYear(b.board.season) - seasonYear(a.board.season) || b.rank - a.rank);
     default: return out.sort((a, b) => b.rank - a.rank);
   }
@@ -333,5 +352,64 @@ export function storeFacets(products: Product[]) {
   };
 }
 
+/** Filters counted on the Filter button (search and category have their own UI). */
 export const activeFilterCount = (f: StoreFilters) =>
-  (f.fitsMe ? 1 : 0) + (f.audience.length ? 1 : 0) + f.brands.length + f.shops.length + (f.maxPrice !== null ? 1 : 0) + (f.saleOnly ? 1 : 0);
+  (f.fitsMe ? 1 : 0) + (f.audience.length ? 1 : 0) + f.brands.length + f.shops.length + (f.maxPrice !== null ? 1 : 0)
+  + (f.minDiscount > 0 ? 1 : 0) + (f.priceDrop ? 1 : 0) + (f.lowest ? 1 : 0) + (f.lastSizes ? 1 : 0);
+
+/* ── URL state: a filtered view can be shared, bookmarked and survives a reload ── */
+
+export interface StoreView {
+  sport: Sport;
+  filters: StoreFilters;
+  sort: SortMode;
+}
+
+/**
+ * Query string for a view: `sport` always, everything else only when it differs from the default.
+ * sport · type (category) · q · sort · sale (min % off; 1 = any) · drop · low · last · fits · max · for · brand · shop
+ */
+export function viewToQuery({ sport, filters: f, sort }: StoreView): URLSearchParams {
+  const q = new URLSearchParams();
+  q.set("sport", sport);
+  if (f.category) q.set("type", f.category);
+  if (f.q.trim()) q.set("q", f.q.trim());
+  if (sort !== "recommended") q.set("sort", sort);
+  if (f.minDiscount > 0) q.set("sale", f.minDiscount <= MIN_DISCOUNT ? "1" : String(Math.round(f.minDiscount * 100)));
+  if (f.priceDrop) q.set("drop", "1");
+  if (f.lowest) q.set("low", "1");
+  if (f.lastSizes) q.set("last", "1");
+  if (f.fitsMe) q.set("fits", "1");
+  if (f.maxPrice !== null) q.set("max", String(f.maxPrice));
+  for (const a of f.audience) q.append("for", a);
+  for (const b of f.brands) q.append("brand", b);
+  for (const s of f.shops) q.append("shop", s);
+  return q;
+}
+
+/** Reads a view back from a query string; unknown or broken values fall back to the defaults. */
+export function viewFromQuery(q: URLSearchParams): { sport: Sport | null; filters: StoreFilters; sort: SortMode } {
+  const sport = SportSchema.safeParse(q.get("sport"));
+  const category = CategorySchema.safeParse(q.get("type"));
+  const sort = q.get("sort") as SortMode | null;
+  const sale = Number(q.get("sale"));
+  const max = Number(q.get("max"));
+  const on = (k: string) => q.get(k) === "1";
+  return {
+    sport: sport.success ? sport.data : null,
+    sort: sort && Object.hasOwn(SORT_LABEL, sort) ? sort : "recommended",
+    filters: {
+      q: (q.get("q") ?? "").slice(0, 80),
+      category: category.success ? category.data : null,
+      minDiscount: !Number.isFinite(sale) || sale <= 0 ? 0 : sale <= 1 ? MIN_DISCOUNT : Math.min(0.9, sale / 100),
+      priceDrop: on("drop"),
+      lowest: on("low"),
+      lastSizes: on("last"),
+      fitsMe: on("fits"),
+      maxPrice: q.has("max") && Number.isFinite(max) && max > 0 ? max : null,
+      audience: q.getAll("for").filter((a): a is Audience => AudienceSchema.safeParse(a).success),
+      brands: q.getAll("brand").slice(0, 30),
+      shops: q.getAll("shop").slice(0, 60),
+    },
+  };
+}

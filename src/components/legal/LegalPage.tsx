@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { ASSETS } from "@/lib/assets";
 
-/** Plain, readable page for policies, in the shop's dark style. */
+/** Plain, readable page for policies, in the store's light style. */
 export function LegalPage({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
   return (
-    <main className="app-gutter mx-auto max-w-2xl py-8">
-      <Link href="/" className="inline-block"><img src={ASSETS.logoFull} alt="BoardBuddy" className="h-9 w-auto" /></Link>
-      <h1 className="headline mt-8 text-5xl">{title}</h1>
-      <p className="mt-1 text-sm text-paper/55">Last updated {updated}</p>
-      <div className="legal mt-6 flex flex-col gap-4 text-[15px] leading-relaxed text-paper/85">{children}</div>
-      <p className="mt-10 text-sm"><Link href="/" className="font-semibold text-acid hover:underline">← Back to the shop</Link></p>
-    </main>
+    <>
+      <header className="border-b border-line">
+        <div className="app-gutter mx-auto flex h-14 max-w-2xl items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <Link href="/" className="inline-flex min-h-11 items-center" aria-label="BoardBuddy home"><img src={ASSETS.logoFull} alt="BoardBuddy" className="h-[30px] w-auto" /></Link>
+        </div>
+      </header>
+      <main className="app-gutter mx-auto max-w-2xl pb-16 pt-8">
+        <h1 className="text-2xl font-bold leading-tight sm:text-3xl">{title}</h1>
+        <p className="mt-1 text-sm text-muted">Last updated {updated}</p>
+        <div className="prose-legal mt-6">{children}</div>
+        <p className="mt-10"><Link href="/" className="btn-ghost">Back to the shop</Link></p>
+      </main>
+    </>
   );
 }
 

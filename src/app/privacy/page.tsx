@@ -7,7 +7,7 @@ export default function Privacy() {
   const email = contactEmail();
   return (
     <LegalPage title="Privacy policy" updated="14 November 2026">
-      <p>BoardBuddy helps you find snowboards that fit you and compares prices from online shops. We collect as little as we can. This page explains what we store, why, and how to delete it.</p>
+      <p>BoardBuddy helps you find snowboards, skateboards and surfboards that fit you and compares prices from online shops. We collect as little as we can. This page explains what we store, why, and how to delete it.</p>
 
       <h2>Without an account</h2>
       <p>You can use BoardBuddy as a guest. Your rider setup (height, weight, boot size, riding style, skill, budget), your buddies and the boards you hold are stored <b>only in your own browser</b> (local storage). We don&apos;t receive them. Clearing your browser data removes them.</p>
