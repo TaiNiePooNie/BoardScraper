@@ -221,6 +221,8 @@ export const BoardModel = z.object({
   /** Best-known MSRP: retailer RRP/compare-at, else highest observed price. */
   msrp: Money,
   images: z.array(z.string()),
+  /** Main colours from the product photo (black, white, grey, red, orange, yellow, green, blue, purple, pink, brown). */
+  colors: z.array(z.string()).optional(),
   ambassadors: z.array(Ambassador),
   reviews: ReviewSummary.nullable(),
 });

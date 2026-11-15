@@ -96,6 +96,7 @@ export class DbRepository implements CatalogRepository {
           styles: b.styles,
           msrp: { amount: b.msrpAmount ?? l.priceAmount, currency: (b.msrpCurrency ?? l.priceCurrency) as CurrencyCode },
           images: b.images.length ? b.images : l.images,
+          colors: b.colors ?? [],
           ambassadors: b.ambassadors.map((a) => ({
             id: String(a.rider.id), name: a.rider.name, disciplines: a.rider.disciplines, confidence: a.confidence, sourceUrl: a.sourceUrl ?? undefined,
           })),

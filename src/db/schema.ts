@@ -42,6 +42,8 @@ export const boards = pgTable("boards", {
   msrpAmount: money("msrp_amount"),
   msrpCurrency: text("msrp_currency"),
   images: text("images").array().notNull().default([]),
+  /** Main colours read from the product photo (src/lib/colors.ts); null = not analysed yet. */
+  colors: text("colors").array(),
   reviewAvg: real("review_avg"),
   reviewCount: integer("review_count"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
