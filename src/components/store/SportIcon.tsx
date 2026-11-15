@@ -19,5 +19,6 @@ const FALLBACK: Record<Sport, React.ReactNode> = {
 export function SportIcon({ sport, className = "h-6 w-6", art = true }: { sport: Sport; className?: string; art?: boolean }) {
   const fb = <span className={`inline-block ${className}`} aria-hidden>{FALLBACK[sport]}</span>;
   if (!art) return fb;
-  return <AssetImg src={ASSETS.sport[sport]} alt="" className={className} fallback={fb} />;
+  // Mascot sticker first, then the plain sport icon, then the line icon.
+  return <AssetImg src={ASSETS.pickSport[sport]} alt="" className={className} fallback={<AssetImg src={ASSETS.sport[sport]} alt="" className={className} fallback={fb} />} />;
 }

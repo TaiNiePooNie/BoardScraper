@@ -1,0 +1,127 @@
+{
+ "products": [
+  {
+   "title": "King Ice Santa Cruz Classic Dot Necklace",
+   "handle": "santa-cruz-x-king-ice-classic-dot-necklace",
+   "body_html": "Since 1973, Santa Cruz has been more than a skateboard company. From its roots in California to becoming one of the most influential names in skateboarding, Santa Cruz helped shape a culture built on creativity, individuality, and doing things your own way. Through generations of legendary riders, unforgettable graphics, and countless sessions, the Classic Dot logo has remained a symbol of that le",
+   "vendor": "Santa Cruz",
+   "product_type": "Apparel Accessory",
+   "tags": [
+    "badge:King Ice",
+    "King Ice",
+    "Shopify Collective"
+   ],
+   "options": [
+    {
+     "name": "Color",
+     "position": 1
+    },
+    {
+     "name": "Size",
+     "position": 2
+    }
+   ],
+   "variants": [
+    {
+     "title": "14K Gold / 2.2 in",
+     "price": "120.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "14K Gold",
+     "option2": "2.2 in",
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0527/5051/6381/files/santa-cruz-x-king-ice-classic-dot-necklace-14k-gold-2-2-king-ice-1266469312.jpg?v=1794333021"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0527/5051/6381/files/santa-cruz-x-king-ice-classic-dot-necklace-14k-gold-2-2-king-ice-1266469314.jpg?v=1794333022"
+    }
+   ]
+  },
+  {
+   "title": "14in Jim Phillips Street Creep Signed Deck Veneer Art Print",
+   "handle": "14in-x-38in-street-creep-veneer-santa-cruz-skateboard-deck",
+   "body_html": "<p><span style=\"text-decoration: underline;\"><strong>NHS Skate Direct member exclusive!</strong></span></p><p><span>Jim Phillips' iconic Street Creep graphic, printed directly onto a natural wood deck veneer.</span></p><p><span>Classic artwork by the legendary Jim Phillips on an uncut 14\" X 38\" single ply of 100% North American maple. </span></p><p><span>Framed and signed by Jim himself.</span></p",
+   "vendor": "Santa Cruz",
+   "product_type": "Decks",
+   "tags": [
+    "11117889",
+    "badge:Exclusive",
+    "Coming_Soon",
+    "Reissue",
+    "Signed",
+    "Skate_Direct_Exclusive",
+    "YCRF_Decks"
+   ],
+   "options": [
+    {
+     "name": "Color",
+     "position": 1
+    },
+    {
+     "name": "Size",
+     "position": 2
+    }
+   ],
+   "variants": [
+    {
+     "title": "No Color / 14in x 38in",
+     "price": "99.95",
+     "compare_at_price": "0.00",
+     "available": false,
+     "option1": "No Color",
+     "option2": "14in x 38in",
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0527/5051/6381/files/11117889_173175_92616_14in_x_38in_Street_Creep_Veneer_Santa_Cruz_Skateboard_Deck_size_14inx38in.jpg?v=1794330911"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0527/5051/6381/files/11117889_173175_92610_14in_x_38in_Street_Creep_Veneer_Santa_Cruz_Skateboard_Deck_size_14inx38in.jpg?v=1794330912"
+    }
+   ]
+  },
+  {
+   "title": "Multi Dot 3in Santa Cruz Stickers (6 Pack)",
+   "handle": "multi-dot-sticker-pack-santa-cruz",
+   "body_html": "<p><span>The <strong>Santa Cruz Multi Dot</strong> clear mylar sticker set features 6 individual Santa Cruz Classic Dot 3\" stickers.</span></p><ul><li><span>6 individual Santa Cruz Classic Dot 3\" stickers</span></li></ul><p><strong>Santa Cruz</strong> has been manufacturing<strong> iconic skateboards and apparel since 1973</strong>. Innovative skateboards and artwork from the beginning 'til the en",
+   "vendor": "Santa Cruz",
+   "product_type": "Apparel Accessory",
+   "tags": [
+    "44644113",
+    "Hometown_Dot"
+   ],
+   "options": [
+    {
+     "name": "Color",
+     "position": 1
+    },
+    {
+     "name": "Size",
+     "position": 2
+    }
+   ],
+   "variants": [
+    {
+     "title": "Hometown/Classics / OS",
+     "price": "15.95",
+     "compare_at_price": "0.00",
+     "available": true,
+     "option1": "Hometown/Classics",
+     "option2": "OS",
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0527/5051/6381/files/44644113_172560_90902_Multi_Dot_Sticker_Pack_Santa_Cruz_color_hometown_classics.jpg?v=1793659249"
+    }
+   ]
+  }
+ ]
+}

@@ -19,7 +19,7 @@ export function SliderField({
   const fill = `${((value - min) / (max - min)) * 100}%`;
   const commit = (raw: string) => {
     const n = Number(raw.replace(",", "."));
-    if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, n)));
+    if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, Math.round(n / step) * step)));
     setTyping(false);
   };
   return (

@@ -57,7 +57,7 @@ const avatarNames = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `avatar-${n}.png`);
 const assetNames = [...readFileSync("src/lib/assets.ts", "utf8").matchAll(/a\("([^"]+)"\)/g)]
   .map((m) => m[1])
   .concat(avatarNames)
-  .concat(readdirSync("public/assets").filter((f) => /^preview-buddy-.*\.webp$/.test(f))) // size-preview sprite sheets
+  .concat(readdirSync("public/assets").filter((f) => /^(preview-buddy-.*\.webp|size-(snow|skate|surf)-.*\.webp|pick-.*\.png)$/.test(f))) // size-finder art
   .filter((f) => !SKIP.has(f) && existsSync(path.join("public/assets", f))); // art not delivered yet → UI fallback
 const inlined = Object.fromEntries(assetNames.map((f) => [f, `data:${MIME[f.split(".").pop()!]};base64,${readFileSync(path.join("public/assets", f)).toString("base64")}`]));
 

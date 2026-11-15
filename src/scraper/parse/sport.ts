@@ -17,7 +17,7 @@ const GEAR = new RegExp(
       "helmets?", "knee ?pads?", "elbow ?pads?", "wrist ?guards?", "protect\\w*", "pads?", "gloves?",
       "wetsuits?", "neoprene", "booties", "hoods?", "lycra", "rash ?guard", "poncho", "boardshorts?", "shirts?", "tee", "hoodie", "cap", "beanie",
       "fins?", "fin ?set", "leash(?:es)?", "leg ?rope", "traction", "deck ?grip", "tail ?pad", "wax", "socks?", "board ?bags?", "bags?", "covers?",
-      "racks?", "tie ?downs?", "straps?", "bodyboards?", "fingerboards?", "skimboards?", "sup", "paddles?", "repair", "kit",
+      "racks?", "tie ?downs?", "straps?", "prints?", "posters?", "stickers?", "bodyboards?", "fingerboards?", "skimboards?", "sup", "paddles?", "repair", "kit",
     ].join("|") +
     ")\\b",
   "i",

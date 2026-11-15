@@ -63,7 +63,8 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
   onClose: () => void;
 }) {
   const [sport, setSport] = useState<Sport>(initialSport);
-  const [r, setR] = useState<RiderInput>(buddy.rider);
+  // Find my size works in whole numbers (cm, kg, L).
+  const [r, setR] = useState<RiderInput>(() => ({ ...buddy.rider, weightKg: Math.round(buddy.rider.weightKg), heightCm: Math.round(buddy.rider.heightCm) }));
   const [name, setName] = useState(buddy.name);
   const set = (p: Partial<RiderInput>) => setR((x) => ({ ...x, ...p }));
   type RangeKey = keyof NonNullable<RiderInput["sizeRange"]>;
@@ -74,7 +75,9 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
     return { ...x, sizeRange: Object.keys(next).length ? next : undefined };
   });
   const fit = recommendFor(sport, r);
-  const value = sport === "skate" ? fit.ideal : sport === "surf" ? (fit.lengthRangeCm![0] + fit.lengthRangeCm![1]) / 2 / r.heightCm : fit.ideal / r.heightCm;
+  // The picture follows the range the rider picked (its middle), so a huge range shows a straining Buddy.
+  const mid = (fit.range[0] + fit.range[1]) / 2;
+  const value = sport === "skate" ? mid : sport === "surf" ? (fit.lengthRangeCm![0] + fit.lengthRangeCm![1]) / 2 / r.heightCm : mid / r.heightCm;
   const kidsOk = r.fit === "kids";
 
   const body = (
@@ -109,7 +112,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
         {(["kids", "mens", "womens", "any"] as FitPreference[]).map((f) => (
           <button key={f} type="button" role="radio" aria-checked={(r.fit ?? "any") === f} onClick={() => set({ fit: f })}
             className={clsx("flex flex-col items-center gap-0.5 rounded-2xl border px-1 py-1.5 text-xs font-semibold", (r.fit ?? "any") === f ? "border-ink bg-surface" : "border-line text-muted")}>
-            <AssetImg src={ASSETS.fit[f]} alt="" className="h-7 w-7" />
+            <AssetImg src={ASSETS.pickFit[f]} alt="" className="h-9 w-9" fallback={<AssetImg src={ASSETS.fit[f]} alt="" className="h-7 w-7" />} />
             {{ kids: "Kids", mens: "Men", womens: "Women", any: "All" }[f]}
           </button>
         ))}
@@ -119,8 +122,8 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
       {sport !== "skate" ? (
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(104px,40%)] gap-3">
           <div className="flex flex-col justify-center gap-2">
-            <SliderField id="height" label="Height" unit="cm" min={90} max={210} value={r.heightCm} onChange={(v) => set({ heightCm: v })} />
-            <SliderField id="weight" label="Weight" unit="kg" min={15} max={140} step={0.5} value={r.weightKg} onChange={(v) => set({ weightKg: v })} />
+            <SliderField id="height" label="Height" unit="cm" min={90} max={210} value={Math.round(r.heightCm)} onChange={(v) => set({ heightCm: v })} />
+            <SliderField id="weight" label="Weight" unit="kg" min={15} max={140} step={1} value={Math.round(r.weightKg)} onChange={(v) => set({ weightKg: v })} />
           </div>
           <div className="h-[clamp(150px,26dvh,240px)]">
             <SizePreview sport={sport} heightCm={r.heightCm} weightKg={r.weightKg} value={value} badge={fit.label} fit={r.fit ?? "any"} />

@@ -240,12 +240,12 @@ export function surfFit(input: RiderInput): BaseFit {
   const skill = input.skill ?? "intermediate";
   const waves = input.waves ?? "small";
   const waveMul = { small: 1.08, medium: 1, big: 0.94 }[waves];
-  const ideal = Math.round(input.weightKg * SURF_GUILD[skill] * waveMul * 2) / 2;
+  const ideal = Math.round(input.weightKg * SURF_GUILD[skill] * waveMul);
   const tol = Math.max(2, ideal * 0.1);
   const len = input.heightCm + SURF_LENGTH_ADD_CM[skill] + { small: 8, medium: 0, big: -5 }[waves];
   const notes = [`${input.weightKg} kg × ${SURF_GUILD[skill]} (${skill}) → ${Math.round(input.weightKg * SURF_GUILD[skill])} L`, `${waves} waves: ×${waveMul}`];
   return {
-    sport: "surf", unit: "L", ideal, range: [round(ideal - tol, 0.5), round(ideal + tol, 0.5)], label: `${ideal} L`, notes,
+    sport: "surf", unit: "L", ideal, range: [Math.round(ideal - tol), Math.round(ideal + tol)], label: `${ideal} L`, notes,
     lengthRangeCm: [Math.round(len - 15), Math.round(len + 15)],
   };
 }
@@ -269,7 +269,7 @@ export function sizeBounds(fit: Pick<SportFit, "sport" | "recommended" | "range"
   const lo = Math.min(a, fit.range[0]);
   const hi = Math.max(b, fit.range[1]);
   if (fit.sport === "skate") return { min: Math.max(6.5, Math.min(lo - 1, 7.5)), max: Math.min(11, Math.max(hi + 1, 9)), step: 0.125 };
-  if (fit.sport === "surf") return { min: Math.max(10, Math.floor(lo - 20)), max: Math.min(120, Math.ceil(hi + 30)), step: 0.5 };
+  if (fit.sport === "surf") return { min: Math.max(10, Math.floor(lo - 20)), max: Math.min(120, Math.ceil(hi + 30)), step: 1 };
   return { min: Math.max(80, Math.floor(lo - 20)), max: Math.min(185, Math.ceil(hi + 20)), step: 1 };
 }
 
