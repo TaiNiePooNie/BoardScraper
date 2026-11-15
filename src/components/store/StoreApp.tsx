@@ -210,7 +210,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const savedProducts = useMemo(() => {
     if (view !== "saved") return [];
     const out: Product[] = [];
-    for (const s of SPORTS) out.push(...buildProducts(deals, s, rider).products.filter((p) => store.holds.includes(p.id)));
+    for (const s of SPORTS) out.push(...buildProducts(deals, s, rider).products.filter((p) => p.boardIds.some((b) => store.holds.includes(b))));
     return out;
   }, [view, deals, rider, store.holds]);
 
@@ -221,7 +221,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     if (!owner) return null;
     return buildProducts(deals, owner.board.sport, rider);
   }, [openId, deals, rider]);
-  const openProduct = allProducts?.products.find((p) => p.id === openId) ?? null;
+  const openProduct = allProducts?.products.find((p) => p.boardIds.includes(openId!)) ?? null;
 
   /* ── product page + browser back ────────────────────────────────────────── */
   const openBoard = (id: string) => {
@@ -256,7 +256,9 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   }, [openProduct?.best.listing.id, services, live, load]);
 
   /* ── actions ──────────────────────────────────────────────────────────── */
-  const toggleSave = (id: string) => update((s) => ({ ...s, holds: s.holds.includes(id) ? s.holds.filter((h) => h !== id) : [...s.holds, id] }));
+  /** Saved if any merged duplicate of the board was saved. */
+  const isSaved = (p: Product) => p.boardIds.some((b) => store.holds.includes(b));
+  const toggleSave = (p: Product) => update((s) => ({ ...s, holds: p.boardIds.some((b) => s.holds.includes(b)) ? s.holds.filter((h) => !p.boardIds.includes(h)) : [...s.holds, p.id] }));
   const setAlerts = (alerts: AlertSettings) => update((s) => ({ ...s, alerts }));
   const openSize = (buddyId?: string) => { setSizeFor(buddyId ?? active.id); setSheet("size"); };
   const sizeBuddy = store.buddies.find((b) => b.id === sizeFor) ?? active;
@@ -435,7 +437,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           <>
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
               {list.slice(0, view === "saved" ? undefined : shown).map((p, i) => (
-                <ProductCard key={p.id} p={p} priority={i < 4} saved={store.holds.includes(p.id)} onOpen={() => openBoard(p.id)} onToggleSave={() => toggleSave(p.id)} />
+                <ProductCard key={p.id} p={p} priority={i < 4} saved={isSaved(p)} onOpen={() => openBoard(p.id)} onToggleSave={() => toggleSave(p)} />
               ))}
             </div>
             {view === "shop" && visible.length > shown && (
@@ -488,8 +490,8 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         <ProductPage
           p={openProduct}
           fit={allProducts?.fit ?? null}
-          saved={store.holds.includes(openProduct.id)}
-          onToggleSave={() => toggleSave(openProduct.id)}
+          saved={isSaved(openProduct)}
+          onToggleSave={() => toggleSave(openProduct)}
           onClose={closeBoard}
           onEditSize={() => openSize()}
           live={live[openProduct.best.listing.id]}

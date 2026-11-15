@@ -1,6 +1,7 @@
+import { brandKey, modelKey } from "@/scraper/parse/normalize";
 import { convert } from "./pricing/currency";
 import { audienceAllows, matchSizesFor, recommendFor, riderFits, type SportFit } from "./sizing";
-import type { Audience, BoardCategory, BoardModel, CurrencyCode, Deal, RiderInput, SizeMatch, Sport } from "./types";
+import type { Audience, BoardCategory, BoardModel, BoardSize, CurrencyCode, Deal, RiderInput, SizeMatch, Sport } from "./types";
 
 /**
  * Store view model: one product per board model, its offers across shops,
@@ -14,7 +15,9 @@ export interface Badge {
 }
 
 export interface Product {
+  /** Display board id (newest season); `boardIds` has every merged duplicate. */
   id: string;
+  boardIds: string[];
   board: BoardModel;
   /** All offers, cheapest delivered first. */
   offers: Deal[];
@@ -83,6 +86,19 @@ export function stockInfo(offers: Deal[], fitLabels: Set<string> | null, lastSea
         ? `Selling out: ${[yours, few ? sizesTxt : null].filter(Boolean).join(", ")}. Popular sizes can take weeks to come back.`
         : null;
   return { sizesLeft: left.size, sizesTotal: all.size, shopsWithYourSize, shops, lastSeason, level, note };
+}
+
+const GENERIC_WORDS = /\b(snow|skate|surf)?boards?\b|\bsplitboards?\b|\bskateboard\b|\bsurfboard\b|\bsnowboard\b/g;
+
+/**
+ * Same board across shops and seasons: sport + brand + model with years, "snowboard"/"board"
+ * words and punctuation removed (gender stays, so women's and men's versions stay apart).
+ * Skate decks and completes stay separate products.
+ */
+export function productKey(b: Pick<BoardModel, "sport" | "brand" | "model" | "category">): string {
+  const model = b.model.toLowerCase().replace(/\b20\d{2}(\s*[/-]\s*(20)?\d{2})?\b/g, " ").replace(GENERIC_WORDS, " ");
+  const kind = b.sport === "skate" ? (b.category === "deck" ? "deck" : "set") : "";
+  return `${b.sport}|${kind}|${brandKey(b.brand)}|${modelKey(model)}`;
 }
 
 export type SortMode = "recommended" | "price-asc" | "price-desc" | "discount" | "newest";
@@ -169,37 +185,73 @@ export function referencePrice(best: Deal, offers: Deal[]): { price: number; sou
 
 export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | null, now = Date.now()): { products: Product[]; fit: SportFit | null } {
   const fit = rider ? recommendFor(sport, rider) : null;
-  const byBoard = new Map<string, Deal[]>();
+  // One product per board, even when shops or seasons name it differently (see productKey).
+  const byKey = new Map<string, Deal[]>();
   for (const d of deals) {
     if (d.board.sport !== sport) continue;
-    const list = byBoard.get(d.board.id);
+    const k = productKey(d.board);
+    const list = byKey.get(k);
     if (list) list.push(d);
-    else byBoard.set(d.board.id, [d]);
+    else byKey.set(k, [d]);
   }
-  const newest = Math.max(0, ...[...byBoard.values()].map((ds) => seasonYear(ds[0].board.season)));
+  const newest = Math.max(0, ...deals.filter((d) => d.board.sport === sport).map((d) => seasonYear(d.board.season)));
 
   const products: Product[] = [];
-  for (const [id, raw] of byBoard) {
-    const offers = [...raw].sort((a, b) => a.landed.total - b.landed.total);
-    const board = offers[0].board;
+  for (const raw of byKey.values()) {
+    const sorted = [...raw].sort((a, b) => a.landed.total - b.landed.total);
+    // Display board: newest season, then most specs known; missing specs filled from the others.
+    const boards = [...new Map(raw.map((d) => [d.board.id, d.board])).values()];
+    const specCount = (b: BoardModel) => [b.profile, b.shape, b.flex, b.category].filter((x) => x !== null).length + b.images.length / 100;
+    const main = [...boards].sort((a, b) => seasonYear(b.season) - seasonYear(a.season) || specCount(b) - specCount(a))[0];
+    const board: BoardModel = {
+      ...main,
+      profile: main.profile ?? boards.find((b) => b.profile)?.profile ?? null,
+      shape: main.shape ?? boards.find((b) => b.shape)?.shape ?? null,
+      flex: main.flex ?? boards.find((b) => b.flex)?.flex ?? null,
+      category: main.category ?? boards.find((b) => b.category)?.category ?? null,
+      images: main.images.length ? main.images : boards.find((b) => b.images.length)?.images ?? [],
+      reviews: main.reviews ?? boards.find((b) => b.reviews)?.reviews ?? null,
+    };
+    const id = main.id;
+    const boardIds = boards.map((b) => b.id);
+
+    // Skate boards sold by length only (most cruisers/longboards) can't be width-matched: fit unknown, never hidden.
+    const sizeless = sport === "skate" && !raw.some((o) => o.listing.sizes.some((sz) => sz.widthIn !== undefined));
+    const forRider = rider ? audienceAllows(riderFits(rider), sport, board.model) : true;
+    const matchOf = new Map<Deal, SizeMatch[]>();
+    if (fit && rider && forRider) for (const o of sorted) matchOf.set(o, matchSizesFor(o.listing.sizes.filter((z) => z.inStock), fit));
+    // One offer per shop (a shop can list the same board on two pages): the one that fits, else the cheapest.
+    // Its sizes are combined, each size keeping its own page and price (some shops list one page per size).
+    const shopDeals = new Map<string, Deal[]>();
+    for (const o of sorted) shopDeals.set(o.retailer.id, [...(shopDeals.get(o.retailer.id) ?? []), o]);
+    const offers: Deal[] = [];
+    for (const list of shopDeals.values()) {
+      const base = list.find((o) => matchOf.get(o)?.length) ?? list[0];
+      if (list.length === 1) { offers.push(base); continue; }
+      const sizes = new Map<string, BoardSize>();
+      for (const o of [base, ...list.filter((x) => x !== base)]) {
+        for (const z of o.listing.sizes) {
+          const cur = sizes.get(z.label);
+          const sized: BoardSize = { ...z, price: z.price ?? o.listing.price.amount, url: o.listing.url !== base.listing.url ? o.listing.url : z.url };
+          if (!cur || (!cur.inStock && z.inStock)) sizes.set(z.label, sized);
+        }
+      }
+      const merged = { ...base, listing: { ...base.listing, sizes: [...sizes.values()] } };
+      offers.push(merged);
+      if (matchOf.has(base)) matchOf.set(merged, matchSizesFor(merged.listing.sizes.filter((z) => z.inStock), fit!));
+    }
+    offers.sort((a, b) => a.landed.total - b.landed.total);
+
     let best = offers[0];
     let fitSizes: SizeMatch[] = [];
     let fits: boolean | null = null;
-    // Skate boards sold by length only (most cruisers/longboards) can't be width-matched: fit unknown, never hidden.
-    const sizeless = sport === "skate" && !offers.some((o) => o.listing.sizes.some((sz) => sz.widthIn !== undefined));
-    const forRider = rider ? audienceAllows(riderFits(rider), sport, board.model) : true;
     if (fit && rider && !(sizeless && forRider)) {
       fits = false;
-      if (forRider) {
-        for (const o of offers) {
-          const m = matchSizesFor(o.listing.sizes.filter((s) => s.inStock), fit);
-          if (m.length) {
-            best = o;
-            fitSizes = m;
-            fits = true;
-            break;
-          }
-        }
+      const hit = offers.find((o) => matchOf.get(o)?.length);
+      if (hit) {
+        best = hit;
+        fitSizes = matchOf.get(hit)!;
+        fits = true;
       }
     }
     const currency = best.landed.currency;
@@ -214,14 +266,14 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     const s = best.stats;
     if (s && s.samples >= 5 && best.listing.price.amount <= s.low90d * 1.005 && s.low90d < s.allTimeHigh) badges.push({ kind: "lowest", label: "Lowest in 90 days" });
     else if (recentDrop(best, now)) badges.push({ kind: "drop", label: "Price dropped" });
-    const lastSeason = !!(newest && seasonYear(board.season) && seasonYear(board.season) < newest);
-    const stock = stockInfo(offers, fit && rider ? new Set(fitSizes.map((m) => m.size.label)) : null, lastSeason);
+    const lastSeason = !!(newest && seasonYear(best.board.season) && seasonYear(best.board.season) < newest);
+    const stock = stockInfo(raw, fit && rider ? new Set(fitSizes.map((m) => m.size.label)) : null, lastSeason);
     if (stock.level !== "ok") badges.splice(fits ? 1 : 0, 0, { kind: "stock", label: stock.level === "last" ? "Last sizes" : "Few left" });
     if (lastSeason) badges.push({ kind: "last-season", label: "Last season" });
 
     const reviews = board.reviews ? (board.reviews.average - 3.5) * 4 * Math.min(1, board.reviews.count / 20) : 0;
     const rank = (fits ? 100 : 0) + best.grade.score * 0.6 + best.styleFit * 20 + reviews;
-    products.push({ id, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, stock, rank });
+    products.push({ id, boardIds, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, stock, rank });
   }
   return { products, fit };
 }

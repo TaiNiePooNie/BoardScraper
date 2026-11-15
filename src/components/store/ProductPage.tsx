@@ -53,6 +53,8 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
   const fittingLabels = new Set(p.fitSizes.map((m) => m.size.label));
   const offerFits = fit ? new Set(offer.listing.sizes.filter((s) => fittingLabels.has(s.label)).map((s) => s.label)) : new Set<string>();
   const images = p.board.images.length ? p.board.images : [""];
+  // Shops with one page per size: buy from the page of your size.
+  const buyUrl = offer.listing.sizes.find((z) => z.inStock && offerFits.has(z.label) && z.url)?.url ?? offer.listing.url;
   const share = async () => {
     const url = `${location.origin}${location.pathname}?board=${p.id}`;
     try {
@@ -130,7 +132,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
           </section>
 
           {/* desktop CTA (mobile: sticky bar) */}
-          <a href={offer.listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary hidden !py-3.5 md:flex">
+          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary hidden !py-3.5 md:flex">
             Buy at {offer.retailer.name}<ExternalLink className="h-4 w-4" />
           </a>
 
@@ -177,7 +179,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
             <p className="text-lg font-bold tabular-nums leading-tight">{formatMoney(offer.landed.total, offer.landed.currency)}</p>
             <p className="truncate text-xs text-muted">{offer.retailer.name}</p>
           </div>
-          <a href={offer.listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0">
+          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0">
             Buy at shop<ExternalLink className="h-4 w-4" />
           </a>
         </div>

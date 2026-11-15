@@ -116,3 +116,23 @@ describe("stock scarcity", () => {
     expect(buyOrWait({ ...base, stock: "low" })?.title).toMatch(/stock is low/);
   });
 });
+
+describe("duplicates are merged", () => {
+  it("same board from two seasons/shops → one product; same shop twice → one offer with all sizes", async () => {
+    const { productKey } = await import("./store");
+    const a = { sport: "snow" as const, brand: "Nitro", model: "Optisym 2026", category: null };
+    expect(productKey(a)).toBe(productKey({ ...a, model: "Optisym Snowboard 2025/26" }));
+    expect(productKey(a)).not.toBe(productKey({ ...a, model: "Optisym Women's" }));
+    expect(productKey({ sport: "skate", brand: "Baker", model: "Logo", category: "deck" })).not.toBe(productKey({ sport: "skate", brand: "Baker", model: "Logo", category: "complete" }));
+
+    const d0 = deals.find((d) => d.board.sport === "snow")!;
+    const sz = (label: string, inStock = true) => ({ lengthCm: Number(label), waist: "regular" as const, label, inStock });
+    const one = { ...d0, board: { ...d0.board, id: "x1", model: "Dup Test 2026", season: "2025/26" }, listing: { ...d0.listing, id: "l1", url: "https://shop.test/a", sizes: [sz("154")] } };
+    const two = { ...d0, board: { ...d0.board, id: "x2", model: "Dup Test Snowboard", season: "2026/27" }, listing: { ...d0.listing, id: "l2", url: "https://shop.test/b", sizes: [sz("158")] } };
+    const { products } = buildProducts([one, two] as never, "snow", null);
+    expect(products).toHaveLength(1);
+    expect(products[0].boardIds.sort()).toEqual(["x1", "x2"]);
+    expect(products[0].offers).toHaveLength(1);
+    expect(products[0].offers[0].listing.sizes.map((z) => z.label).sort()).toEqual(["154", "158"]);
+  });
+});
