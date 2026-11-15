@@ -193,8 +193,14 @@ export interface SportFit {
   unit: "cm" | "in" | "L";
   ideal: number;
   range: [number, number];
-  /** Short display label, e.g. "156 cm", '8.25"', "34 L". */
+  /** Short display label of the ideal size, e.g. "156 cm", '8.25"', "34 L". */
   label: string;
+  /** What we recommend (range is the same unless the rider picked their own). */
+  recommended: [number, number];
+  /** Rider set their own range (sizeRange). */
+  custom: boolean;
+  /** The active range as text, e.g. "153–159 cm". */
+  rangeLabel: string;
   notes: string[];
   /** Snow only: the full snowboard recommendation (wide rule, flex, profiles). */
   snow?: Recommendation;
@@ -210,7 +216,7 @@ export function fmtFeet(cm: number): string {
 }
 
 /** Skate deck width (in) from US shoe size; style shifts it, kids get narrow decks. */
-export function skateFit(input: RiderInput): SportFit {
+export function skateFit(input: RiderInput): BaseFit {
   const us = toUSBootSize(input.bootSize, input.bootSystem);
   const kids = input.fit === "kids";
   const base = kids ? (us <= 3 ? 7.0 : 7.375) : us <= 6 ? 7.75 : us <= 8.5 ? 7.875 : us <= 10.5 ? 8.125 : us <= 12 ? 8.375 : 8.625;
@@ -226,7 +232,7 @@ export function skateFit(input: RiderInput): SportFit {
 /** Surf volume from weight × skill factor (the "guild factor"), nudged by wave size; length from height + skill. */
 export const SURF_GUILD: Record<SkillLevel, number> = { beginner: 0.7, intermediate: 0.45, advanced: 0.39, expert: 0.36 };
 const SURF_LENGTH_ADD_CM: Record<SkillLevel, number> = { beginner: 75, intermediate: 35, advanced: 12, expert: 3 };
-export function surfFit(input: RiderInput): SportFit {
+export function surfFit(input: RiderInput): BaseFit {
   const skill = input.skill ?? "intermediate";
   const waves = input.waves ?? "small";
   const waveMul = { small: 1.08, medium: 1, big: 0.94 }[waves];
@@ -240,18 +246,66 @@ export function surfFit(input: RiderInput): SportFit {
   };
 }
 
-export function snowFit(input: RiderInput): SportFit {
+export function snowFit(input: RiderInput): BaseFit {
   const r = recommend(input);
   return { sport: "snow", unit: "cm", ideal: r.idealLengthCm, range: r.lengthRangeCm, label: `${r.idealLengthCm}${r.requiresWide ? "W" : ""} cm`, notes: r.notes, snow: r };
 }
 
+export const fmtSize = (sport: Sport, n: number) => (sport === "skate" ? fmtIn(n) : sport === "surf" ? `${n} L` : `${Math.round(n)} cm`);
+export function fmtRange(sport: Sport, [a, b]: [number, number]): string {
+  if (Math.abs(a - b) < 1e-6) return fmtSize(sport, a);
+  if (sport === "skate") return `${Number(a.toFixed(3))}–${fmtIn(b)}`;
+  if (sport === "surf") return `${a}–${b} L`;
+  return `${Math.round(a)}–${Math.round(b)} cm`;
+}
+
+/** Size-range slider bounds: zoomed around the recommendation so the "best" band stays readable. */
+export function sizeBounds(fit: Pick<SportFit, "sport" | "recommended" | "range">): { min: number; max: number; step: number } {
+  const [a, b] = fit.recommended;
+  const lo = Math.min(a, fit.range[0]);
+  const hi = Math.max(b, fit.range[1]);
+  if (fit.sport === "skate") return { min: Math.max(6.5, Math.min(lo - 1, 7.5)), max: Math.min(11, Math.max(hi + 1, 9)), step: 0.125 };
+  if (fit.sport === "surf") return { min: Math.max(10, Math.floor(lo - 20)), max: Math.min(120, Math.ceil(hi + 30)), step: 0.5 };
+  return { min: Math.max(80, Math.floor(lo - 20)), max: Math.min(185, Math.ceil(hi + 20)), step: 1 };
+}
+
+type BaseFit = Omit<SportFit, "recommended" | "custom" | "rangeLabel">;
+
 export function recommendFor(sport: Sport, input: RiderInput): SportFit {
-  return sport === "skate" ? skateFit(input) : sport === "surf" ? surfFit(input) : snowFit(input);
+  const base: BaseFit = sport === "skate" ? skateFit(input) : sport === "surf" ? surfFit(input) : snowFit(input);
+  const rec: [number, number] = [base.range[0], base.range[1]];
+  const own = input.sizeRange?.[sport];
+  if (!own) return { ...base, recommended: rec, custom: false, rangeLabel: fmtRange(sport, rec) };
+  const range: [number, number] = [Math.min(own[0], own[1]), Math.max(own[0], own[1])];
+  const out: SportFit = { ...base, range, recommended: rec, custom: true, rangeLabel: fmtRange(sport, range) };
+  // Surf boards without a listed volume are matched by length: stretch the length range with the volume range.
+  if (sport === "surf" && base.lengthRangeCm) {
+    const [la, lb] = base.lengthRangeCm;
+    const scale = (v: number, rv: number) => Math.sqrt(Math.max(0.1, v / rv));
+    out.lengthRangeCm = [Math.round(la * scale(range[0], rec[0])), Math.round(lb * scale(range[1], rec[1]))];
+  }
+  return out;
+}
+
+/** How far the rider's own range strays from the recommendation, for a gentle warning. */
+export function rangeWarning(fit: SportFit): null | { below: boolean; above: boolean } {
+  if (!fit.custom) return null;
+  const eps = fit.unit === "in" ? 0.01 : 0.5;
+  const below = fit.range[0] < fit.recommended[0] - eps;
+  const above = fit.range[1] > fit.recommended[1] + eps;
+  return below || above ? { below, above } : null;
 }
 
 /** Sizes of a listing that fit, best first. Skate by width, surf by volume (else length), snow as before. */
-export function matchSizesFor(sizes: BoardSize[], fit: SportFit): SizeMatch[] {
-  if (fit.sport === "snow" && fit.snow) return matchSizes(sizes, fit.snow);
+export function matchSizesFor(sizes: BoardSize[], fit: Pick<SportFit, "sport" | "ideal" | "range" | "snow" | "lengthRangeCm"> & { custom?: boolean }): SizeMatch[] {
+  if (fit.sport === "snow" && fit.snow) {
+    if (!fit.custom) return matchSizes(sizes, fit.snow);
+    const wide = fit.snow.requiresWide;
+    return sizes
+      .filter((s) => (wide ? s.waist === "wide" : s.waist !== "wide") && s.lengthCm >= fit.range[0] && s.lengthCm <= fit.range[1])
+      .map((size) => ({ size, deltaCm: Math.abs(size.lengthCm - fit.ideal), fits: true }))
+      .sort((a, b) => a.deltaCm - b.deltaCm);
+  }
   const [lo, hi] = fit.range;
   const out: SizeMatch[] = [];
   for (const size of sizes) {

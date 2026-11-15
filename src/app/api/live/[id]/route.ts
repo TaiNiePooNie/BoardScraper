@@ -31,7 +31,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 
   const money = (n: number) => formatMoney(n, row.priceCurrency as CurrencyCode);
   if (Date.now() - row.lastScrapedAt.getTime() < FRESH_MS) {
-    return NextResponse.json({ ok: true, changed: false, price: row.priceAmount, message: `Price checked ${ago(row.lastScrapedAt)}: ${money(row.priceAmount)} at the shop.` });
+    return NextResponse.json({ ok: true, changed: false, price: row.priceAmount, checkedAgo: ago(row.lastScrapedAt), message: `Price checked ${ago(row.lastScrapedAt)}: ${money(row.priceAmount)} at the shop.` });
   }
   const adapter = ADAPTERS[row.retailerId];
   if (!adapter) return NextResponse.json({ error: "This shop isn't supported anymore." }, { status: 410 });
@@ -52,6 +52,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
       price: p.price,
       currency: p.currency,
       inStock,
+      checkedAgo: "just now",
       message: changed
         ? `Price just changed at the shop: ${money(row.priceAmount)} → ${money(p.price)}.`
         : `Price checked just now: still ${money(p.price)}${inStock ? "" : " (sold out in all sizes)"}.`,

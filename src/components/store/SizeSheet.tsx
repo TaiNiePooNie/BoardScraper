@@ -12,6 +12,7 @@ import { recommendFor } from "@/lib/sizing";
 import { SPORT_SHORT } from "@/lib/store";
 import { SPORTS, type FitPreference, type RiderInput, type RiderStyle, type SkateStyle, type SkillLevel, type Sport, type SurfWaves } from "@/lib/types";
 import { Sheet } from "./Sheet";
+import { SizeRange } from "./SizeRange";
 import { SportIcon } from "./SportIcon";
 
 function Seg<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
@@ -146,6 +147,12 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
         <Seg<SkillLevel> label="Level" value={r.skill ?? "intermediate"} onChange={(v) => set({ skill: v })}
           options={[["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"], ["expert", "Expert"]]} />
       )}
+      <SizeRange fit={fit} onChange={(range) => setR((x) => {
+        const next = { ...(x.sizeRange ?? {}) };
+        if (range) next[sport] = range;
+        else delete next[sport];
+        return { ...x, sizeRange: Object.keys(next).length ? next : undefined };
+      })} />
       {kidsOk && sport === "skate" && <p className="text-xs text-muted">Kids&apos; shoe sizes: use US kids sizes (e.g. 3 = US kids 3).</p>}
       <p className="text-xs text-muted">{fit.notes.join(" · ")}</p>
     </div>
@@ -157,7 +164,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
       onClose={onClose}
       footer={
         <button type="button" className="btn-primary w-full" onClick={() => onSave(r, name.trim() || buddy.name, sport)}>
-          Show {SPORT_SHORT[sport].toLowerCase()} boards in {fit.label}
+          Show {SPORT_SHORT[sport].toLowerCase()} boards in {fit.rangeLabel}
         </button>
       }
     >
