@@ -11,6 +11,7 @@ export interface Mail {
   text: string;
   /** One-click unsubscribe URL (RFC 8058) for marketing mail. */
   unsubscribeUrl?: string;
+  replyTo?: string;
 }
 
 export async function sendEmail(m: Mail): Promise<void> {
@@ -23,7 +24,7 @@ export async function sendEmail(m: Mail): Promise<void> {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, text: m.text, headers }),
+    body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, text: m.text, headers, ...(m.replyTo ? { reply_to: m.replyTo } : {}) }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }

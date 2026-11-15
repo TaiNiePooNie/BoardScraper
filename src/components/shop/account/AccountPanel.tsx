@@ -18,7 +18,7 @@ export interface AccountState {
 }
 
 /** Profile page: who you are, your buddies, deal emails, log out / delete. */
-export function AccountPanel({ account, state, buddies, activeId, alerts, onAlerts, onEdit, onAdd, onRemove, onSwitch, onClose, summary }: {
+export function AccountPanel({ account, state, buddies, activeId, alerts, onAlerts, onEdit, onAdd, onRemove, onSwitch, onClose, summary, extra }: {
   account?: AccountServices;
   state: AccountState;
   buddies: Buddy[];
@@ -31,6 +31,8 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
   onSwitch: (id: string) => void;
   onClose: () => void;
   summary: (b: Buddy) => string;
+  /** Extra links (feedback & support, owner tools) shown under the header. */
+  extra?: React.ReactNode;
 }) {
   const [removing, setRemoving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -94,6 +96,8 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
             )}
           </section>
         )}
+
+        {extra}
 
         {/* buddies */}
         <section>

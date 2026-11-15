@@ -1,5 +1,6 @@
 import type { MePayload } from "@/lib/account";
 import type { DealsResult } from "@/lib/deals";
+import type { FeedbackInput } from "@/lib/feedback";
 import type { CurrencyCode, RiderInput } from "@/lib/types";
 
 export type DealsLoader = (q: { country: string; currency: CurrencyCode; rider: RiderInput | null }) => Promise<DealsResult>;
@@ -57,6 +58,29 @@ export interface AccountServices {
   deleteAccount: () => Promise<void>;
 }
 
+export interface FeedbackItem {
+  id: number;
+  kind: FeedbackInput["kind"];
+  subject: string;
+  message: string;
+  email: string | null;
+  context: Record<string, unknown> | null;
+  status: "new" | "read" | "done";
+  createdAt: string;
+  media: { id: number; filename: string; mime: string; size: number }[];
+}
+
+export interface FeedbackServices {
+  /** Sends the message, then uploads each file in chunks; onProgress gets 0..1. */
+  send: (input: FeedbackInput, files: File[], onProgress: (p: number) => void) => Promise<{ failedFiles: string[] }>;
+  inbox: {
+    list: () => Promise<FeedbackItem[]>;
+    setStatus: (id: number, status: FeedbackItem["status"]) => Promise<void>;
+    remove: (id: number) => Promise<void>;
+    mediaUrl: (mediaId: number) => string;
+  };
+}
+
 /** What the shop can do in this environment. The static test build only has loadDeals. */
 export interface ShopServices {
   account?: AccountServices;
@@ -67,6 +91,7 @@ export interface ShopServices {
     status: () => Promise<RestockStatus>;
   };
   liveCheck?: (listingId: string) => Promise<LiveResult>;
+  feedback?: FeedbackServices;
 }
 
 const callback = () => `${location.pathname}?signedin=1`;
@@ -132,7 +157,50 @@ const accountServices: AccountServices = {
   },
 };
 
+async function jsonOrThrow(res: Response) {
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+  return body;
+}
+
+const feedbackServices: FeedbackServices = {
+  async send(input, files, onProgress) {
+    const { id, token } = await jsonOrThrow(await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }));
+    if (!id) return { failedFiles: [] };
+    const headers = { "x-upload-token": token };
+    const total = files.reduce((n, f) => n + f.size, 0) || 1;
+    let sent = 0;
+    const failedFiles: string[] = [];
+    for (const f of files) {
+      try {
+        const { mediaId, chunks, chunkBytes } = await jsonOrThrow(await fetch(`/api/feedback/${id}/media`, {
+          method: "POST", headers: { ...headers, "content-type": "application/json" },
+          body: JSON.stringify({ filename: f.name || "attachment", mime: f.type, size: f.size }),
+        }));
+        for (let i = 0; i < chunks; i++) {
+          const part = f.slice(i * chunkBytes, Math.min(f.size, (i + 1) * chunkBytes));
+          await jsonOrThrow(await fetch(`/api/feedback/media/${mediaId}/${i}`, { method: "PUT", headers: { ...headers, "content-type": "application/octet-stream" }, body: part }));
+          sent += part.size;
+          onProgress(sent / total);
+        }
+      } catch {
+        failedFiles.push(f.name);
+      }
+    }
+    await fetch(`/api/feedback/${id}/done`, { method: "POST", headers }).catch(() => {});
+    onProgress(1);
+    return { failedFiles };
+  },
+  inbox: {
+    list: async () => (await jsonOrThrow(await fetch("/api/feedback", { cache: "no-store" }))).items,
+    setStatus: async (id, status) => { await jsonOrThrow(await fetch(`/api/feedback/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status }) })); },
+    remove: async (id) => { await jsonOrThrow(await fetch(`/api/feedback/${id}`, { method: "DELETE" })); },
+    mediaUrl: (mediaId) => `/api/feedback/media/${mediaId}`,
+  },
+};
+
 export const apiServices: ShopServices = {
+  feedback: feedbackServices,
   account: accountServices,
   async loadDeals({ country, currency, rider }) {
     const q = new URLSearchParams({ country, currency });
