@@ -1,6 +1,6 @@
 "use client";
 import clsx from "clsx";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Heart, Info, Share2, Star } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Heart, Info, Share2, Star, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { ProductImg } from "@/components/ProductImg";
@@ -120,6 +120,12 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
                 );
               })}
             </div>
+            {p.stock.note && (
+              <p className={clsx("mt-2 flex items-start gap-1.5 rounded-xl px-3 py-2 text-xs font-medium", p.stock.level === "last" ? "bg-orange/10 text-[#a33d00]" : "bg-[#fff6e5] text-[#8a5a00]")} role="status">
+                <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0" />{p.stock.note}
+              </p>
+            )}
+            {p.stock.level === "ok" && p.stock.sizesTotal > 1 && <p className="mt-2 text-xs text-muted">{p.stock.sizesLeft} of {p.stock.sizesTotal} sizes in stock across {p.stock.shops} shop{p.stock.shops === 1 ? "" : "s"}{p.stock.shopsWithYourSize ? ` · your size at ${p.stock.shopsWithYourSize}` : ""}.</p>}
             {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here is in your {fit.rangeLabel} range{p.board.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
           </section>
 

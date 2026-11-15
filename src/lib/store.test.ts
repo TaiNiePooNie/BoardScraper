@@ -90,3 +90,29 @@ describe("audience (kids / men / women, multi-select)", () => {
     }
   });
 });
+
+describe("stock scarcity", () => {
+  const sz = (label: string, inStock: boolean) => ({ lengthCm: Number(label), waist: "regular" as const, label, inStock });
+  const offer = (id: string, sizes: ReturnType<typeof sz>[]) => ({ ...deals[0], retailer: { ...deals[0].retailer, id }, listing: { ...deals[0].listing, id, sizes } });
+  it("flags last-season boards with few sizes left as 'last'", async () => {
+    const { stockInfo } = await import("./store");
+    const offers = [offer("a", [sz("150", false), sz("154", false), sz("158", true), sz("162", false)])];
+    const s = stockInfo(offers as never, null, true);
+    expect(s).toMatchObject({ sizesLeft: 1, sizesTotal: 4, level: "last" });
+    expect(s.note).toMatch(/aren't restocked/);
+    expect(stockInfo(offers as never, null, false).level).toBe("low"); // 1 of 4 left
+  });
+  it("your size at only one shop is 'low'; plenty of stock is 'ok'", async () => {
+    const { stockInfo } = await import("./store");
+    const offers = [offer("a", [sz("154", true), sz("158", true), sz("162", true)]), offer("b", [sz("154", false), sz("158", true), sz("162", true)])];
+    expect(stockInfo(offers as never, new Set(["154"]), false)).toMatchObject({ shopsWithYourSize: 1, level: "low" });
+    expect(stockInfo(offers as never, new Set(["158"]), false)).toMatchObject({ shopsWithYourSize: 2, level: "ok", note: null });
+  });
+  it("scarce last-season stock overrides 'wait for the sale'", async () => {
+    const { buyOrWait } = await import("./sales");
+    const base = { now: new Date("2026-11-15T00:00:00Z"), country: "US", sport: "snow" as const, discountPct: 0.05, lowestIn90: false };
+    expect(buyOrWait(base)?.kind).toBe("wait");
+    expect(buyOrWait({ ...base, stock: "last" })?.title).toBe("Don't wait too long");
+    expect(buyOrWait({ ...base, stock: "low" })?.title).toMatch(/stock is low/);
+  });
+});

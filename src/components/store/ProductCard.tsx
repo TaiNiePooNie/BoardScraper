@@ -12,6 +12,7 @@ const BADGE_STYLE: Record<Badge["kind"], string> = {
   lowest: "bg-ink text-white",
   drop: "bg-ink text-white",
   "last-season": "bg-white text-ink ring-1 ring-line",
+  stock: "bg-orange text-white",
 };
 
 export function BadgePill({ badge, className }: { badge: Badge; className?: string }) {

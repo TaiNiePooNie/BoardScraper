@@ -36,7 +36,7 @@ export function SaleBanner({ sport, country, onShowSale, onAlerts }: { sport: Sp
 
 /** Board page: buy now or wait for the next sale? */
 export function BuyOrWait({ p, country, saved, onSave }: { p: Product; country: string; saved: boolean; onSave: () => void }) {
-  const v = useMemo(() => buyOrWait({ now: new Date(), country, sport: p.board.sport, discountPct: p.discountPct, lowestIn90: p.badges.some((b) => b.kind === "lowest") }), [country, p]);
+  const v = useMemo(() => buyOrWait({ now: new Date(), country, sport: p.board.sport, discountPct: p.discountPct, lowestIn90: p.badges.some((b) => b.kind === "lowest"), stock: p.stock.level }), [country, p]);
   if (!v) return null;
   const Icon = v.kind === "wait" ? CalendarClock : TrendingDown;
   return (

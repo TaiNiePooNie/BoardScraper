@@ -7,7 +7,7 @@ import type { Audience, BoardCategory, BoardModel, CurrencyCode, Deal, RiderInpu
  * plain-language price badges (no tiers) and whether it fits the active rider.
  */
 
-export type BadgeKind = "discount" | "lowest" | "drop" | "fits" | "last-season";
+export type BadgeKind = "discount" | "lowest" | "drop" | "fits" | "last-season" | "stock";
 export interface Badge {
   kind: BadgeKind;
   label: string;
@@ -32,8 +32,57 @@ export interface Product {
   /** null = no rider, true/false = fits the rider. */
   fits: boolean | null;
   badges: Badge[];
+  stock: StockInfo;
   /** Internal ranking for "Recommended". */
   rank: number;
+}
+
+/**
+ * How scarce a board is. Shops publish in-stock/sold-out per size, not unit counts, so
+ * scarcity = sold-out sizes across all shops + how many shops still have the rider's size.
+ * Last season's boards aren't restocked, which makes low stock urgent.
+ */
+export interface StockInfo {
+  /** Distinct sizes in stock at any shop / listed at any shop. */
+  sizesLeft: number;
+  sizesTotal: number;
+  /** Shops that have the rider's size in stock (null without a rider). */
+  shopsWithYourSize: number | null;
+  shops: number;
+  lastSeason: boolean;
+  /** ok · low (could sell out) · last (likely gone for good soon). */
+  level: "ok" | "low" | "last";
+  /** One line for the board page, or null when stock is fine. */
+  note: string | null;
+}
+
+export function stockInfo(offers: Deal[], fitLabels: Set<string> | null, lastSeason: boolean): StockInfo {
+  const all = new Set<string>();
+  const left = new Set<string>();
+  for (const o of offers) for (const z of o.listing.sizes) {
+    all.add(z.label);
+    if (z.inStock) left.add(z.label);
+  }
+  const shops = new Set(offers.map((o) => o.retailer.id)).size;
+  const shopsWithYourSize = fitLabels
+    ? new Set(offers.filter((o) => o.listing.sizes.some((z) => z.inStock && fitLabels.has(z.label))).map((o) => o.retailer.id)).size
+    : null;
+  const share = all.size ? left.size / all.size : 1;
+  // Thresholds keep the label rare enough to mean something.
+  const few = all.size >= 4 && (share <= 0.25 || left.size <= 1);
+  const yoursScarce = shopsWithYourSize === 1 && shops > 1;
+  let level: StockInfo["level"] = "ok";
+  if (lastSeason && all.size >= 3 && (share <= 0.4 || left.size <= 2 || yoursScarce)) level = "last";
+  else if (few || yoursScarce) level = "low";
+  const sizesTxt = `${left.size} of ${all.size} size${all.size === 1 ? "" : "s"} left`;
+  const yours = shopsWithYourSize === 1 ? `your size is only in stock at 1 shop` : null;
+  const note =
+    level === "last"
+      ? `Last season's board: ${[yours, all.size >= 3 ? sizesTxt : null].filter(Boolean).join(", ") || "stock is running out"}. These usually aren't restocked once they sell out.`
+      : level === "low"
+        ? `Selling out: ${[yours, few ? sizesTxt : null].filter(Boolean).join(", ")}. Popular sizes can take weeks to come back.`
+        : null;
+  return { sizesLeft: left.size, sizesTotal: all.size, shopsWithYourSize, shops, lastSeason, level, note };
 }
 
 export type SortMode = "recommended" | "price-asc" | "price-desc" | "discount" | "newest";
@@ -165,11 +214,14 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     const s = best.stats;
     if (s && s.samples >= 5 && best.listing.price.amount <= s.low90d * 1.005 && s.low90d < s.allTimeHigh) badges.push({ kind: "lowest", label: "Lowest in 90 days" });
     else if (recentDrop(best, now)) badges.push({ kind: "drop", label: "Price dropped" });
-    if (newest && seasonYear(board.season) && seasonYear(board.season) < newest) badges.push({ kind: "last-season", label: "Last season" });
+    const lastSeason = !!(newest && seasonYear(board.season) && seasonYear(board.season) < newest);
+    const stock = stockInfo(offers, fit && rider ? new Set(fitSizes.map((m) => m.size.label)) : null, lastSeason);
+    if (stock.level !== "ok") badges.splice(fits ? 1 : 0, 0, { kind: "stock", label: stock.level === "last" ? "Last sizes" : "Few left" });
+    if (lastSeason) badges.push({ kind: "last-season", label: "Last season" });
 
     const reviews = board.reviews ? (board.reviews.average - 3.5) * 4 * Math.min(1, board.reviews.count / 20) : 0;
     const rank = (fits ? 100 : 0) + best.grade.score * 0.6 + best.styleFit * 20 + reviews;
-    products.push({ id, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, rank });
+    products.push({ id, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, stock, rank });
   }
   return { products, fit };
 }
