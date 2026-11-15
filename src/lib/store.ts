@@ -24,6 +24,8 @@ export interface Product {
   currency: CurrencyCode;
   /** MSRP converted to the buyer currency (null when unknown or not above price). */
   wasTotal: number | null;
+  /** Where the "was" price comes from: a shop's/brand's RRP, or the highest price we've recorded. */
+  wasSource: "rrp" | "history" | null;
   discountPct: number;
   /** Fitting sizes of the shown offer (rider only). */
   fitSizes: SizeMatch[];
@@ -86,6 +88,35 @@ function recentDrop(d: Deal, now: number): boolean {
   return now - Date.parse(changedAt) < 14 * 86_400_000;
 }
 
+/** Smallest discount we label (rounding noise and tiny currency moves below this). */
+export const MIN_DISCOUNT = 0.03;
+
+/**
+ * Original price for the shown offer, in that offer's currency, from everything we know:
+ *  1. RRP: every shop's own "was"/compare-at price for this board and the board's best-known MSRP;
+ *  2. otherwise the highest price any shop has charged for it (price history).
+ * Values above 3× the price are ignored as data errors.
+ */
+export function referencePrice(best: Deal, offers: Deal[]): { price: number; source: "rrp" | "history" } | null {
+  const cur = best.listing.price.currency;
+  const price = best.listing.price.amount;
+  const ok = (v: number) => v > price * (1 + MIN_DISCOUNT / 2) && v < price * 3;
+  const rrp: number[] = [];
+  const seen: number[] = [];
+  const msrp = best.board.msrp;
+  if (msrp?.amount) rrp.push(convert(msrp.amount, msrp.currency, cur));
+  for (const o of offers) {
+    const c = o.listing.price.currency;
+    if (o.listing.listPrice) rrp.push(convert(o.listing.listPrice, c, cur));
+    const high = Math.max(o.listing.price.amount, o.stats?.allTimeHigh ?? 0, ...o.listing.history.map((h) => h.price));
+    seen.push(convert(high, c, cur));
+  }
+  const r = Math.max(0, ...rrp.filter(ok));
+  if (r) return { price: r, source: "rrp" };
+  const h = Math.max(0, ...seen.filter(ok));
+  return h ? { price: h, source: "history" } : null;
+}
+
 export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | null, now = Date.now()): { products: Product[]; fit: SportFit | null } {
   const fit = rider ? recommendFor(sport, rider) : null;
   const byBoard = new Map<string, Deal[]>();
@@ -122,13 +153,13 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     }
     const currency = best.landed.currency;
     const total = best.landed.total;
-    const msrpLocal = best.grade.discountPct > 0 ? best.listing.price.amount / (1 - best.grade.discountPct) : null;
-    const wasTotal = msrpLocal ? Math.round(total + convert(msrpLocal - best.listing.price.amount, best.listing.price.currency, currency)) : null;
-    const discountPct = best.grade.discountPct;
+    const ref = referencePrice(best, offers);
+    const discountPct = ref ? 1 - best.listing.price.amount / ref.price : 0;
+    const wasTotal = ref ? Math.round(total + convert(ref.price - best.listing.price.amount, best.listing.price.currency, currency)) : null;
 
     const badges: Badge[] = [];
     if (fits) badges.push({ kind: "fits", label: "Fits you" });
-    if (discountPct >= 0.1) badges.push({ kind: "discount", label: `−${Math.round(discountPct * 100)}%` });
+    if (discountPct >= MIN_DISCOUNT) badges.push({ kind: "discount", label: `−${Math.round(discountPct * 100)}%` });
     const s = best.stats;
     if (s && s.samples >= 5 && best.listing.price.amount <= s.low90d * 1.005 && s.low90d < s.allTimeHigh) badges.push({ kind: "lowest", label: "Lowest in 90 days" });
     else if (recentDrop(best, now)) badges.push({ kind: "drop", label: "Price dropped" });
@@ -136,7 +167,7 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
 
     const reviews = board.reviews ? (board.reviews.average - 3.5) * 4 * Math.min(1, board.reviews.count / 20) : 0;
     const rank = (fits ? 100 : 0) + best.grade.score * 0.6 + best.styleFit * 20 + reviews;
-    products.push({ id, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total ? wasTotal : null, discountPct, fitSizes, fits, badges, rank });
+    products.push({ id, board, offers, best, total, currency, wasTotal: wasTotal && wasTotal > total && discountPct >= MIN_DISCOUNT ? wasTotal : null, wasSource: discountPct >= MIN_DISCOUNT ? ref?.source ?? null : null, discountPct: discountPct >= MIN_DISCOUNT ? discountPct : 0, fitSizes, fits, badges, rank });
   }
   return { products, fit };
 }
