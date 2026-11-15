@@ -83,14 +83,19 @@ export async function ingestProduct(db: DB, retailerId: string, p: ScrapedProduc
       );
     }
 
+    // Price history is change-only: a point is written when the price or stock differs
+    // from the latest one (several checks on one day keep that day's lowest price).
     const inStock = p.sizes.some((s) => s.inStock);
-    await tx
-      .insert(pricePoints)
-      .values({ listingId: listing.id, date: today(), price: p.price, inStock })
-      .onConflictDoUpdate({
-        target: [pricePoints.listingId, pricePoints.date],
-        set: { price: sql`least(${pricePoints.price}, excluded.price)`, inStock: sql`${pricePoints.inStock} or excluded.in_stock` },
-      });
+    const [last] = await tx.select().from(pricePoints).where(eq(pricePoints.listingId, listing.id)).orderBy(desc(pricePoints.date)).limit(1);
+    if (!last || last.date === today() || Math.abs(last.price - p.price) >= 0.005 || last.inStock !== inStock) {
+      await tx
+        .insert(pricePoints)
+        .values({ listingId: listing.id, date: today(), price: p.price, inStock })
+        .onConflictDoUpdate({
+          target: [pricePoints.listingId, pricePoints.date],
+          set: { price: sql`least(${pricePoints.price}, excluded.price)`, inStock: sql`${pricePoints.inStock} or excluded.in_stock` },
+        });
+    }
 
     if (p.rating) {
       const rs = { boardId: board.id, source: retailerId, url: p.url, average: p.rating.average, count: p.rating.count };

@@ -77,7 +77,7 @@ A light, modern web store for **snowboards, skateboards and surfboards** (`src/c
 | `src/lib/data/` | `CatalogRepository`: `DbRepository` (Drizzle) when `DATABASE_URL` is set, else mock |
 | `src/lib/retailers.ts` | Retailer config: country, currency, VAT policy, shipping rules |
 | `src/db/` | Drizzle schema, client (Postgres or PGlite), migrate, stats |
-| `src/app/api/deals` | `GET /api/deals?sport&weightKg&heightCm&bootSize&bootSystem&style&skateStyle&waves&country&currency` (`sport` = snow, skate or surf; all when omitted) |
+| `src/app/api/catalog` | `GET /api/catalog?sport=snow|skate|surf&part=N`: compact, CDN-cached catalogue feed (buyable, fresh listings only; `src/lib/catalog-wire.ts`). The browser computes deals (delivered price, grade, fit) with `buildDeals()` |
 | `src/components/` | Rider form, tier tabs, filter panel, card grid (carousel + zoom lightbox + price chart), sortable table |
 | `src/scraper/` | Polite fetcher (`http.ts`), parsers (sizes, specs EN/FR/DE, names), retailer adapters, ingest, CLI; Playwright context (`browser.ts`) kept for future JS-only shops |
 | `ui-art-requests.md` | Branding/UI art briefs for the design agent → files land in `public/assets/` |

@@ -35,8 +35,31 @@ function median(nums: number[]): number {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+/**
+ * Price history is stored as change points (a row only when the price or stock
+ * changes). Expand it to one point per day up to `now` by carrying the last value
+ * forward, so statistics weigh every day equally. Dense input passes through unchanged.
+ */
+export function densify(history: PricePoint[], now = new Date(), maxDays = 400): PricePoint[] {
+  if (history.length === 0) return [];
+  const pts = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const end = Math.max(Date.parse(iso(now.getTime())), Date.parse(pts[pts.length - 1].date));
+  const start = Math.max(Date.parse(pts[0].date), end - maxDays * DAY);
+  const out: PricePoint[] = [];
+  let i = 0;
+  let cur = pts[0];
+  for (let t = start; t <= end; t += DAY) {
+    const day = iso(t);
+    while (i < pts.length && pts[i].date <= day) cur = pts[i++];
+    out.push(cur.date === day ? cur : { date: day, price: cur.price, inStock: cur.inStock });
+  }
+  return out;
+}
+
 export function computeStats(history: PricePoint[], now = new Date()): PriceStats | null {
-  const pts = history.filter((p) => p.inStock);
+  const pts = densify(history, now).filter((p) => p.inStock);
   if (pts.length === 0) return null;
   const prices = pts.map((p) => p.price);
   const cutoff = now.getTime() - 90 * DAY;

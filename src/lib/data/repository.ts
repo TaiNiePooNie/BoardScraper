@@ -1,6 +1,6 @@
-import { eq, gte } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import type { DB } from "@/db/client";
-import { BoardCategory, type BoardModel, type CurrencyCode, type Listing, type Retailer } from "../types";
+import { BoardCategory, type BoardModel, type CurrencyCode, type Listing, type Retailer, type Sport } from "../types";
 import { buildMockCatalog } from "./mock";
 import { RETAILERS } from "../retailers";
 
@@ -16,44 +16,59 @@ export interface Catalog {
  */
 export interface CatalogRepository {
   readonly source: "db" | "mock";
-  getCatalog(): Promise<Catalog>;
+  /** Whole catalogue, or one sport's (cheaper: the store loads sports separately). */
+  getCatalog(sport?: Sport): Promise<Catalog>;
+  /** Forget cached catalogues (after a live price check wrote a change). */
+  invalidate(): void;
 }
 
 class MockRepository implements CatalogRepository {
   readonly source = "mock" as const;
   private cache = buildMockCatalog();
-  async getCatalog() {
-    return this.cache;
+  invalidate() {}
+  async getCatalog(sport?: Sport) {
+    if (!sport) return this.cache;
+    const boards = this.cache.boards.filter((b) => b.sport === sport);
+    const ids = new Set(boards.map((b) => b.id));
+    return { boards, listings: this.cache.listings.filter((l) => ids.has(l.boardId)), retailers: this.cache.retailers };
   }
 }
 
 const HISTORY_DAYS = 365;
-const CACHE_MS = 60_000;
+const CACHE_MS = 5 * 60_000;
 
 export class DbRepository implements CatalogRepository {
   readonly source = "db" as const;
-  private cached: { at: number; data: Promise<Catalog> } | null = null;
+  private cached = new Map<string, { at: number; data: Promise<Catalog> }>();
 
   /** Inject a DB (tests); defaults to the process-wide handle from DATABASE_URL. */
   constructor(private readonly dbProvider: () => Promise<DB> = async () => (await import("@/db/client")).getDb()) {}
 
-  getCatalog(): Promise<Catalog> {
-    if (!this.cached || Date.now() - this.cached.at > CACHE_MS) {
-      const data = this.load();
-      data.catch(() => (this.cached = null));
-      this.cached = { at: Date.now(), data };
-    }
-    return this.cached.data;
+  invalidate() {
+    this.cached.clear();
   }
 
-  private async load(): Promise<Catalog> {
+  getCatalog(sport?: Sport): Promise<Catalog> {
+    const key = sport ?? "*";
+    const hit = this.cached.get(key);
+    if (hit && Date.now() - hit.at <= CACHE_MS) return hit.data;
+    const data = this.load(sport);
+    data.catch(() => this.cached.delete(key));
+    this.cached.set(key, { at: Date.now(), data });
+    return data;
+  }
+
+  private async load(sport?: Sport): Promise<Catalog> {
     const [db, s] = await Promise.all([this.dbProvider(), import("@/db/schema")]);
     const since = new Date(Date.now() - HISTORY_DAYS * 86_400_000).toISOString().slice(0, 10);
+    const active = sport
+      ? and(eq(s.listings.active, true), inArray(s.listings.boardId, db.select({ id: s.boards.id }).from(s.boards).where(eq(s.boards.sport, sport))))
+      : eq(s.listings.active, true);
 
     const [retailerRows, listingRows] = await Promise.all([
       db.select().from(s.retailers).where(eq(s.retailers.enabled, true)),
       db.query.listings.findMany({
-        where: eq(s.listings.active, true),
+        where: active,
         with: {
           sizes: true,
           history: { where: gte(s.pricePoints.date, since), orderBy: (p, { asc }) => [asc(p.date)] },
