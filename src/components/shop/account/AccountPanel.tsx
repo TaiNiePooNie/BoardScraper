@@ -78,7 +78,10 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
         <section className="flex items-center gap-4">
           {me && <Avatar n={me.avatar} name={me.name} size={72} />}
           <div className="min-w-0">
-            <h1 className="headline text-4xl">{state.user?.name || me?.name || "Guest"}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="headline truncate text-4xl">{(me?.name && me.name !== "Me" ? me.name : state.user?.name) || me?.name || "Guest"}</h1>
+              {me && <button type="button" onClick={() => onEdit(me.id)} className="shrink-0 rounded-full p-2 hover:bg-surface" aria-label="Change your name, picture and sizes"><Pencil className="h-4 w-4" /></button>}
+            </div>
             <p className="truncate text-sm text-paper/60">{state.user ? state.user.email : "Guest · saved on this device only"}</p>
           </div>
         </section>

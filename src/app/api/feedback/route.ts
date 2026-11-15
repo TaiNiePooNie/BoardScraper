@@ -10,6 +10,15 @@ export const dynamic = "force-dynamic";
 
 /** Send a feedback / support message. Returns an upload token for attachments. */
 export async function POST(req: Request) {
+  try {
+    return await send(req);
+  } catch (e) {
+    console.error("feedback POST failed", e);
+    return NextResponse.json({ error: "We couldn't save your message right now. Please try again in a few minutes." }, { status: 500 });
+  }
+}
+
+async function send(req: Request) {
   if (!process.env.DATABASE_URL) return NextResponse.json({ error: "Feedback isn't available here." }, { status: 503 });
   const parsed = FeedbackInput.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid message" }, { status: 400 });

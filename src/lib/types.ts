@@ -64,9 +64,9 @@ export const RiderInput = z.object({
   fit: FitPreference.optional(), // default: any
   skateStyle: SkateStyle.optional(), // default: street
   waves: SurfWaves.optional(), // default: small
-  /** Rider-chosen size range per sport (snow cm, skate in, surf L); default = the recommended range. */
+  /** Rider-chosen size range per sport (snow cm, skate in, surf L, surfLength cm); default = the recommended range. */
   sizeRange: z
-    .object({ snow: SizeRange.optional(), skate: SizeRange.optional(), surf: SizeRange.optional() })
+    .object({ snow: SizeRange.optional(), skate: SizeRange.optional(), surf: SizeRange.optional(), surfLength: SizeRange.optional() })
     .partial()
     .optional(),
 });
