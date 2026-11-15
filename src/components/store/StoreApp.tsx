@@ -1,6 +1,6 @@
 "use client";
 import clsx from "clsx";
-import { Heart, Home, Ruler, Search, SlidersHorizontal, User, X } from "lucide-react";
+import { Heart, Home, Inbox, MessageCircleQuestion, Ruler, Search, SlidersHorizontal, User, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AssetImg } from "@/components/AssetImg";
 import { DEFAULT_ALERTS, type AlertSettings } from "@/lib/account";
@@ -19,6 +19,8 @@ import { Avatar } from "../shop/account/Avatar";
 import { Logo } from "../shop/Logo";
 import { RestockSheet } from "../shop/RestockSheet";
 import type { ShopServices } from "../shop/services";
+import { FeedbackInbox } from "./FeedbackInbox";
+import { FeedbackSheet } from "./FeedbackSheet";
 import { FilterSheet } from "./FilterSheet";
 import { LocaleSheet } from "./LocaleSheet";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
@@ -69,7 +71,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const [sort, setSort] = useState<SortMode>("recommended");
   const [shown, setShown] = useState(PAGE);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<null | "size" | "filters" | "locale" | "account" | "restock">(null);
+  const [sheet, setSheet] = useState<null | "size" | "filters" | "locale" | "account" | "restock" | "feedback" | "inbox">(null);
   const [sizeFor, setSizeFor] = useState<string | null>(null);
   const [acct, setAcct] = useState<AccountState>({ available: false, providers: { google: false, apple: false, email: false, password: false, passwordReset: false }, user: null });
   const [toast, setToast] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const searchRef = useRef<HTMLInputElement>(null);
   const deepLink = useRef<string | null>(null);
+  const openInbox = useRef(false);
 
   const active = store.buddies.find((b) => b.id === store.activeId) ?? store.buddies[0];
   const rider: RiderInput | null = sized ? active.rider : null;
@@ -106,7 +109,8 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     if (key) setToast(notices[key]);
     if (q.get("board")) deepLink.current = q.get("board");
     if (q.has("profile")) setSheet("account");
-    if (key || q.has("profile") || q.has("sport")) history.replaceState(null, "", location.pathname + (q.get("board") ? `?board=${q.get("board")}` : ""));
+    if (q.has("inbox")) openInbox.current = true;
+    if (key || q.has("profile") || q.has("sport") || q.has("inbox")) history.replaceState(null, "", location.pathname + (q.get("board") ? `?board=${q.get("board")}` : ""));
 
     const account = services.account;
     if (account) {
@@ -116,6 +120,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           if (!cfg.enabled) return;
           const me = await account.me();
           setAcct({ available: true, providers: cfg.providers, user: me?.user ?? null });
+          if (openInbox.current && me?.user?.isOwner) setSheet("inbox");
           if (!me) return;
           if (me.data && me.data.buddies.length) {
             setStore((local) => ({
@@ -304,6 +309,11 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
               <Heart className="h-5 w-5" />
               {store.holds.length > 0 && <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[10px] font-bold text-white">{store.holds.length}</span>}
             </button>
+            {services.feedback && (
+              <button type="button" onClick={() => setSheet("feedback")} className="rounded-full p-2 hover:bg-surface" aria-label="Feedback & support" title="Feedback & support">
+                <MessageCircleQuestion className="h-5 w-5" />
+              </button>
+            )}
             <button type="button" onClick={() => setSheet("account")} className="rounded-full p-1 hover:bg-surface" aria-label="Your profile">
               <Avatar n={store.buddies[0].avatar} name={acct.user?.name ?? store.buddies[0].name} size={30} />
             </button>
@@ -440,6 +450,8 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <button type="button" onClick={() => setSheet("locale")} className="font-semibold text-ink underline underline-offset-2">Ship to {countryName(locale.country)} · {locale.currency}</button>
           {result?.updatedAt && <span>Prices from {new Date(result.updatedAt).toLocaleDateString()}</span>}
+          {services.feedback && <button type="button" onClick={() => setSheet("feedback")} className="font-semibold text-ink underline underline-offset-2">Feedback & support</button>}
+          {acct.user?.isOwner && services.feedback && <button type="button" onClick={() => setSheet("inbox")} className="font-semibold text-ink underline underline-offset-2">Feedback inbox</button>}
           {acct.user?.isOwner && <button type="button" onClick={() => setSheet("restock")} className="font-semibold text-ink underline underline-offset-2">Restock now</button>}
           <span className="ml-auto flex gap-4"><a href="/privacy" className="hover:text-ink">Privacy</a><a href="/terms" className="hover:text-ink">Terms</a></span>
         </div>
@@ -510,8 +522,23 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           onSwitch={(id) => { update((s) => ({ ...s, activeId: id })); setSheet(null); }}
           onClose={() => setSheet(null)}
           summary={summary}
+          extra={services.feedback ? (
+            <section className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" onClick={() => setSheet("feedback")} className="btn-ghost flex-1 !justify-start !py-3"><MessageCircleQuestion className="h-5 w-5" />Feedback & support</button>
+              {acct.user?.isOwner && <button type="button" onClick={() => setSheet("inbox")} className="btn-ghost flex-1 !justify-start !py-3"><Inbox className="h-5 w-5" />Feedback inbox</button>}
+            </section>
+          ) : undefined}
         />
       )}
+      {sheet === "feedback" && services.feedback && (
+        <FeedbackSheet
+          service={services.feedback}
+          email={acct.user?.email}
+          page={{ view, sport, board: openId ?? undefined, signedIn: !!acct.user }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet === "inbox" && services.feedback && acct.user?.isOwner && <FeedbackInbox service={services.feedback} onClose={() => setSheet(null)} />}
       {sheet === "restock" && acct.user?.isOwner && <RestockSheet services={services} onClose={() => setSheet(null)} onFinished={load} />}
 
       {toast && (

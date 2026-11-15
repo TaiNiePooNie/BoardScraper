@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
-  boolean, date, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, real, serial, text, timestamp, uniqueIndex,
+  boolean, customType, date, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, real, serial, text, timestamp, uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { BoardCategory, ShippingRule } from "@/lib/types";
 
@@ -221,3 +221,44 @@ export const alertLog = pgTable("alert_log", {
   currency: text("currency").notNull(),
   sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.userId, t.boardId] })]);
+
+/* ───────────────────────── Feedback & support ───────────────────────── */
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+
+export const feedbackKind = pgEnum("feedback_kind", ["question", "bug", "feature", "feedback", "other"]);
+export const feedbackStatus = pgEnum("feedback_status", ["new", "read", "done"]);
+
+/** A message from the Feedback & support form. */
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  kind: feedbackKind("kind").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  /** Reply-to address (signed-in email or typed). */
+  email: text("email"),
+  userId: text("user_id"),
+  /** Page, device, app state the sender agreed to include. */
+  context: jsonb("context").$type<Record<string, unknown>>(),
+  /** Salted hash of the sender's IP, for rate limiting only. */
+  ipHash: text("ip_hash"),
+  status: feedbackStatus("status").notNull().default("new"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("feedback_created_idx").on(t.createdAt), index("feedback_ip_idx").on(t.ipHash, t.createdAt)]);
+
+/** Screenshot or video attached to a feedback message (stored in chunks: serverless bodies are small). */
+export const feedbackMedia = pgTable("feedback_media", {
+  id: serial("id").primaryKey(),
+  feedbackId: integer("feedback_id").notNull().references(() => feedback.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  mime: text("mime").notNull(),
+  size: integer("size").notNull(),
+  chunks: integer("chunks").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("feedback_media_fb_idx").on(t.feedbackId)]);
+
+export const feedbackMediaChunks = pgTable("feedback_media_chunks", {
+  mediaId: integer("media_id").notNull().references(() => feedbackMedia.id, { onDelete: "cascade" }),
+  idx: integer("idx").notNull(),
+  data: bytea("data").notNull(),
+}, (t) => [primaryKey({ columns: [t.mediaId, t.idx] })]);
