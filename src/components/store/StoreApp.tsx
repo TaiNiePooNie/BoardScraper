@@ -20,6 +20,7 @@ import { Logo } from "../shop/Logo";
 import { RestockSheet } from "../shop/RestockSheet";
 import type { ShopServices } from "../shop/services";
 import { FeedbackInbox } from "./FeedbackInbox";
+import { SaleBanner } from "./SaleBanner";
 import { FeedbackSheet } from "./FeedbackSheet";
 import { FilterSheet } from "./FilterSheet";
 import { LocaleSheet } from "./LocaleSheet";
@@ -368,6 +369,9 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           </section>
         )}
 
+        {/* ── sale calendar ── */}
+        {view === "shop" && !searching && <SaleBanner sport={sport} country={locale.country} onShowSale={() => { setFilters((f) => ({ ...f, saleOnly: true })); document.getElementById("grid")?.scrollIntoView({ behavior: "smooth" }); }} onAlerts={() => setSheet("account")} />}
+
         {/* ── shop by type ── */}
         {view === "shop" && !searching && facets.categories.size > 0 && (
           <section className="mt-6" aria-label="Shop by type">
@@ -490,6 +494,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           onEditSize={() => openSize()}
           live={live[openProduct.best.listing.id]}
           shipTo={countryName(locale.country)}
+          country={locale.country}
         />
       )}
       {sheet === "size" && (

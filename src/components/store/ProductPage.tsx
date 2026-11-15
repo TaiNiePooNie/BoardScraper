@@ -12,6 +12,7 @@ import { CATEGORY_LABEL, type Product } from "@/lib/store";
 import { effectiveMsrp } from "@/lib/deals";
 import type { Deal } from "@/lib/types";
 import { BadgePill, Price } from "./ProductCard";
+import { BuyOrWait } from "./SaleBanner";
 
 export interface LiveCheck {
   status: "checking" | "fresh" | "updated" | "failed";
@@ -25,7 +26,7 @@ const PROFILE_LABEL: Record<string, string> = {
 };
 const SHAPE_LABEL: Record<string, string> = { "true-twin": "True twin", "directional-twin": "Directional twin", directional: "Directional", tapered: "Tapered" };
 
-export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, live, shipTo }: {
+export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, live, shipTo, country }: {
   p: Product;
   fit: SportFit | null;
   saved: boolean;
@@ -34,6 +35,8 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
   onEditSize: () => void;
   live?: LiveCheck;
   shipTo: string;
+  /** Buyer country, for the sale calendar. */
+  country: string;
 }) {
   const [offerId, setOfferId] = useState(p.best.listing.id);
   const offer = p.offers.find((o) => o.listing.id === offerId) ?? p.best;
@@ -95,6 +98,8 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
             <CostBreakdown d={offer} shipTo={shipTo} />
             {live && offer === p.best && <LiveLine live={live} d={offer} />}
           </section>
+
+          <BuyOrWait p={p} country={country} saved={saved} onSave={onToggleSave} />
 
           <section aria-label="Sizes">
             <div className="flex items-baseline justify-between gap-3">
