@@ -104,7 +104,9 @@ export function buildProducts(deals: Deal[], sport: Sport, rider: RiderInput | n
     let best = offers[0];
     let fitSizes: SizeMatch[] = [];
     let fits: boolean | null = null;
-    if (fit && rider) {
+    // Skate boards sold by length only (most cruisers/longboards) can't be width-matched: fit unknown, never hidden.
+    const sizeless = sport === "skate" && !offers.some((o) => o.listing.sizes.some((sz) => sz.widthIn !== undefined));
+    if (fit && rider && !(sizeless && fitAllows(rider.fit, board.model))) {
       fits = false;
       if (fitAllows(rider.fit, board.model)) {
         for (const o of offers) {
