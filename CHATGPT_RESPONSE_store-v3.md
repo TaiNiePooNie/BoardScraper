@@ -107,3 +107,90 @@ The app scrubs frames with sliders and crossfades slim/regular/broad builds, exa
 - **Purpose:** Product card fallback when a shop photo fails to load.
 - **Dimensions:** 600x800, transparent.
 - **Style/Theme:** Flat light-grey (`#E7E8E4`) silhouette of the board type with a small Buddy paw-print sticker in one corner. Subtle, not attention-grabbing.
+
+
+## Response
+
+Delivered all 49 requested image assets, plus `store-v3-contact.jpg` for the PR overview. The surf and skate sheets reuse the snowboard vector Buddy puppet: same head and expression shapes, torso/build construction and pose rig, with sport-specific clothes, hat, footwear and boards. Application code is unchanged.
+
+![Store v3 overview](public/assets/store-v3-contact.jpg)
+
+![Surf registration](public/assets/preview-buddy-surf-contact.png)
+
+![Skate registration](public/assets/preview-buddy-skate-contact.png)
+
+### Files delivered
+
+| File | Bytes | Dimensions | Format |
+|---|---:|---|---|
+| `preview-buddy-surf-man-slim.webp` | 151,422 | 3000 × 600 | webp |
+| `preview-buddy-surf-man-regular.webp` | 158,330 | 3000 × 600 | webp |
+| `preview-buddy-surf-man-broad.webp` | 150,296 | 3000 × 600 | webp |
+| `preview-buddy-surf-woman-slim.webp` | 167,644 | 3000 × 600 | webp |
+| `preview-buddy-surf-woman-regular.webp` | 173,788 | 3000 × 600 | webp |
+| `preview-buddy-surf-woman-broad.webp` | 166,380 | 3000 × 600 | webp |
+| `preview-buddy-surf-kid-slim.webp` | 178,606 | 3000 × 600 | webp |
+| `preview-buddy-surf-kid-regular.webp` | 174,238 | 3000 × 600 | webp |
+| `preview-buddy-surf-kid-broad.webp` | 176,074 | 3000 × 600 | webp |
+| `preview-buddy-skate-man-slim.webp` | 131,434 | 2400 × 600 | webp |
+| `preview-buddy-skate-man-regular.webp` | 133,276 | 2400 × 600 | webp |
+| `preview-buddy-skate-man-broad.webp` | 134,012 | 2400 × 600 | webp |
+| `preview-buddy-skate-woman-slim.webp` | 142,002 | 2400 × 600 | webp |
+| `preview-buddy-skate-woman-regular.webp` | 144,392 | 2400 × 600 | webp |
+| `preview-buddy-skate-woman-broad.webp` | 145,684 | 2400 × 600 | webp |
+| `preview-buddy-skate-kid-slim.webp` | 143,552 | 2400 × 600 | webp |
+| `preview-buddy-skate-kid-regular.webp` | 146,444 | 2400 × 600 | webp |
+| `preview-buddy-skate-kid-broad.webp` | 147,842 | 2400 × 600 | webp |
+| `preview-buddy-surf-contact.png` | 343,205 | 3000 × 1800 | png |
+| `preview-buddy-skate-contact.png` | 288,410 | 2400 × 1800 | png |
+| `sport-snow.svg` | 1,995 | 256 × 256 | svg |
+| `sport-skate.svg` | 3,683 | 256 × 256 | svg |
+| `sport-surf.svg` | 1,680 | 256 × 256 | svg |
+| `type-all-mountain.svg` | 2,246 | 256 × 256 | svg |
+| `type-freestyle.svg` | 1,986 | 256 × 256 | svg |
+| `type-powder.svg` | 1,614 | 256 × 256 | svg |
+| `type-splitboard.svg` | 1,973 | 256 × 256 | svg |
+| `type-deck.svg` | 1,045 | 256 × 256 | svg |
+| `type-complete.svg` | 3,569 | 256 × 256 | svg |
+| `type-cruiser.svg` | 3,701 | 256 × 256 | svg |
+| `type-longboard.svg` | 3,575 | 256 × 256 | svg |
+| `type-shortboard.svg` | 1,548 | 256 × 256 | svg |
+| `type-fish.svg` | 967 | 256 × 256 | svg |
+| `type-midlength.svg` | 1,006 | 256 × 256 | svg |
+| `type-longboard-surf.svg` | 1,018 | 256 × 256 | svg |
+| `type-foamie.svg` | 3,934 | 256 × 256 | svg |
+| `hero-snow.webp` | 86,070 | 1600 × 640 | webp |
+| `hero-snow-mobile.webp` | 52,478 | 800 × 800 | webp |
+| `hero-skate.webp` | 67,870 | 1600 × 640 | webp |
+| `hero-skate-mobile.webp` | 46,864 | 800 × 800 | webp |
+| `hero-surf.webp` | 85,918 | 1600 × 640 | webp |
+| `hero-surf-mobile.webp` | 51,452 | 800 × 800 | webp |
+| `mascot-skate.png` | 81,871 | 800 × 800 | png |
+| `mascot-surf.png` | 77,706 | 800 × 800 | png |
+| `empty-search.png` | 84,187 | 1000 × 700 | png |
+| `empty-saved.png` | 58,354 | 1000 × 700 | png |
+| `placeholder-snow.png` | 18,960 | 600 × 800 | png |
+| `placeholder-skate.png` | 15,865 | 600 × 800 | png |
+| `placeholder-surf.png` | 19,537 | 600 × 800 | png |
+| `store-v3-contact.jpg` | 549,184 | 2072 × 1666 | jpg |
+| `manifest.json` (updated) | 23,891 | — | json |
+
+### Validation and integration notes
+
+- 18 WebP sheets, 162 frames. Surf: 3000 × 600 / 10 frames, 340 px Buddy, x=110, tail/feet y=592. Skate: 2400 × 600 / 8 frames, 440 px Buddy, x=150, feet y=592. Exact top/bottom sticker bounds verified on all temporary Buddy masks.
+- Surf board lengths use exactly 340 × [0.95, 1.03, 1.10, 1.17, 1.24, 1.31, 1.38, 1.47, 1.56, 1.65]; tails stay at y=592, centre x=222. Fish frames have swallow tails; later boards have round noses.
+- Skate deck length is exactly 260 px (x=20–280), centre (150,400). Widths are exactly [105,112.5,116.25,120,123.75,127.5,135,150] px. The formula W × 15 takes precedence over the rounded 116/124 entries in the request table. Wheels are outside those deck-width bounds.
+- Heads are identical across the three builds of each persona/frame. Source alpha and encoded WebP alpha match exactly. No alpha enters a cell’s 4 px margin.
+- WebP quality 80, alpha quality 100; every sheet and hero is below its requested byte limit. All PNG dimensions, transparency/opacity and limits checked.
+- SVGs are hand-authored paths/shapes with exact 256 × 256 viewBoxes, no raster/text/font/filter dependencies, and below 15 KB. Outer dark hairlines surround the white sticker rims.
+- Desktop heroes keep the left 45% calm; mobile versions are separately recomposed with the top 40% calm. These areas were visually checked and have less than 1.5% dark pixels.
+- Review sheets retain the prior one-third-scale layout, on opaque white. All 49 requested assets and the extra overview are listed in the manifest.
+- Numeric scale/registration rules take precedence over approximate anatomical descriptions; the same chubby marmot proportions are retained. Raster subpixel coverage can extend a geometric edge to the adjacent pixel.
+- No product photos were generated. The three placeholders are deliberately quiet #E7E8E4 silhouettes with small paw stickers.
+
+### Project checks
+
+- `npm run build`: passed.
+- `npm run typecheck`: passed after the build completed generating Next.js types.
+- `npm test`: passed, 57 tests across 4 files.
+- Full overview and both nine-row registration contact sheets were visually inspected after export.

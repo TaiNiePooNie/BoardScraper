@@ -663,5 +663,355 @@
     "height": 1800,
     "format": "png",
     "alt": "All nine Buddy size-preview sprite sheets at one-third scale with frame and ground guides."
+  },
+  {
+    "file": "preview-buddy-surf-man-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of man Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-surf-man-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of man Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-surf-man-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of man Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-surf-woman-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of woman Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-surf-woman-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of woman Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-surf-woman-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of woman Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-surf-kid-slim.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of kid Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-surf-kid-regular.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of kid Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-surf-kid-broad.webp",
+    "width": 3000,
+    "height": 600,
+    "format": "webp",
+    "alt": "Ten surf sizing poses of kid Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-skate-man-slim.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of man Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-skate-man-regular.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of man Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-skate-man-broad.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of man Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-skate-woman-slim.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of woman Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-skate-woman-regular.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of woman Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-skate-woman-broad.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of woman Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-skate-kid-slim.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of kid Buddy, slim build."
+  },
+  {
+    "file": "preview-buddy-skate-kid-regular.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of kid Buddy, regular build."
+  },
+  {
+    "file": "preview-buddy-skate-kid-broad.webp",
+    "width": 2400,
+    "height": 600,
+    "format": "webp",
+    "alt": "Eight skate sizing poses of kid Buddy, broad build."
+  },
+  {
+    "file": "preview-buddy-surf-contact.png",
+    "width": 3000,
+    "height": 1800,
+    "format": "png",
+    "alt": "Nine registered surf Buddy flipbooks on white with frame and ground guides."
+  },
+  {
+    "file": "preview-buddy-skate-contact.png",
+    "width": 2400,
+    "height": 1800,
+    "format": "png",
+    "alt": "Nine registered skate Buddy flipbooks on white with frame and ground guides."
+  },
+  {
+    "file": "sport-snow.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Snowboard and snowflake sport sticker."
+  },
+  {
+    "file": "sport-skate.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skateboard sport sticker with four wheels."
+  },
+  {
+    "file": "sport-surf.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Surfboard and wave sport sticker."
+  },
+  {
+    "file": "type-all-mountain.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Twin snowboard and mountain sticker."
+  },
+  {
+    "file": "type-freestyle.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Snowboard spinning between motion arcs sticker."
+  },
+  {
+    "file": "type-powder.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Swallowtail snowboard in a powder plume sticker."
+  },
+  {
+    "file": "type-splitboard.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Split snowboard halves with skins sticker."
+  },
+  {
+    "file": "type-deck.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Bare skateboard deck sticker."
+  },
+  {
+    "file": "type-complete.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Skateboard deck with trucks and wheels sticker."
+  },
+  {
+    "file": "type-cruiser.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Wide cruiser with large soft wheels sticker."
+  },
+  {
+    "file": "type-longboard.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Drop-through longboard sticker."
+  },
+  {
+    "file": "type-shortboard.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Pointed thruster surfboard sticker."
+  },
+  {
+    "file": "type-fish.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Swallowtail fish surfboard sticker."
+  },
+  {
+    "file": "type-midlength.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Egg-shaped mid-length surfboard sticker."
+  },
+  {
+    "file": "type-longboard-surf.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Long round-nose surfboard sticker."
+  },
+  {
+    "file": "type-foamie.svg",
+    "width": 256,
+    "height": 256,
+    "format": "svg",
+    "alt": "Rounded soft-top surfboard sticker."
+  },
+  {
+    "file": "hero-snow.webp",
+    "width": 1600,
+    "height": 640,
+    "format": "webp",
+    "alt": "Buddy carving through snow, with open space on the left."
+  },
+  {
+    "file": "hero-snow-mobile.webp",
+    "width": 800,
+    "height": 800,
+    "format": "webp",
+    "alt": "Buddy carving through snow, with clear sky above."
+  },
+  {
+    "file": "hero-skate.webp",
+    "width": 1600,
+    "height": 640,
+    "format": "webp",
+    "alt": "Buddy kickflipping over a curb, with open space on the left."
+  },
+  {
+    "file": "hero-skate-mobile.webp",
+    "width": 800,
+    "height": 800,
+    "format": "webp",
+    "alt": "Buddy kickflipping over a curb, with clear sky above."
+  },
+  {
+    "file": "hero-surf.webp",
+    "width": 1600,
+    "height": 640,
+    "format": "webp",
+    "alt": "Buddy riding a small wave, with open space on the left."
+  },
+  {
+    "file": "hero-surf-mobile.webp",
+    "width": 800,
+    "height": 800,
+    "format": "webp",
+    "alt": "Buddy riding a small wave, with clear sky above."
+  },
+  {
+    "file": "mascot-skate.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Buddy waving with one foot on a skateboard."
+  },
+  {
+    "file": "mascot-surf.png",
+    "width": 800,
+    "height": 800,
+    "format": "png",
+    "alt": "Buddy in a wetsuit and bucket hat holding a surfboard and making a shaka."
+  },
+  {
+    "file": "empty-search.png",
+    "width": 1000,
+    "height": 700,
+    "format": "png",
+    "alt": "Puzzled Buddy examining an empty rack with a magnifying glass."
+  },
+  {
+    "file": "empty-saved.png",
+    "width": 1000,
+    "height": 700,
+    "format": "png",
+    "alt": "Buddy hugging an empty heart outline."
+  },
+  {
+    "file": "placeholder-snow.png",
+    "width": 600,
+    "height": 800,
+    "format": "png",
+    "alt": "Pale snowboard silhouette with a small paw sticker."
+  },
+  {
+    "file": "placeholder-skate.png",
+    "width": 600,
+    "height": 800,
+    "format": "png",
+    "alt": "Pale skateboard silhouette with a small paw sticker."
+  },
+  {
+    "file": "placeholder-surf.png",
+    "width": 600,
+    "height": 800,
+    "format": "png",
+    "alt": "Pale surfboard silhouette with a small paw sticker."
+  },
+  {
+    "file": "store-v3-contact.jpg",
+    "width": 2072,
+    "height": 1666,
+    "format": "jpg",
+    "alt": "Overview of all store v3 art assets on white."
   }
 ]
