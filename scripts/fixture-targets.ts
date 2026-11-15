@@ -78,7 +78,7 @@ export const FIXTURE_TARGETS: Record<string, FixtureTarget> = {
   // The brands' / shops' actual online stores live on other hosts:
   "pukas-shop": { origin: "https://pukassurfshop.com", json: ["/collections/pukas-surfboards/products.json?limit=20", "/meta.json"], max: 0 },
   "jart-shop": { origin: "https://skatemenu.com", json: ["/products.json?limit=20", "/meta.json"], max: 0 },
-  "nhs-shop": { origin: "https://nhsskatedirect.com", json: ["/products.json?limit=20", "/meta.json"], max: 0 },
+  "nhs-shop": { origin: "https://nhsskatedirect.com", sitemaps: [], json: ["/collections/skateboard-decks/products.json?limit=6", "/collections/complete-skateboards/products.json?limit=6", "/collections/santa-cruz-skateboard-decks/products.json?limit=6"], max: 0 },
   "xdubai-shop": { origin: "https://xdubaishop.com", json: ["/products.json?limit=20", "/meta.json"], max: 3 },
   "slimes-shop": { origin: "https://www.oceanearthstore.com", json: ["/products.json?limit=20", "/meta.json"], max: 3 },
   "ogasaka-shop": { origin: "https://www.ogasakashop.com", urls: ["https://www.ogasakashop.com/shopbrand/11/"], follow: /\/shopdetail\/\d+/, max: 2 },
