@@ -5,7 +5,8 @@ import type { CurrencyCode } from "../types";
  * (e.g. ECB daily reference XML) via `setRates` from a cron/revalidate job.
  */
 let RATES: Record<CurrencyCode, number> = {
-  EUR: 1, USD: 1.08, GBP: 0.85, CHF: 0.94, CAD: 1.5, AUD: 1.65, SEK: 11.3, NOK: 11.7, DKK: 7.46, PLN: 4.3, JPY: 165,
+  EUR: 1, USD: 1.08, GBP: 0.85, CHF: 0.94, CAD: 1.5, AUD: 1.65, NZD: 1.8, SEK: 11.3, NOK: 11.7, DKK: 7.46, PLN: 4.3, JPY: 165,
+  SGD: 1.45, AED: 3.97,
 };
 let ratesAsOf = "static-fallback";
 

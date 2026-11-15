@@ -1,0 +1,40 @@
+name: Survey retailers
+
+# Manual: checks candidate shops (robots.txt, platform, Shopify facts, shipping policy,
+# how many boards our classifier finds) from GitHub's network, which can reach every shop.
+on:
+  workflow_dispatch:
+    inputs:
+      sites:
+        description: "Candidate ids, comma-separated (blank = all)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+        env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
+      - name: Robots + platform
+        env: { SITES: "${{ inputs.sites }}" }
+        run: |
+          npx tsx scripts/survey-retailers.ts $SITES | tee survey.txt
+          { echo '```'; cat survey.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Shopify details
+        env: { SITES: "${{ inputs.sites }}" }
+        run: |
+          npx tsx scripts/survey-deep.ts survey-deep.json $SITES | tee deep.txt
+          { echo '```'; cat deep.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: survey
+          path: |
+            survey.txt
+            survey-deep.json

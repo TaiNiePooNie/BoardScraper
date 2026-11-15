@@ -23,11 +23,13 @@ npm test                        # unit + ingest tests (in-memory PGlite)
 
 | id | Shop | Region | Sports | Source |
 |---|---|---|---|---|
-| `evo` | evo.com | US (USD, ex. tax) | snow, skate, surf | Shopify public collection JSON (price, compare-at, per-size stock). Collections: `snowboards`, `skateboard-decks`, `skateboard-completes`, `cruiser-skateboards`, `longboard-skateboard-completes`, `surfboards` (bundles/packages, used and blem boards skipped) |
+| `evo` | evo.com | US (USD, ex. tax) | snow, skate, surf | Generic Shopify adapter, public collection JSON (price, compare-at, per-size stock). Collections: `snowboards`, `skateboard-decks`, `skateboard-completes`, `cruiser-skateboards`, `longboard-skateboard-completes`, `surfboards` (bundles/packages, used and blem boards skipped) |
 | `blue-tomato` | blue-tomato.com | AT → EU (EUR incl. VAT) | snow, skate, surf | Sitemap (filtered by the product-type suffix of the URL) → schema.org ProductGroup JSON-LD + breadcrumbs; width / length / volume from the page's feature list; RRP from `og:price:standard_amount` |
 | `glisshop` | glisshop.com | FR → EU (EUR incl. VAT) | snow | Sitemap → schema.org ProductGroup JSON-LD; RRP from embedded `advicePrice` |
 
 Every path used is allowed by the shop's robots.txt; the fetcher checks robots.txt at runtime, waits ≥ 2.5 s between requests per host, and stops on 403/429/bot challenges instead of evading them. Excluded after review (blocking or disallowed): Snowleader, Sport Conrad, Absolute-Snow, The House, Snowboard Asylum; Bergzeit and Tradeinn need different discovery/parsing (see `src/lib/retailers.ts`). Shipping rules in `src/lib/retailers.ts` are estimates — verify each season.
+
+Adding retailers: `npm run survey [-- id,id]` (`scripts/survey-retailers.ts`) prints one line per candidate shop/brand store — platform (Shopify `/products.json`, sitemap + JSON-LD, other), robots.txt verdict for the feed/product paths, HTTP status. Shopify shops plug into the generic `shopifyAdapter` (`src/scraper/retailers/shopify.ts`): whole-catalogue `/products.json` paging with board/gear classification from `product_type` → title → tags (`classifyShopifySport`), or explicit board `collections`; prices in the shop's base currency (checked against `/meta.json`). Sitemap shops use `sitemapJsonLdAdapter` with per-sport product-URL regexes.
 
 ## App
 

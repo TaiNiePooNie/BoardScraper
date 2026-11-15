@@ -15,7 +15,8 @@
     "db:stats": "tsx src/db/stats.ts",
     "retailers": "tsx src/scraper/list.ts",
     "build:static": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/build-static.ts",
-    "alerts": "tsx src/alerts/run.ts"
+    "alerts": "tsx src/alerts/run.ts",
+    "survey": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/survey-retailers.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

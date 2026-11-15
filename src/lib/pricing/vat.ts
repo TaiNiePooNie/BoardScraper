@@ -6,7 +6,7 @@ export const VAT_RATES: Record<string, number> = {
   DE: 0.19, GR: 0.24, HU: 0.27, IE: 0.23, IT: 0.22, LV: 0.21, LT: 0.21, LU: 0.17, MT: 0.18, NL: 0.21,
   PL: 0.23, PT: 0.23, RO: 0.21, SK: 0.23, SI: 0.22, ES: 0.21, SE: 0.25,
   GB: 0.2, CH: 0.081, NO: 0.25, IS: 0.24,
-  US: 0, CA: 0.05, AU: 0.1, NZ: 0.15, JP: 0.1,
+  US: 0, CA: 0.05, AU: 0.1, NZ: 0.15, JP: 0.1, SG: 0.09, AE: 0.05,
 };
 
 export const EU = new Set(["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"]);
@@ -15,7 +15,8 @@ export const EU = new Set(["AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE
 export const displaysVatInclusive = (country: CountryCode) => country !== "US" && country !== "CA";
 
 export const COUNTRY_CURRENCY: Record<string, CurrencyCode> = {
-  US: "USD", GB: "GBP", CH: "CHF", CA: "CAD", AU: "AUD", SE: "SEK", NO: "NOK", DK: "DKK", PL: "PLN", JP: "JPY",
+  US: "USD", GB: "GBP", CH: "CHF", CA: "CAD", AU: "AUD", NZ: "NZD", SE: "SEK", NO: "NOK", DK: "DKK", PL: "PLN", JP: "JPY",
+  SG: "SGD", AE: "AED",
 };
 export const currencyForCountry = (c: CountryCode): CurrencyCode => COUNTRY_CURRENCY[c] ?? "EUR";
 

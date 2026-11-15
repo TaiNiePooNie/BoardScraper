@@ -1,0 +1,456 @@
+{
+ "products": [
+  {
+   "title": "Mountain Twin Snowboard 2026",
+   "handle": "mountain-twin-2026",
+   "body_html": "<p>Directional twin with <b>CamRock</b> profile, all-mountain freeride ripper.</p>",
+   "vendor": "Jones",
+   "product_type": "Snowboards",
+   "tags": [
+    "Mens",
+    "All-Mountain"
+   ],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "154",
+     "price": "479.95",
+     "compare_at_price": "599.95",
+     "available": true,
+     "option1": "154",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "157",
+     "price": "479.95",
+     "compare_at_price": "599.95",
+     "available": false,
+     "option1": "157",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "158W",
+     "price": "499.95",
+     "compare_at_price": "599.95",
+     "available": true,
+     "option1": "158W",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/mountain-twin-2026.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Apollo Snowboard Bindings",
+   "handle": "apollo-bindings",
+   "body_html": "",
+   "vendor": "Jones",
+   "product_type": "Snowboard Bindings",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "M",
+     "price": "299.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "M",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "L",
+     "price": "299.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "L",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/apollo-bindings.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Hovercraft 2.0 Splitboard",
+   "handle": "hovercraft-split",
+   "body_html": "",
+   "vendor": "Jones",
+   "product_type": "Splitboards",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "156",
+     "price": "899.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "156",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "160",
+     "price": "899.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "160",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/hovercraft-split.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Mountain Twin Snowboard + Apollo Binding",
+   "handle": "mt-package",
+   "body_html": "",
+   "vendor": "Jones",
+   "product_type": "Snowboard Packages",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "157",
+     "price": "699.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "157",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/mt-package.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Classic Dot 8.25 Skateboard Deck",
+   "handle": "classic-dot-deck",
+   "body_html": "",
+   "vendor": "Santa Cruz",
+   "product_type": "Decks",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "8.25",
+     "price": "64.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "8.25",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/classic-dot-deck.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Stage 11 Hollow Trucks",
+   "handle": "stage-11-trucks",
+   "body_html": "",
+   "vendor": "Independent",
+   "product_type": "Trucks",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "139",
+     "price": "35.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "139",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/stage-11-trucks.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Classic Dot Complete Skateboard",
+   "handle": "classic-dot-complete",
+   "body_html": "",
+   "vendor": "Santa Cruz",
+   "product_type": "Complete Skateboards",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "8.0\"",
+     "price": "119.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "8.0\"",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/classic-dot-complete.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Ghost Surfboard",
+   "handle": "ghost",
+   "body_html": "",
+   "vendor": "Pyzel",
+   "product_type": "Surfboards",
+   "tags": [],
+   "options": [
+    {
+     "name": "Length",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "6'0\"",
+     "price": "945.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "6'0\"",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "6'2\"",
+     "price": "945.00",
+     "compare_at_price": null,
+     "available": false,
+     "option1": "6'2\"",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/ghost.jpg"
+    }
+   ]
+  },
+  {
+   "title": "FCS II Performer Tri Fins",
+   "handle": "fcs-performer",
+   "body_html": "",
+   "vendor": "FCS",
+   "product_type": "Fins",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "M",
+     "price": "89.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "M",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/fcs-performer.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Logo Tee",
+   "handle": "logo-tee",
+   "body_html": "",
+   "vendor": "Santa Cruz",
+   "product_type": "T-Shirts",
+   "tags": [
+    "skate"
+   ],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "S",
+     "price": "29.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "S",
+     "option2": null,
+     "option3": null
+    },
+    {
+     "title": "M",
+     "price": "29.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "M",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/logo-tee.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Gift Card",
+   "handle": "gift-card",
+   "body_html": "",
+   "vendor": "Shop",
+   "product_type": "Gift Card",
+   "tags": [],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "$50",
+     "price": "50.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "$50",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/gift-card.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Hyperfreak 4/3 Surf Wetsuit",
+   "handle": "hyperfreak",
+   "body_html": "",
+   "vendor": "O'Neill",
+   "product_type": "",
+   "tags": [
+    "surf",
+    "wetsuit"
+   ],
+   "options": [
+    {
+     "name": "Size",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "M",
+     "price": "389.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "M",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/hyperfreak.jpg"
+    }
+   ]
+  },
+  {
+   "title": "Puddle Jumper Softboard",
+   "handle": "pj-soft",
+   "body_html": "",
+   "vendor": "Lost",
+   "product_type": "Surfboard",
+   "tags": [],
+   "options": [
+    {
+     "name": "Length",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "5'6\"",
+     "price": "549.00",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "5'6\"",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "//cdn.shopify.com/s/files/pj-soft.jpg"
+    }
+   ]
+  }
+ ]
+}
