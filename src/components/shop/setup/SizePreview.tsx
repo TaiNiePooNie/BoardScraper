@@ -106,6 +106,7 @@ export function SizePreview({ sport = "snow", heightCm, weightKg, value, badge, 
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [boxH, setBoxH] = useState(200);
+  const [boxW, setBoxW] = useState(150);
   const [has, setHas] = useState<boolean | null>(null);
   const [stills, setStills] = useState(false);
 
@@ -122,7 +123,7 @@ export function SizePreview({ sport = "snow", heightCm, weightKg, value, badge, 
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setBoxH(Math.max(100, e.contentRect.height)));
+    const ro = new ResizeObserver(([e]) => { setBoxH(Math.max(100, e.contentRect.height)); setBoxW(Math.max(80, e.contentRect.width)); });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -133,11 +134,11 @@ export function SizePreview({ sport = "snow", heightCm, weightKg, value, badge, 
   const frames = SHEET[sport].stops.length;
 
   return (
-    <div ref={box} className="relative flex h-full min-h-[100px] w-full items-end justify-center" role="img" aria-label={`Buddy with a ${badge} board`}>
+    <div ref={box} className="relative flex h-full min-h-[100px] w-full items-end justify-center overflow-hidden" role="img" aria-label={`Buddy with a ${badge} board`}>
       <div className="absolute inset-x-0 bottom-0 h-px bg-line" />
       <span className="absolute right-0 top-0 rounded-full bg-acid px-2 py-0.5 text-sm font-bold text-ink">{badge}</span>
       {has && stills ? (
-        <Still sport={sport} persona={persona} stage={nearestStage(sport, value)} build={Math.round(buildFor(heightCm, weightKg, kid))} h={boxH * scale} />
+        <Still sport={sport} persona={persona} stage={nearestStage(sport, value)} build={Math.round(buildFor(heightCm, weightKg, kid))} maxW={boxW} maxH={(boxH - 28) * scale} />
       ) : has ? (
         <BuddySprite sport={sport} persona={persona} frame={stopIndex(value, SHEET[sport].stops)} frames={frames} build={buildFor(heightCm, weightKg, kid)} frameH={boxH * scale} />
       ) : has === false ? (
@@ -147,10 +148,32 @@ export function SizePreview({ sport = "snow", heightCm, weightKg, value, badge, 
   );
 }
 
-/** Mascot-style still for the stage + build (the next one is preloaded by the browser cache as you slide). */
-function Still({ sport, persona, stage, build, h }: { sport: Sport; persona: Persona; stage: number; build: number; h: number }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={stillUrl(sport, persona, BUILDS[Math.max(0, Math.min(2, build))], stage)} alt="" className="block w-auto select-none" style={{ height: h }} draggable={false} />;
+/**
+ * Union of every still's visible pixels per sport (600×800 canvases): cropping to this box
+ * keeps Buddy and the board aligned and centred, whatever the stage, build or persona.
+ */
+const STILL_BOX: Record<Sport, { x: number; y: number; w: number; h: number }> = {
+  snow: { x: 47, y: 203, w: 458, h: 570 },
+  skate: { x: 67, y: 248, w: 413, h: 524 },
+  surf: { x: 49, y: 9, w: 528, h: 762 },
+};
+
+/** Mascot-style still for the stage + build, cropped to the sport's box and fitted inside the preview. */
+function Still({ sport, persona, stage, build, maxW, maxH }: { sport: Sport; persona: Persona; stage: number; build: number; maxW: number; maxH: number }) {
+  const box = STILL_BOX[sport];
+  const k = Math.min(maxW / box.w, maxH / box.h);
+  return (
+    <div className="relative overflow-hidden" style={{ width: box.w * k, height: box.h * k }} aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={stillUrl(sport, persona, BUILDS[Math.max(0, Math.min(2, build))], stage)}
+        alt=""
+        draggable={false}
+        className="absolute max-w-none select-none"
+        style={{ width: 600 * k, height: 800 * k, left: -box.x * k, top: -box.y * k }}
+      />
+    </div>
+  );
 }
 
 /** One still picture: the nearest frame for the size and the nearest build (no blending). */

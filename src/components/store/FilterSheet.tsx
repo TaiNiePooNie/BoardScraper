@@ -88,10 +88,18 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
           </div>
         </Group>
       )}
-      {facets.shops.length > 1 && (
-        <Group title="Shop">
+      {facets.shops.length > 0 && (
+        <Group title="Websites">
+          <div className="mb-2 flex items-center justify-between text-xs text-muted">
+            <span>{value.shops.length ? `${value.shops.length} of ${facets.shops.length} selected` : `All ${facets.shops.length} shops`}</span>
+            {value.shops.length > 0 && <button type="button" className="font-semibold text-ink underline underline-offset-2" onClick={() => set({ shops: [] })}>Show all</button>}
+          </div>
           <div className="flex flex-wrap gap-1.5">
-            {facets.shops.map((s) => <button key={s.id} type="button" aria-pressed={value.shops.includes(s.id)} onClick={() => set({ shops: toggleIn(value.shops, s.id) })} className="chip">{s.name}</button>)}
+            {facets.shops.map((s) => (
+              <button key={s.id} type="button" aria-pressed={value.shops.includes(s.id)} onClick={() => set({ shops: toggleIn(value.shops, s.id) })} className="chip">
+                {s.name} <span className="opacity-60">{s.n}</span>
+              </button>
+            ))}
           </div>
         </Group>
       )}
