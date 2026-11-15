@@ -74,7 +74,8 @@ export function buildDigest(input: DigestInput): Digest {
   };
 
   for (const buddy of buddies) {
-    const { deals } = buildDeals(catalog, locale, buddy.rider);
+    // Picks stay snowboard-only for now (sizing/grouping is tuned for snow); held boards of any sport still get drop alerts.
+    const { deals } = buildDeals(catalog, locale, buddy.rider, "snow");
     const groups = groupDeals(deals, buddy.budget, buddy.rider.style)
       .filter((g) => (g.budget === "in" || g.budget === "none") && g.tier !== "bad" && g.tier !== "normal");
     let picks = sortGroups(groups, "value").filter((g) => !used.has(g.id));

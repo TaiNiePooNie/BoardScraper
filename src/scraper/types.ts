@@ -1,4 +1,4 @@
-import type { BoardProfile, BoardShape, BoardSize, CurrencyCode, Retailer, RidingStyle } from "@/lib/types";
+import type { BoardCategory, BoardProfile, BoardShape, BoardSize, CurrencyCode, Retailer, RidingStyle, Sport } from "@/lib/types";
 import type { PoliteFetcher } from "./http";
 
 export interface BoardSpecs {
@@ -12,6 +12,10 @@ export interface BoardSpecs {
 export interface ScrapedProduct {
   url: string;
   title: string;
+  /** Which board sport this product belongs to. */
+  sport: Sport;
+  /** Board type within the sport (deck, cruiser, fish, powder…); null if unknown. */
+  category: BoardCategory | null;
   brand: string;
   model: string;
   season: string;
@@ -22,6 +26,7 @@ export interface ScrapedProduct {
   /** Retailer-shown RRP / compare-at price. */
   listPrice: number | null;
   currency: CurrencyCode;
+  /** snow: lengthCm/waist · skate: widthIn (+ lengthCm when known, else 0) · surf: lengthCm (+ volumeL). */
   sizes: BoardSize[];
   images: string[];
   specs: BoardSpecs;
@@ -31,13 +36,18 @@ export interface ScrapedProduct {
 
 export interface CrawlContext {
   http: PoliteFetcher;
+  /** Max products per sport. */
   limit: number;
   log: (msg: string) => void;
+  /** Only crawl these sports (all the adapter supports when omitted). */
+  sports?: readonly Sport[];
 }
 
 /** One per retailer. Yields products as they are parsed so ingest can stream. */
 export interface RetailerAdapter {
   retailer: Retailer;
+  /** Sports this retailer is crawled for. */
+  sports: readonly Sport[];
   crawl(ctx: CrawlContext): AsyncGenerator<ScrapedProduct>;
   /** Re-check one product page (live price check). */
   fetchOne(http: PoliteFetcher, url: string): Promise<ScrapedProduct | null>;

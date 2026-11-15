@@ -117,5 +117,89 @@ export function buildMockCatalog() {
       });
     });
   });
+  boards.push(...buildSkateSurf(listings));
   return { boards, listings, retailers: RETAILERS };
+}
+
+/* ───────────────────────── Skate & surf (fictional) ───────────────────────── */
+
+/** Placeholder skate deck / surfboard silhouette. */
+function shapeImage(kind: "skate" | "surf", hue: number, variant: number): string {
+  const body = kind === "skate"
+    ? `<rect x="150" y="60" width="100" height="480" rx="50" fill="hsl(${hue} 60% ${38 + variant * 10}%)"/><circle cx="200" cy="130" r="8" fill="#222"/><circle cx="200" cy="470" r="8" fill="#222"/>`
+    : `<path d="M200 30 C285 170 285 430 235 570 L165 570 C115 430 115 170 200 30 Z" fill="hsl(${hue} 55% ${45 + variant * 10}%)"/><line x1="200" y1="40" x2="200" y2="565" stroke="#fff" stroke-width="3"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600"><rect width="400" height="600" fill="hsl(${hue} 20% 94%)"/>${body}<text x="200" y="592" font-family="sans-serif" font-size="14" text-anchor="middle" fill="#666">placeholder ${variant + 1}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/** [brand, model, category, msrp €, sizes as [width in, length in]] */
+const SKATE_MODELS: Array<[string, string, "deck" | "complete" | "cruiser" | "longboard", number, Array<[number, number]>]> = [
+  ["Pavement Club", "Ghost Logo", "deck", 69, [[7.75, 31.5], [8, 31.75], [8.25, 32], [8.5, 32.25], [8.75, 32.5]]],
+  ["Lowtide Skate Co.", "Night Swim", "deck", 74, [[8, 31.5], [8.25, 31.875], [8.5, 32.125], [9, 32.75]]],
+  ["Concrete Saints", "Halo Pro", "deck", 79, [[8.25, 31.9], [8.38, 32], [8.5, 32.1]]],
+  ["Pavement Club", "Mini Ripper", "deck", 54, [[7.5, 30], [7.625, 30.25]]],
+  ["Lowtide Skate Co.", "First Push", "complete", 119, [[7.75, 31.25], [8, 31.5], [8.25, 32]]],
+  ["Concrete Saints", "Street Ready", "complete", 149, [[8, 31.5], [8.25, 32], [8.5, 32.25]]],
+  ["Coastline Wheelworks", "Pocket Rocketship", "cruiser", 139, [[8, 27]]],
+  ["Driftline", "Tugger", "cruiser", 189, [[9, 30]]],
+  ["Driftline", "Canyon Carver", "longboard", 249, [[9.5, 40]]],
+  ["Coastline Wheelworks", "Pintail 44", "longboard", 219, [[9, 44]]],
+];
+
+/** [brand, model, category, msrp €, sizes as [feet, inches, litres]] */
+const SURF_MODELS: Array<[string, string, "shortboard" | "fish" | "midlength" | "longboard-surf" | "foamie", number, Array<[number, number, number]>]> = [
+  ["Saltglass Shapes", "Razor Pro", "shortboard", 749, [[5, 8, 25.5], [5, 10, 27.8], [6, 0, 29.9], [6, 2, 31.8], [6, 4, 34]]],
+  ["Tidecraft", "Daily Driver", "shortboard", 679, [[5, 10, 30], [6, 0, 32.5], [6, 2, 34.8], [6, 4, 37]]],
+  ["Saltglass Shapes", "Twin Keel Fish", "fish", 719, [[5, 4, 30], [5, 6, 32.5], [5, 8, 35], [5, 10, 38]]],
+  ["Tidecraft", "Easy Egg", "midlength", 829, [[7, 0, 45], [7, 4, 50], [7, 8, 55], [8, 0, 60]]],
+  ["Old Pier Surf Co.", "Classic Log", "longboard-surf", 999, [[9, 0, 68], [9, 2, 71], [9, 6, 76]]],
+  ["Bubbleboard", "Soft Cruiser", "foamie", 329, [[7, 0, 55], [7, 6, 63], [8, 0, 72]]],
+];
+
+function buildSkateSurf(listings: Listing[]): BoardModel[] {
+  const r = rng(7);
+  const boards: BoardModel[] = [];
+  const base = { season: "2025/26", profile: null, shape: null, flex: null, styles: [] as RidingStyle[], ambassadors: [] as Ambassador[] };
+  const review = () => (r() > 0.3 ? { average: Math.round((3.6 + r() * 1.4) * 10) / 10, count: Math.floor(3 + r() * 120), sources: [] } : null);
+
+  SKATE_MODELS.forEach(([brand, model, category, msrp], i) => {
+    boards.push({
+      ...base, id: `s${i}`, sport: "skate", category, brand, model, msrp: { amount: msrp, currency: "EUR" },
+      images: [0, 1].map((v) => shapeImage("skate", (i * 53 + 20) % 360, v)), reviews: review(),
+    });
+  });
+  SURF_MODELS.forEach(([brand, model, category, msrp], i) => {
+    boards.push({
+      ...base, id: `f${i}`, sport: "surf", category, brand, model, msrp: { amount: msrp, currency: "EUR" },
+      images: [0, 1].map((v) => shapeImage("surf", (i * 47 + 190) % 360, v)), reviews: review(),
+    });
+  });
+
+  const skateSizes = (dims: Array<[number, number]>): BoardSize[] =>
+    dims.map(([w, l]) => ({ lengthCm: Math.round(l * 2.54), waist: "regular", label: `${w}"`, widthIn: w, inStock: r() > 0.2 }));
+  const surfSizes = (dims: Array<[number, number, number]>): BoardSize[] =>
+    dims.map(([ft, inch, vol]) => ({ lengthCm: Math.round((ft * 12 + inch) * 2.54), waist: "regular", label: `${ft}'${inch}"`, volumeL: vol, inStock: r() > 0.2 }));
+
+  boards.forEach((b) => {
+    const dims = b.sport === "skate" ? SKATE_MODELS[Number(b.id.slice(1))][4] : SURF_MODELS[Number(b.id.slice(1))][4];
+    RETAILERS.forEach((ret) => {
+      if (r() < 0.3) return;
+      const msrpLocal = Math.round(b.msrp.amount * FX[ret.currency]);
+      const history = historyFor(r, msrpLocal);
+      const sizes = b.sport === "skate" ? skateSizes(dims as Array<[number, number]>) : surfSizes(dims as Array<[number, number, number]>);
+      if (!sizes.some((s) => s.inStock)) sizes[0].inStock = true;
+      listings.push({
+        id: `${b.id}-${ret.id}`,
+        boardId: b.id,
+        retailerId: ret.id,
+        url: `${ret.homepage}/${b.sport}/${b.brand}-${b.model}`.toLowerCase().replace(/[^a-z0-9/:.-]+/g, "-"),
+        price: { amount: history[history.length - 1].price, currency: ret.currency },
+        listPrice: msrpLocal,
+        sizes,
+        history,
+        lastScrapedAt: "2026-11-13T06:00:00Z",
+      });
+    });
+  });
+  return boards;
 }

@@ -9,14 +9,20 @@ export const ADAPTERS: Record<string, RetailerAdapter> = {
     retailer: RETAILERS["blue-tomato"],
     // en-GB sitemap for discovery; fetch the en-NL page, which shows EU VAT-inclusive EUR prices (en-GB shows ex-VAT).
     sitemaps: ["https://www.blue-tomato.com/en-GB/sitemap-products-1.xml"],
-    productUrl: /\/product\/[^/]+\+Snowboard-\d+\/$/,
+    // Product slugs end with the product type ("…+Skateboard+Deck-664878/"); long slugs are truncated ("+Surfboa-").
+    productUrls: {
+      snow: /\/product\/[^/]+\+(?:Snowboard|Splitboard)-\d+\/$/,
+      skate: /\/product\/[^/]+\+(?:Deck|Complete|Skateb\w*|Surfsk\w*|Cruiser|Longboard)-\d+\/$/,
+      surf: /\/product\/[^/]+\+(?:Surf|Surfb\w*|Softboard|Foamie)-\d+\/$/,
+    },
     rewriteUrl: (u) => u.replace("/en-GB/", "/en-NL/"),
   }),
   glisshop: sitemapJsonLdAdapter({
     retailer: RETAILERS.glisshop,
     sitemaps: ["https://www.glisshop.com/Assets/Rbs/Seo/sitemap-index.xml"],
     followSitemap: /Rbs_Catalog_Product/,
-    productUrl: /glisshop\.com\/planche-de-snowboard\//,
+    // Snow only: Glisshop doesn't sell skateboards or surfboards (only snowskates).
+    productUrls: { snow: /glisshop\.com\/planche-de-snowboard\// },
     titlePrefix: /^planche(?: de)? snowboard\s+/i,
     // Embedded price state: "advicePrice":{…"valueWithTax":399.9} is the RRP. The page also
     // carries packs/related products, so take the most frequent plausible value (ties → lowest).

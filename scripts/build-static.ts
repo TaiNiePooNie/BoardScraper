@@ -14,7 +14,7 @@ const out = path.resolve(process.argv[2] ?? "dist/boardscraper.html");
 const tmp = path.resolve("dist/.static");
 mkdirSync(tmp, { recursive: true });
 
-// 1. Catalog snapshot (active listings, 1y history) straight from the DB.
+// 1. Catalog snapshot (active listings, 1y history, all sports) straight from the DB.
 const h = await openDb();
 const catalog = await new DbRepository(async () => h.db).getCatalog();
 await h.close();
@@ -96,4 +96,7 @@ ${css}
 `;
 mkdirSync(path.dirname(out), { recursive: true });
 writeFileSync(out, html);
-console.log(`✓ ${out} — ${(html.length / 1024).toFixed(0)} KB, ${catalog.listings.length} listings, ${catalog.boards.length} boards`);
+// The snapshot holds every sport (no sport filter): the page filters per sport in the browser.
+const perSport = Object.entries(catalog.boards.reduce<Record<string, number>>((m, b) => ({ ...m, [b.sport]: (m[b.sport] ?? 0) + 1 }), {}))
+  .map(([s, n]) => `${s} ${n}`).join(", ");
+console.log(`✓ ${out} — ${(html.length / 1024).toFixed(0)} KB, ${catalog.listings.length} listings, ${catalog.boards.length} boards (${perSport || "none"})`);
