@@ -16,6 +16,8 @@ import { BadgePill, Price } from "./ProductCard";
 export interface LiveCheck {
   status: "checking" | "fresh" | "updated" | "failed";
   message: string;
+  checkedAgo?: string;
+  soldOut?: boolean;
 }
 
 const PROFILE_LABEL: Record<string, string> = {
@@ -90,18 +92,14 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
 
           <section aria-label="Price">
             <OfferPrice d={offer} p={p} isBest={offer === p.best} />
-            <p className="mt-1 text-sm text-muted">Delivered to {shipTo} from <b className="font-semibold text-ink">{offer.retailer.name}</b>{offer.landed.notes.length ? ` · ${offer.landed.notes.join(" · ")}` : ""}</p>
-            {live && (
-              <p className={clsx("mt-2 flex items-center gap-1.5 text-xs font-medium", live.status === "failed" ? "text-muted" : live.status === "checking" ? "text-muted" : "text-ok")}>
-                {live.status === "checking" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-transparent" /> : <Check className="h-3.5 w-3.5" />}{live.message}
-              </p>
-            )}
+            <CostBreakdown d={offer} shipTo={shipTo} />
+            {live && offer === p.best && <LiveLine live={live} d={offer} />}
           </section>
 
           <section aria-label="Sizes">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="text-sm font-bold">Sizes at {offer.retailer.name}</h2>
-              <button type="button" onClick={onEditSize} className="text-sm font-semibold underline underline-offset-2">{fit ? `Your size: ${fit.label}` : "Find my size"}</button>
+              <button type="button" onClick={onEditSize} className="text-sm font-semibold underline underline-offset-2">{fit ? `Your size: ${fit.rangeLabel}` : "Find my size"}</button>
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               {offer.listing.sizes.map((s) => {
@@ -117,7 +115,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
                 );
               })}
             </div>
-            {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here fits your {fit.label} recommendation{p.board.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
+            {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here is in your {fit.rangeLabel} range{p.board.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
           </section>
 
           {/* desktop CTA (mobile: sticky bar) */}
@@ -174,6 +172,46 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
         </div>
       </div>
     </div>
+  );
+}
+
+const fmt = (d: Deal, n: number) => formatMoney(n, d.landed.currency);
+
+/** "€85 board + €8 shipping (+ €4 import VAT & duties)", from the same numbers as the delivered total. */
+function costParts(d: Deal): { board: number; shipping: number; extra: number } {
+  const l = d.landed;
+  const board = l.item;
+  const shipping = l.shipping;
+  const extra = Math.max(0, Math.round((l.total - board - shipping) * 100) / 100);
+  return { board, shipping, extra };
+}
+
+function CostBreakdown({ d, shipTo }: { d: Deal; shipTo: string }) {
+  const { board, shipping, extra } = costParts(d);
+  return (
+    <p className="mt-1 text-sm text-muted">
+      {fmt(d, board)} board {shipping > 0 ? <>+ {fmt(d, shipping)} shipping</> : <>+ <b className="font-semibold text-ok">free shipping</b></>}
+      {extra >= 0.5 && <> + {fmt(d, extra)} {d.landed.duties > 0 ? "import VAT & duties" : d.landed.vatIncluded ? "VAT" : "tax"}</>}
+      {" "}to {shipTo}, from <b className="font-semibold text-ink">{d.retailer.name}</b>.
+      {d.landed.notes.filter((n) => n !== "Free shipping").map((n) => <span key={n} className="block text-xs">{n}</span>)}
+    </p>
+  );
+}
+
+function LiveLine({ live, d }: { live: LiveCheck; d: Deal }) {
+  if (live.status === "checking") {
+    return <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-muted"><span className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-transparent" />Checking the shop&apos;s price right now…</p>;
+  }
+  if (live.status === "failed") return <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-muted"><Info className="h-3.5 w-3.5" />{live.message}</p>;
+  const { shipping } = costParts(d);
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-ok">
+      <Check className="mt-px h-3.5 w-3.5 shrink-0" />
+      <span>
+        {live.status === "updated" ? "Price just changed at the shop. " : `Price checked ${live.checkedAgo ?? "just now"}: `}
+        {fmt(d, d.landed.total)} delivered ({shipping > 0 ? `incl. ${fmt(d, shipping)} shipping` : "free shipping"}){live.soldOut ? ", but sold out in every size" : ""}.
+      </span>
+    </p>
   );
 }
 

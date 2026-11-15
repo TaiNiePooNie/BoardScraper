@@ -361,3 +361,28 @@ describe("ingest skate + surf (PGlite)", () => {
     expect(skateDeals.deals.every((d) => d.board.sport === "skate")).toBe(true);
   });
 });
+
+describe("rider-chosen size range", () => {
+  const base: import("@/lib/types").RiderInput = { weightKg: 75, heightCm: 178, bootSize: 10, bootSystem: "US", style: "all-mountain", skill: "intermediate", fit: "any" };
+  it("defaults to the recommendation and widens matching when set", async () => {
+    const { recommendFor, matchSizesFor, rangeWarning } = await import("@/lib/sizing");
+    const rec = recommendFor("snow", base);
+    expect(rec.custom).toBe(false);
+    expect(rec.range).toEqual(rec.recommended);
+    expect(rangeWarning(rec)).toBeNull();
+    const own = recommendFor("snow", { ...base, sizeRange: { snow: [rec.recommended[0] - 6, rec.recommended[1]] } });
+    expect(own.custom).toBe(true);
+    expect(rangeWarning(own)).toEqual({ below: true, above: false });
+    const short = { lengthCm: rec.recommended[0] - 5, waist: "regular" as const, label: "x", inStock: true };
+    expect(matchSizesFor([short], rec)).toHaveLength(0);
+    expect(matchSizesFor([short], own)).toHaveLength(1);
+    const inside = recommendFor("snow", { ...base, sizeRange: { snow: [rec.recommended[0] + 1, rec.recommended[1] - 1] } });
+    expect(rangeWarning(inside)).toBeNull();
+  });
+  it("wide rule still applies inside a custom snow range", async () => {
+    const { recommendFor, matchSizesFor } = await import("@/lib/sizing");
+    const fit = recommendFor("snow", { ...base, bootSize: 12, sizeRange: { snow: [140, 170] } });
+    expect(matchSizesFor([{ lengthCm: 158, waist: "regular", label: "158", inStock: true }], fit)).toHaveLength(0);
+    expect(matchSizesFor([{ lengthCm: 158, waist: "wide", label: "158W", inStock: true }], fit)).toHaveLength(1);
+  });
+});

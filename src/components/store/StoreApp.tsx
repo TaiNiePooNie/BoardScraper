@@ -244,7 +244,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     if (!listingId || !services.liveCheck || live[listingId]) return;
     setLive((m) => ({ ...m, [listingId]: { status: "checking", message: "Checking the shop's price right now…" } }));
     services.liveCheck(listingId).then((r) => {
-      setLive((m) => ({ ...m, [listingId]: { status: !r.ok ? "failed" : r.changed ? "updated" : "fresh", message: r.message } }));
+      setLive((m) => ({ ...m, [listingId]: { status: !r.ok ? "failed" : r.changed ? "updated" : "fresh", message: r.message, checkedAgo: r.checkedAgo, soldOut: r.inStock === false } }));
       if (r.ok && r.changed) load();
     });
   }, [openProduct?.best.listing.id, services, live, load]);
@@ -343,7 +343,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
                   {fit ? (
                     <>
                       <button type="button" className="btn-lime !py-2.5" onClick={() => { setFilters((f) => ({ ...f, fitsMe: true })); document.getElementById("grid")?.scrollIntoView({ behavior: "smooth" }); }}>
-                        {fitCount} fit {firstName} · {fit.label}
+                        {fitCount} fit {firstName} · {fit.rangeLabel}
                       </button>
                       <button type="button" className="text-sm font-semibold underline underline-offset-2" onClick={() => openSize()}>Edit size</button>
                     </>
@@ -493,7 +493,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         />
       )}
       {sheet === "filters" && (
-        <FilterSheet value={filters} onChange={(f) => { setFilters(f); setShown(PAGE); }} sort={sort} onSort={setSort} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.label ?? null} count={visible.length} onClose={() => setSheet(null)} />
+        <FilterSheet value={filters} onChange={(f) => { setFilters(f); setShown(PAGE); }} sort={sort} onSort={setSort} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.rangeLabel ?? null} count={visible.length} onClose={() => setSheet(null)} />
       )}
       {sheet === "locale" && <LocaleSheet value={locale} onChange={setLocale} onClose={() => setSheet(null)} />}
       {sheet === "account" && (

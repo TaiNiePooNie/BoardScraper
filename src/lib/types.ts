@@ -48,6 +48,8 @@ export type SkateStyle = z.infer<typeof SkateStyle>;
 export const SurfWaves = z.enum(["small", "medium", "big"]);
 export type SurfWaves = z.infer<typeof SurfWaves>;
 
+const SizeRange = z.tuple([z.number(), z.number()]).refine(([a, b]) => a <= b, "min must be ≤ max");
+
 /**
  * One rider, all sports. Snow uses weight/height/boot/style/skill; skate uses
  * bootSize as shoe size + skateStyle; surf uses weight/height/skill + waves.
@@ -62,6 +64,11 @@ export const RiderInput = z.object({
   fit: FitPreference.optional(), // default: any
   skateStyle: SkateStyle.optional(), // default: street
   waves: SurfWaves.optional(), // default: small
+  /** Rider-chosen size range per sport (snow cm, skate in, surf L); default = the recommended range. */
+  sizeRange: z
+    .object({ snow: SizeRange.optional(), skate: SizeRange.optional(), surf: SizeRange.optional() })
+    .partial()
+    .optional(),
 });
 export type RiderInput = z.infer<typeof RiderInput>;
 

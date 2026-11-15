@@ -249,3 +249,14 @@ body {
 @keyframes page-in {
   from { opacity: 0; transform: translateY(16px); }
 }
+
+/* Range picker: smaller thumbs so the green "best" band stays visible between them. */
+.bb-dual .bb-range::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -6px;
+}
+.bb-dual .bb-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+}

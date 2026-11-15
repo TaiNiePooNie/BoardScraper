@@ -17,6 +17,8 @@ export interface LiveResult {
   price?: number;
   currency?: CurrencyCode;
   inStock?: boolean;
+  /** "just now", "3 min ago" */
+  checkedAgo?: string;
   message: string;
 }
 
