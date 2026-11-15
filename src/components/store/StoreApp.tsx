@@ -1,6 +1,6 @@
 "use client";
 import clsx from "clsx";
-import { Heart, Home, Inbox, MessageCircleQuestion, Ruler, Search, SlidersHorizontal, User, X } from "lucide-react";
+import { Check, Heart, Home, Inbox, MessageCircleQuestion, Ruler, Search, SlidersHorizontal, User, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AssetImg } from "@/components/AssetImg";
 import { DEFAULT_ALERTS, type AlertSettings } from "@/lib/account";
@@ -288,7 +288,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const firstName = active.id === store.buddies[0].id ? "you" : active.name;
 
   return (
-    <div className="min-h-screen bg-white pb-20 md:pb-0">
+    <div className="min-h-screen bg-white pb-32 md:pb-0">
       {/* ── header ── */}
       <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="app-gutter mx-auto flex h-14 max-w-7xl items-center gap-3 md:h-16">
@@ -343,7 +343,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
 
         {/* ── hero ── */}
         {showHero && (
-          <section className={clsx("relative mt-3 overflow-hidden rounded-3xl bg-gradient-to-br md:mt-6", HERO_TINT[sport])}>
+          <section className={clsx("relative mt-6 hidden overflow-hidden rounded-3xl bg-gradient-to-br md:block", HERO_TINT[sport])}>
             {heroArt && <img src={ASSETS.hero[sport]} alt="" className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-right md:block" />}
             <div className={clsx("relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-5 md:min-h-[320px] md:p-10", heroArt ? "pb-3" : "min-h-[220px]")}>
               <div className="max-w-md">
@@ -395,7 +395,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         )}
 
         {/* ── toolbar ── */}
-        <div id="grid" className={clsx("sticky top-[calc(env(safe-area-inset-top,0px)+5.75rem)] z-30 -mx-4 flex items-center gap-2 bg-white/95 px-4 py-2.5 backdrop-blur md:top-16 md:mx-0 md:px-0", showHero || facets.categories.size ? "mt-6" : "mt-2")}>
+        <div id="grid" className={clsx("sticky top-[calc(env(safe-area-inset-top,0px)+5.75rem)] z-30 -mx-4 flex items-center gap-2 bg-white/95 px-4 py-2.5 backdrop-blur md:top-16 md:mx-0 md:px-0", showHero || facets.categories.size ? "mt-3 md:mt-6" : "mt-2")}>
           <h2 className="min-w-0 flex-1 truncate text-base font-bold md:text-lg">
             {view === "saved" ? `Saved (${list.length})` : filters.category ? CATEGORY_LABEL[filters.category] : searching ? `Results for “${filters.q.trim()}”` : `All ${SPORT_LABEL[sport].toLowerCase()}`}
             {view === "shop" && <span className="ml-2 text-sm font-medium text-muted">{visible.length}</span>}
@@ -463,6 +463,24 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         </div>
         <p className="mt-3 text-xs">Prices come from the shops and can change. We may earn nothing from these links; we just like a good deal.</p>
       </footer>
+
+      {/* ── phones: small floating size reminder (replaces the hero card) ── */}
+      {view === "shop" && !openProduct && !sheet && (
+        <div className="pointer-events-none fixed inset-x-0 z-30 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
+          {fit ? (
+            <div className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-ink/10 bg-white/95 text-sm font-semibold shadow-lg backdrop-blur">
+              <button type="button" aria-pressed={filters.fitsMe} onClick={() => { setFilters((f) => ({ ...f, fitsMe: !f.fitsMe })); setShown(PAGE); }}
+                className={clsx("flex items-center gap-1.5 py-2 pl-3.5 pr-3", filters.fitsMe ? "bg-ink text-white" : "text-ink")}>
+                <span className={clsx("grid h-4 w-4 place-items-center rounded-full border", filters.fitsMe ? "border-acid bg-acid text-ink" : "border-ink/40")}>{filters.fitsMe && <Check className="h-3 w-3" />}</span>
+                {filters.fitsMe ? `${fitCount} fit ${firstName}` : `Only my size`} · {fit.rangeLabel}
+              </button>
+              <button type="button" onClick={() => openSize()} className="border-l border-line px-3 py-2 text-muted" aria-label="Edit size"><Ruler className="h-4 w-4" /></button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => openSize()} className="btn-lime pointer-events-auto !py-2 !text-sm shadow-lg"><Ruler className="h-4 w-4" />Find my size</button>
+          )}
+        </div>
+      )}
 
       {/* ── mobile bottom nav ── */}
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
