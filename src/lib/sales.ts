@@ -87,7 +87,19 @@ export type Verdict = { kind: "buy" | "wait" | "fair"; title: string; text: stri
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 /** Buy now or wait? From the current discount and the next sale for this buyer and sport. */
-export function buyOrWait(opts: { now: Date; country: string; sport: Sport; discountPct: number; lowestIn90: boolean }): Verdict | null {
+export function buyOrWait(opts: { now: Date; country: string; sport: Sport; discountPct: number; lowestIn90: boolean; stock?: "ok" | "low" | "last" }): Verdict | null {
+  const v = saleVerdict(opts);
+  // Scarce stock beats waiting for a sale: last season's boards aren't restocked.
+  if (opts.stock === "last" && (!v || v.kind !== "buy")) {
+    return { kind: "buy", title: "Don't wait too long", text: `It's last season's board and stock is running out${v?.event ? `: it may be gone before ${v.event.name}` : ""}. Sold-out sizes usually don't come back.`, event: v?.event };
+  }
+  if (opts.stock === "low" && v?.kind === "wait") {
+    return { ...v, title: `${v.title}, but stock is low`, text: `${v.text} Sizes are selling out, so waiting is a gamble.` };
+  }
+  return v;
+}
+
+function saleVerdict(opts: { now: Date; country: string; sport: Sport; discountPct: number; lowestIn90: boolean }): Verdict | null {
   const { active, upcoming } = salesFor(opts.now, opts.country, opts.sport, 45);
   const sale = active[0];
   if (sale) {
