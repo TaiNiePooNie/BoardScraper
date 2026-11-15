@@ -71,7 +71,10 @@ const QUICK: { key: QuickKey; label: (f: StoreFilters) => string; on: (f: StoreF
   { key: "fits", label: () => "Fits me", on: (f) => f.fitsMe, set: (f, on) => ({ ...f, fitsMe: on }) },
 ];
 
-export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLocale; services: ShopServices }) {
+/** The shop lives at "/" (or wherever the static page is); /board/<id> links open it on that board. */
+const basePath = () => (location.pathname.startsWith("/board/") ? "/" : location.pathname);
+
+export function StoreApp({ initialLocale, services, initialBoardId }: { initialLocale: BuyerLocale; services: ShopServices; initialBoardId?: string }) {
   const [store, setStore] = useState<Store>(firstStore);
   const [sized, setSized] = useState(false);
   const [ready, setReady] = useState(false);
@@ -95,6 +98,19 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const localeRef = useRef(locale);
   localeRef.current = locale;
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // The floating size pill slides away while you scroll down the list and returns when you scroll up.
+  const [pillHidden, setPillHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 12) return;
+      setPillHidden(y > last && y > 160);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   /** `?board=<id>` from the address bar, opened once the deals have loaded. */
   const [pendingBoard, setPendingBoard] = useState<string | null>(null);
   const openInbox = useRef(false);
@@ -126,7 +142,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     };
     const key = Object.keys(notices).find((k) => q.has(k));
     if (key) setToast(notices[key]);
-    if (q.get("board")) setPendingBoard(q.get("board"));
+    if (q.get("board") ?? initialBoardId) setPendingBoard(q.get("board") ?? initialBoardId!);
     if (q.has("profile")) setSheet("account");
     if (q.has("inbox")) openInbox.current = true;
     // One-off params (signedin, profile, …) drop out when the view is written back to the URL below.
@@ -255,7 +271,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const viewUrl = useCallback((board: string | null) => {
     const q = viewToQuery({ sport, filters, sort });
     if (board) q.set("board", board);
-    return `${location.pathname}?${q}`;
+    return `${basePath()}?${q}`;
   }, [sport, filters, sort]);
   useEffect(() => {
     if (!ready) return;
@@ -546,7 +562,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
 
       {/* ── phones: small floating size pill (replaces the hero card) ── */}
       {view === "shop" && !openProduct && !sheet && visible.length > 0 && (
-        <div className="pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4 md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
+        <div className={clsx("pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4 transition duration-200 md:hidden", pillHidden && "translate-y-24 opacity-0")} style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
           {fit ? (
             <div className="pointer-events-auto flex max-w-full items-center overflow-hidden rounded-full border border-line bg-white text-sm font-semibold shadow-float">
               <button type="button" aria-pressed={filters.fitsMe} onClick={() => changeFilters((f) => ({ ...f, fitsMe: !f.fitsMe }))}

@@ -55,7 +55,8 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
   // Shops with one page per size: buy from the page of your size.
   const buyUrl = offer.listing.sizes.find((z) => z.inStock && offerFits.has(z.label) && z.url)?.url ?? offer.listing.url;
   const share = async () => {
-    const url = `${location.origin}${location.pathname}?board=${p.id}`;
+    // The live site shares /board/<id> (title, price and photo in link previews); the static test page keeps its own URL.
+    const url = "__BB_ASSETS" in globalThis ? `${location.origin}${location.pathname}?board=${p.id}` : `${location.origin}/board/${p.id}`;
     try {
       if (navigator.share) await navigator.share({ title: `${p.board.brand} ${p.board.model}`, url });
       else {
