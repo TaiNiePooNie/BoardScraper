@@ -85,7 +85,7 @@ describe("pipeline", () => {
   it("never returns a non-wide size to a wide-boot rider", () => {
     const res = buildDeals(buildMockCatalog(), { country: "DE", currency: "EUR", source: "default" }, {
       weightKg: 85, heightCm: 188, bootSize: 45, bootSystem: "EU", style: "freeride",
-    });
+    }, "snow");
     expect(res.deals.length).toBeGreaterThan(0);
     for (const d of res.deals) for (const m of d.matchingSizes) expect(m.size.waist).toBe("wide");
   });
