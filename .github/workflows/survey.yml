@@ -8,6 +8,9 @@ on:
       sites:
         description: "Candidate ids, comma-separated (blank = all)"
         required: false
+      dryrun:
+        description: "Configured retailer ids to dry-run instead of surveying (comma-separated, 'all' = every retailer)"
+        required: false
 
 permissions:
   contents: read
@@ -22,17 +25,37 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
         env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
+      - name: Dry-run retailers (parse only, no database)
+        if: ${{ inputs.dryrun != '' }}
+        env: { DRYRUN: "${{ inputs.dryrun }}" }
+        run: |
+          ids="$DRYRUN"; [ "$ids" = "all" ] && ids=$(npm run -s retailers | tr -d '[]"')
+          for r in ${ids//,/ }; do
+            echo "=== $r"
+            timeout 300 npx tsx src/scraper/run.ts --retailer=$r --dry-run --limit=2 2>&1 | grep -E '✓|⚠|Error|"sport"' | cut -c1-260 | head -8 || true
+          done
       - name: Robots + platform
+        if: ${{ inputs.dryrun == '' }}
         env: { SITES: "${{ inputs.sites }}" }
         run: |
           npx tsx scripts/survey-retailers.ts $SITES | tee survey.txt
           { echo '```'; cat survey.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Shopify details
+        if: ${{ inputs.dryrun == '' }}
         env: { SITES: "${{ inputs.sites }}" }
         run: |
           npx tsx scripts/survey-deep.ts survey-deep.json $SITES | tee deep.txt
           { echo '```'; cat deep.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Print shipping details (one line per Shopify site)
+        if: ${{ inputs.dryrun == '' }}
+        run: |
+          node -e '
+            const r = require("./survey-deep.json");
+            for (const x of r.filter((x) => x.shopify)) {
+              console.log("SHIP " + JSON.stringify({ id: x.id, cur: x.meta?.currency, country: x.meta?.country, to: x.meta?.shipsTo, policy: (x.shippingPolicy || "").slice(0, 900) }));
+            }'
       - uses: actions/upload-artifact@v4
+        if: ${{ inputs.dryrun == '' }}
         with:
           name: survey
           path: |

@@ -108,7 +108,7 @@ export type BoardSize = z.infer<typeof BoardSize>;
 
 /* ───────────────────────── Money & locale ───────────────────────── */
 
-export const CurrencyCode = z.enum(["EUR", "USD", "GBP", "CHF", "CAD", "AUD", "NZD", "SEK", "NOK", "DKK", "PLN", "JPY", "SGD", "AED"]);
+export const CurrencyCode = z.enum(["EUR", "USD", "GBP", "CHF", "CAD", "AUD", "NZD", "SEK", "NOK", "DKK", "PLN", "JPY", "SGD", "AED", "HKD"]);
 export type CurrencyCode = z.infer<typeof CurrencyCode>;
 
 /** ISO-3166 alpha-2. */

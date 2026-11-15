@@ -41,8 +41,16 @@ async function deep(c: (typeof CANDIDATES)[number]): Promise<Result> {
     r.shopify = true;
     r.meta = { name: meta.name, currency: meta.currency, country: meta.country, shipsTo: meta.ships_to_countries };
   } catch (e) {
-    r.error = `meta: ${(e as Error).message.slice(0, 120)}`;
-    return r;
+    // Some stores hide /meta.json but still serve the public catalogue feed.
+    try {
+      const probe = await http.getJson<{ products?: unknown[] }>(`${c.url}/products.json?limit=1`);
+      if (!Array.isArray(probe.products)) throw new Error("no products array");
+      r.shopify = true;
+      r.error = `meta hidden (${(e as Error).message.slice(0, 60)}); products.json works`;
+    } catch {
+      r.error = `meta: ${(e as Error).message.slice(0, 120)}`;
+      return r;
+    }
   }
   try {
     const pol = await http.get(`${c.url}/policies/shipping-policy`);

@@ -111,3 +111,24 @@ describe("generic Shopify adapter (fixture catalogue)", () => {
     expect(shopifyBoard(p, "https://brand.example", "", "USD", { defaultSport: "snow" })).toMatchObject({ sport: "snow", model: "Flagship Pro", currency: "USD" });
   });
 });
+
+describe("store-v3 survey misfits are dropped", async () => {
+  const { parseShopifyProduct } = await import("./retailers/shopify");
+  const base = { handle: "x", body_html: "", vendor: "V", tags: [], images: [], options: [{ name: "Size", position: 1 }] };
+  const v = (label: string) => ({ title: label, price: "100.00", compare_at_price: null, available: true, option1: label, option2: null, option3: null });
+  it.each([
+    ["Dakine Pipe BoardBag Rosin", "snow", ["148", "157"]],
+    ["Ronix Flyweight Atlantik Wakesurf", "surf", [`4'7"`]],
+    ["FREEDOM Techno / Foilboard", "surf", [`4'8"`]],
+    ["Ronix Carbon Air Core 3 Skimmer", "surf", [`4'4"`]],
+    ["Sharpeye Synergy Youth - Pre Loved", "surf", [`4'9"`]],
+    ["Vans Premium LX Authentic Deck in Black", "skate", ["9", "10", "11"]],
+  ] as const)("%s", (title, sport, sizes) => {
+    const p = { ...base, title, product_type: "", variants: sizes.map(v) };
+    expect(parseShopifyProduct(p as never, "https://x.test", "2026-11-15", sport)).toBeNull();
+  });
+  it("keeps a real deck", () => {
+    const p = { ...base, title: "Chocolate Trahan Bar Series III", product_type: "Decks", variants: ['8.25"', '8.5"'].map(v) };
+    expect(parseShopifyProduct(p as never, "https://x.test", "2026-11-15", "skate")?.sizes.map((s) => s.widthIn)).toEqual([8.25, 8.5]);
+  });
+});

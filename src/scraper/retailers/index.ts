@@ -1,6 +1,8 @@
 import { RETAILERS } from "@/lib/retailers";
 import type { RetailerAdapter } from "../types";
+import { SHOPIFY_SHOPS } from "@/lib/retailers-shopify";
 import { evoAdapter } from "./evo";
+import { shopifyAdapter } from "./shopify";
 import { sitemapJsonLdAdapter } from "./sitemapJsonLd";
 
 export const ADAPTERS: Record<string, RetailerAdapter> = {
@@ -36,4 +38,5 @@ export const ADAPTERS: Record<string, RetailerAdapter> = {
       return best?.[0] ?? null;
     },
   }),
+  ...Object.fromEntries(SHOPIFY_SHOPS.map((x) => [x.retailer.id, shopifyAdapter({ retailer: x.retailer, sports: x.sports, defaultSport: x.defaultSport })])),
 };

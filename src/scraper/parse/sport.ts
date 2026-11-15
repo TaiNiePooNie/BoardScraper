@@ -40,7 +40,7 @@ export function isSkateSurfGear(title: string): boolean {
 }
 
 /** Variant labels to skip (B-grade, used, placeholder options). */
-export const SKIP_VARIANT = /\b(b[- ]?grade|blem\w*|used|do not use)\b/i;
+export const SKIP_VARIANT = /\b(b[- ]?grade|blem\w*|used|pre[- ]?loved|do not use)\b/i;
 
 /** Guess the sport from shop taxonomy + title. Null = not a board we handle. */
 export function detectSport(hint: string): Sport | null {
