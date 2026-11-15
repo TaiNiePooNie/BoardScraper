@@ -386,3 +386,19 @@ describe("rider-chosen size range", () => {
     expect(matchSizesFor([{ lengthCm: 158, waist: "wide", label: "158W", inStock: true }], fit)).toHaveLength(1);
   });
 });
+
+describe("surf length range", () => {
+  it("a rider-set length range also filters boards that list volume", async () => {
+    const { recommendFor, matchSizesFor } = await import("@/lib/sizing");
+    const rider: import("@/lib/types").RiderInput = { weightKg: 75, heightCm: 178, bootSize: 10, bootSystem: "US", style: "any", skill: "intermediate", waves: "small" };
+    const rec = recommendFor("surf", rider);
+    const vol = rec.ideal;
+    const short = { lengthCm: 170, waist: "regular" as const, label: `5'7"`, inStock: true, volumeL: vol };
+    const long = { lengthCm: 240, waist: "regular" as const, label: `7'10"`, inStock: true, volumeL: vol };
+    expect(matchSizesFor([short, long], rec)).toHaveLength(2); // default: volume decides
+    const own = recommendFor("surf", { ...rider, sizeRange: { surfLength: [230, 250] } });
+    expect(own.lengthCustom).toBe(true);
+    expect(matchSizesFor([short, long], own).map((m) => m.size.label)).toEqual([`7'10"`]);
+    expect(Number.isInteger(rec.range[0] * 2)).toBe(true);
+  });
+});

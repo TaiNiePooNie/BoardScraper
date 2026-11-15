@@ -315,7 +315,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
               </button>
             )}
             <button type="button" onClick={() => setSheet("account")} className="rounded-full p-1 hover:bg-surface" aria-label="Your profile">
-              <Avatar n={store.buddies[0].avatar} name={acct.user?.name ?? store.buddies[0].name} size={30} />
+              <Avatar n={store.buddies[0].avatar} name={store.buddies[0].name} size={30} />
             </button>
           </div>
         </div>

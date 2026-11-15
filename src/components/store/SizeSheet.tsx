@@ -66,6 +66,13 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
   const [r, setR] = useState<RiderInput>(buddy.rider);
   const [name, setName] = useState(buddy.name);
   const set = (p: Partial<RiderInput>) => setR((x) => ({ ...x, ...p }));
+  type RangeKey = keyof NonNullable<RiderInput["sizeRange"]>;
+  const setRange = (key: RangeKey, range: [number, number] | null) => setR((x) => {
+    const next = { ...(x.sizeRange ?? {}) };
+    if (range) next[key] = range;
+    else delete next[key];
+    return { ...x, sizeRange: Object.keys(next).length ? next : undefined };
+  });
   const fit = recommendFor(sport, r);
   const value = sport === "skate" ? fit.ideal : sport === "surf" ? (fit.lengthRangeCm![0] + fit.lengthRangeCm![1]) / 2 / r.heightCm : fit.ideal / r.heightCm;
   const kidsOk = r.fit === "kids";
@@ -85,7 +92,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
         </div>
       </div>
       <label className="sr-only" htmlFor="rider-name">Name</label>
-      {buddy.id !== buddies[0]?.id && <input id="rider-name" className="input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} placeholder="Name" />}
+      <input id="rider-name" className="input !py-2.5 !text-base" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} placeholder={buddy.id === buddies[0]?.id ? "Your name or nickname" : "Buddy's name"} />
 
       {/* sport */}
       <div role="radiogroup" aria-label="Sport" className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1">
@@ -147,12 +154,11 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
         <Seg<SkillLevel> label="Level" value={r.skill ?? "intermediate"} onChange={(v) => set({ skill: v })}
           options={[["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"], ["expert", "Expert"]]} />
       )}
-      <SizeRange fit={fit} onChange={(range) => setR((x) => {
-        const next = { ...(x.sizeRange ?? {}) };
-        if (range) next[sport] = range;
-        else delete next[sport];
-        return { ...x, sizeRange: Object.keys(next).length ? next : undefined };
-      })} />
+      <SizeRange
+        fit={fit}
+        onChange={(range) => setRange(sport, range)}
+        onLengthChange={sport === "surf" ? (range) => setRange("surfLength", range) : undefined}
+      />
       {kidsOk && sport === "skate" && <p className="text-xs text-muted">Kids&apos; shoe sizes: use US kids sizes (e.g. 3 = US kids 3).</p>}
       <p className="text-xs text-muted">{fit.notes.join(" · ")}</p>
     </div>
