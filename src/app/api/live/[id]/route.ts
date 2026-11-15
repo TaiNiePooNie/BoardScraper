@@ -45,6 +45,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     const { boardId } = await ingestProduct(db, row.retailerId, { ...p, url: row.url });
     await refreshBoards(db, [boardId]);
     const changed = Math.abs(p.price - row.priceAmount) >= 0.01;
+    if (changed) (await import("@/lib/data/repository")).repository.invalidate();
     const inStock = p.sizes.some((z) => z.inStock);
     return NextResponse.json({
       ok: true,

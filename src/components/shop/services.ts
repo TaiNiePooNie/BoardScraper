@@ -1,7 +1,9 @@
 import type { MePayload } from "@/lib/account";
-import type { DealsResult } from "@/lib/deals";
+import { fromParts, type CatalogPart } from "@/lib/catalog-wire";
+import type { Catalog } from "@/lib/data/repository";
+import { buildDeals, type DealsResult } from "@/lib/deals";
 import type { FeedbackInput } from "@/lib/feedback";
-import type { CurrencyCode, RiderInput } from "@/lib/types";
+import { SPORTS, type CurrencyCode, type RiderInput, type Sport } from "@/lib/types";
 
 export type DealsLoader = (q: { country: string; currency: CurrencyCode; rider: RiderInput | null }) => Promise<DealsResult>;
 
@@ -157,6 +159,40 @@ const accountServices: AccountServices = {
   },
 };
 
+/**
+ * The catalogue feed is country-independent and CDN-cached; deals (delivered price,
+ * grade, fit) are computed here in the browser. Kept in memory for a few minutes so
+ * switching country or currency doesn't download it again.
+ */
+const CATALOG_TTL_MS = 5 * 60_000;
+let catalogCache: { at: number; data: Promise<{ catalog: Catalog; source: "db" | "mock" }> } | null = null;
+
+async function fetchPart(sport: Sport, part: number): Promise<CatalogPart> {
+  // `v` skips the CDN copy after a live check changed a price.
+  const res = await fetch(`/api/catalog?sport=${sport}&part=${part}${bust ? `&v=${bust}` : ""}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function loadCatalog() {
+  if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL_MS) return catalogCache.data;
+  const data = (async () => {
+    const perSport = await Promise.all(SPORTS.map(async (sport) => {
+      const first = await fetchPart(sport, 0);
+      const rest = await Promise.all(Array.from({ length: first.parts - 1 }, (_, i) => fetchPart(sport, i + 1)));
+      return [first, ...rest];
+    }));
+    const parts = perSport.flat();
+    return { catalog: fromParts(parts), source: parts[0]?.source ?? "db" };
+  })();
+  data.catch(() => (catalogCache = null));
+  catalogCache = { at: Date.now(), data };
+  return data;
+}
+/** After a live price check changed something: next load re-downloads. */
+let bust = 0;
+export const invalidateCatalog = () => { catalogCache = null; bust = Date.now(); };
+
 async function jsonOrThrow(res: Response) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -203,11 +239,10 @@ export const apiServices: ShopServices = {
   feedback: feedbackServices,
   account: accountServices,
   async loadDeals({ country, currency, rider }) {
-    const q = new URLSearchParams({ country, currency });
-    if (rider) Object.entries(rider).forEach(([k, v]) => v !== undefined && q.set(k, String(v)));
-    const res = await fetch(`/api/deals?${q}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const { catalog, source } = await loadCatalog();
+    const result = buildDeals(catalog, { country, currency, source: "override" }, rider);
+    const updatedAt = catalog.listings.reduce<string | null>((m, l) => (!m || l.lastScrapedAt > m ? l.lastScrapedAt : m), null);
+    return { ...result, source, updatedAt };
   },
   restock: {
     async start(passcode) {
@@ -226,6 +261,7 @@ export const apiServices: ShopServices = {
     const res = await fetch(`/api/live/${encodeURIComponent(listingId)}`, { method: "POST" });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, changed: false, message: body.error ?? "Couldn't check the shop right now." };
+    if (body.changed) invalidateCatalog();
     return body;
   },
 };
