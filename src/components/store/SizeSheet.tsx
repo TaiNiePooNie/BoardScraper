@@ -40,7 +40,7 @@ function ShoeSize({ rider, onChange, label }: { rider: RiderInput; onChange: (r:
   return (
     <div>
       <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center rounded-full border border-line">
           <button type="button" onClick={() => step(-0.5)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface" aria-label="Smaller"><Minus className="h-4 w-4" /></button>
           <span className="min-w-[3.5rem] text-center text-xl font-bold tabular-nums" aria-live="polite">{Number.isInteger(rider.bootSize) ? rider.bootSize : rider.bootSize.toFixed(1)}</span>
