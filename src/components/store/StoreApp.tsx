@@ -74,7 +74,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const [acct, setAcct] = useState<AccountState>({ available: false, providers: { google: false, apple: false, email: false, password: false, passwordReset: false }, user: null });
   const [toast, setToast] = useState<string | null>(null);
   const [live, setLive] = useState<Record<string, LiveCheck>>({});
-  const [heroArt, setHeroArt] = useState(false);
+  const heroArt = useArtReady(ASSETS.hero[sport]);
   const loadedAt = useRef(0);
   const localeRef = useRef(locale);
   localeRef.current = locale;
@@ -331,8 +331,8 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         {/* ── hero ── */}
         {showHero && (
           <section className={clsx("relative mt-3 overflow-hidden rounded-3xl bg-gradient-to-br md:mt-6", HERO_TINT[sport])}>
-            <HeroArt sport={sport} onReady={setHeroArt} />
-            <div className="relative grid min-h-[220px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-5 md:min-h-[320px] md:p-10">
+            {heroArt && <img src={ASSETS.hero[sport]} alt="" className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-right md:block" />}
+            <div className={clsx("relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-5 md:min-h-[320px] md:p-10", heroArt ? "pb-3" : "min-h-[220px]")}>
               <div className="max-w-md">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">{SPORT_LABEL[sport]}</p>
                 <h1 className="mt-1 text-[1.65rem] font-extrabold leading-[1.1] tracking-tight md:text-5xl">{HERO_LINE[sport]}</h1>
@@ -354,6 +354,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
               </div>
               {!heroArt && <AssetImg src={ASSETS.mascotSport[sport]} alt="" className="h-28 w-28 self-end md:h-56 md:w-56" fallback={<AssetImg src={ASSETS.mascot.wave} alt="" className="h-28 w-28 self-end md:h-56 md:w-56" />} />}
             </div>
+            {heroArt && <img src={ASSETS.heroMobile[sport]} alt="" className="block aspect-[2/1] w-full object-cover object-[50%_75%] md:hidden" />}
           </section>
         )}
 
@@ -525,19 +526,21 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   );
 }
 
-/** Sport hero art (desktop banner / mobile crop); reports whether it loaded so the mascot fallback can hide. */
-function HeroArt({ sport, onReady }: { sport: Sport; onReady: (ok: boolean) => void }) {
-  const [ok, setOk] = useState(false);
-  useEffect(() => { setOk(false); onReady(false); }, [sport, onReady]);
-  return (
-    <picture className={clsx("pointer-events-none absolute inset-0 transition-opacity duration-300", ok ? "opacity-100" : "opacity-0")}>
-      <source media="(min-width: 768px)" srcSet={ASSETS.hero[sport]} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ASSETS.heroMobile[sport]} alt="" className="h-full w-full object-cover object-bottom md:object-right"
-        onLoad={(e) => { const good = e.currentTarget.naturalWidth > 0; setOk(good); onReady(good); }}
-        onError={() => { setOk(false); onReady(false); }} />
-    </picture>
-  );
+/** True once an art file has loaded (false while missing), so layouts can fall back. */
+const artCache = new Map<string, boolean>();
+function useArtReady(src: string): boolean {
+  const [ok, setOk] = useState(() => artCache.get(src) ?? false);
+  useEffect(() => {
+    if (artCache.has(src)) { setOk(artCache.get(src)!); return; }
+    setOk(false);
+    let alive = true;
+    const img = new Image();
+    img.onload = () => { artCache.set(src, img.naturalWidth > 0); if (alive) setOk(img.naturalWidth > 0); };
+    img.onerror = () => { artCache.set(src, false); if (alive) setOk(false); };
+    img.src = src;
+    return () => { alive = false; };
+  }, [src]);
+  return ok;
 }
 
 function SearchBox({ value, onChange, className, inputRef }: { value: string; onChange: (q: string) => void; className?: string; inputRef?: React.Ref<HTMLInputElement> }) {
