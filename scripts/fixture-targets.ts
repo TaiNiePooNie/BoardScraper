@@ -55,11 +55,19 @@ export const FIXTURE_TARGETS: Record<string, FixtureTarget> = {
     max: 4,
   },
   "boardsports-eu": {
-    sitemaps: ["https://www.boardsports.eu/sitemap.xml", "https://www.boardsports.eu/sitemap_index.xml"],
-    urls: ["https://www.boardsports.eu/arbor-snowboards", "https://www.boardsports.eu/capita-snowboards"],
-    follow: /^https:\/\/www\.boardsports\.eu\/[\w-]*(?:snowboard|deck|complete|cruiser|longboard|surfboard)[\w-]*(?:\/\d+)?$/i,
-    max: 4,
+    sitemaps: ["https://www.boardsports.eu/sitemap.xml"],
+    urls: ["https://www.boardsports.eu/snowboards", "https://www.boardsports.eu/longboards", "https://www.boardsports.eu/shipping-payment"],
+    follow: /^https:\/\/www\.boardsports\.eu\/[\w.-]+-(?:(?:snowboard|splitboard)-20\d\d|longboard-complete)$/i,
+    max: 5,
   },
+  "zumiez-snow": {
+    origin: "https://www.zumiez.com",
+    match: /(?:-snowboard-202[5-7]|-202[5-7]-snowboard)\.html$/,
+    urls: ["https://www.zumiez.com/snow/snowboards.html"],
+    max: 4,
+    maxSitemaps: 20,
+  },
+  "skatehut-delivery": { origin: "https://www.skatehut.co.uk", sitemaps: [], urls: ["https://www.skatehut.co.uk/delivery"], max: 0 },
   chilli: {
     match: /\/shop\/surfboards\/detail\.php\?id=\d+$/,
     urls: ["https://www.chillisurfboards.com/shop/surfboards/", "https://www.chillisurfboards.com/legal/shipping.php"],

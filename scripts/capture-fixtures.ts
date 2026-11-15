@@ -16,6 +16,8 @@ import { CANDIDATES } from "./survey-retailers";
 const BOARD = /snowboard|splitboard|skateboard|skate-?deck|\bdecks?\b|complete|cruiser|longboard|surfboard|surf-?board|softboard|foamie|\bboards?\b|planche|tabla|deck|tavola/i;
 const GEAR = /binding|boot|wheel|truck|bearing|griptape|grip-tape|wetsuit|leash|\bfins?\b|bag|helmet|jacket|pant|shoe|sock|hood|tee|shirt|cap|beanie|glove|goggle|wax|sticker|gift|hardware|tool|wax/i;
 const MAX_HTML = 700_000;
+/** Inline CSS can be most of a page (skatedeluxe: 560 kB): drop it so the markup fits. */
+const trim = (html: string) => html.replace(/(<style[^>]*>)[\s\S]*?(<\/style>)/gi, "$1$2").slice(0, MAX_HTML);
 
 async function capture(id: string, out: string) {
   const t = FIXTURE_TARGETS[id] ?? {};
@@ -29,7 +31,7 @@ async function capture(id: string, out: string) {
   try {
     const home = await http.get(`${c.url}/`);
     origin = new URL(home.url).origin;
-    writeFileSync(path.join(dir, "home.html"), home.text.slice(0, MAX_HTML));
+    writeFileSync(path.join(dir, "home.html"), trim(home.text));
   } catch (e) {
     note.push(`home: ${(e as Error).message.slice(0, 100)}`);
   }
@@ -69,7 +71,7 @@ async function capture(id: string, out: string) {
   for (const [i, u] of (t.urls ?? []).entries()) {
     try {
       const r = await http.get(u);
-      writeFileSync(path.join(dir, `page-${i + 1}.html`), `<!-- ${u} -->\n` + r.text.slice(0, MAX_HTML));
+      writeFileSync(path.join(dir, `page-${i + 1}.html`), `<!-- ${u} -->\n` + trim(r.text));
       if (t.follow) {
         const links = [...r.text.matchAll(/href="([^"#]+)"/g)].map((m) => new URL(m[1].replace(/&amp;/g, "&"), r.url).href);
         for (const l of new Set(links)) if (t.follow.test(l) && !picks.includes(l) && picks.length < max) picks.push(l);
@@ -101,7 +103,7 @@ async function capture(id: string, out: string) {
   for (const [i, u] of picks.entries()) {
     try {
       const r = await http.get(u);
-      writeFileSync(path.join(dir, `product-${i + 1}.html`), `<!-- ${u} -->\n` + r.text.slice(0, MAX_HTML));
+      writeFileSync(path.join(dir, `product-${i + 1}.html`), `<!-- ${u} -->\n` + trim(r.text));
     } catch (e) {
       note.push(`product ${u}: ${(e as Error).message.slice(0, 80)}`);
     }
