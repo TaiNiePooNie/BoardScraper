@@ -106,6 +106,8 @@ export const BoardSize = z.object({
   widthIn: z.number().optional(),
   /** Surf: board volume in litres (when the shop lists it). */
   volumeL: z.number().optional(),
+  /** Shop page for this size when the shop lists sizes on separate pages (set when merging duplicates). */
+  url: z.string().optional(),
   /** Per-size price when the retailer prices sizes/colorways differently. */
   price: z.number().optional(),
 });
