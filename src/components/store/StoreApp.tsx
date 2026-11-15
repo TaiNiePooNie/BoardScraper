@@ -30,6 +30,7 @@ const RELOAD_AFTER_MS = 10 * 60_000;
 const PAGE = 24;
 const SPORT_KEY = "boardbuddy.sport";
 const SIZED_KEY = "boardbuddy.sized";
+const V3_KEY = "boardbuddy.v3";
 
 const firstStore = (): Store => ({
   buddies: [{ id: "me", name: "Me", avatar: 8, rider: DEFAULT_PROFILE.rider, budget: DEFAULT_PROFILE.budget }],
@@ -87,10 +88,11 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   /* ── boot ─────────────────────────────────────────────────────────────── */
   useEffect(() => {
     const saved = loadStore();
-    if (saved) {
-      setStore(saved.activeId === BROWSE_ID ? { ...saved, activeId: saved.buddies[0].id } : saved);
-      setSized(true);
-    } else if (safeGet(SIZED_KEY)) setSized(true);
+    // Riders from the old setup wizard count as sized; in v3 only saving a size (or an account) does.
+    if (saved && !safeGet(V3_KEY)) safeSet(SIZED_KEY, "1");
+    safeSet(V3_KEY, "1");
+    if (saved) setStore(saved.activeId === BROWSE_ID ? { ...saved, activeId: saved.buddies[0].id } : saved);
+    if (safeGet(SIZED_KEY)) setSized(true);
     const sp = SportSchema.safeParse(new URLSearchParams(location.search).get("sport") ?? safeGet(SPORT_KEY));
     if (sp.success) setSportState(sp.data);
 
@@ -376,7 +378,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         )}
 
         {/* ── toolbar ── */}
-        <div id="grid" className="sticky top-[calc(env(safe-area-inset-top,0px)+5.75rem)] z-30 -mx-4 mt-6 flex items-center gap-2 bg-white/95 px-4 py-2.5 backdrop-blur md:top-16 md:mx-0 md:px-0">
+        <div id="grid" className={clsx("sticky top-[calc(env(safe-area-inset-top,0px)+5.75rem)] z-30 -mx-4 flex items-center gap-2 bg-white/95 px-4 py-2.5 backdrop-blur md:top-16 md:mx-0 md:px-0", showHero || facets.categories.size ? "mt-6" : "mt-2")}>
           <h2 className="min-w-0 flex-1 truncate text-base font-bold md:text-lg">
             {view === "saved" ? `Saved (${list.length})` : filters.category ? CATEGORY_LABEL[filters.category] : searching ? `Results for “${filters.q.trim()}”` : `All ${SPORT_LABEL[sport].toLowerCase()}`}
             {view === "shop" && <span className="ml-2 text-sm font-medium text-muted">{visible.length}</span>}

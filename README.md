@@ -30,17 +30,15 @@ Every path used is allowed by the shop's robots.txt; the fetcher checks robots.t
 
 ## App
 
-- **Setup flow** (`src/components/shop/setup/`): fit preference, height/weight sliders with a to-scale size preview, boot-size wheel, style and skill cards, budget range. Every number can be typed. Saved on the device.
-- **Shop walls** (`src/lib/walls.ts`, `ShopWall`, `RackBoard`): picks for you, sale rack, last season corner, full price wall, slightly over budget, holds, whole shop.
-- **Board detail** (`BoardDetail`): pick-up transition, callouts around the board, game-style stats (`src/lib/stats.ts`), delivered price breakdown, other shops, price history, riders and reviews. Swipe or arrow keys to browse.
-- **Pro mode**: ship-to and currency, filters, list and deal-tier view.
-- **Restock** (`/api/restock`): button in Pro mode, visible only when signed in with a confirmed email listed in `OWNER_EMAILS`; starts the scrape workflow. Needs `GITHUB_TOKEN` (fine-grained, this repo, *Actions: read and write*).
-- **Live price check** (`/api/live/[id]`): opening a board re-checks that one listing at the shop (at most every 15 min per listing).
-- **Riders & buddies**: several rider profiles (you + buddies) with a header switcher; "Browse everything" shows the whole shop without size or budget filters. Kids / Men / Women / All fit filter.
-- **Accounts** (Better Auth, optional): Google, Apple and email sign-in links; profile page with riders, deal-email settings, log out and delete account. Guests keep everything on the device.
-- **Deal alert emails** (`npm run alerts`, runs after the daily scrape): opt-in weekly roundup on a chosen day or "when a new board fits", plus price drops on held boards. One-click unsubscribe.
-- **Image proxy** (`/api/img`): trims the shops' white canvas, resizes and caches product photos (allow-listed hosts only).
-- **Static test build**: `DATABASE_URL=pglite:./data/pglite npm run build:static -- out.html` makes one self-contained page (art and one photo per board embedded, deals computed in the browser). `--no-photos` skips photos.
+A light, modern web store for **snowboards, skateboards and surfboards** (`src/components/store/`, view model in `src/lib/store.ts`).
+
+- **Header**: sport switch (Snow · Skate · Surf), search, "Find my size", saved boards, profile. Phones get a bottom bar (Shop, Saved, My size, Profile).
+- **Shop**: hero per sport, "Shop by type" tiles, product grid (24 at a time, "Show more"), filter & sort sheet (fits me, on sale, gender, max price, brand, shop).
+- **Price badges** instead of deal tiers: −% off, "Lowest in 90 days", "Price dropped", "Last season", "Fits you". Prices are delivered prices (shipping, VAT, duties) for the chosen country.
+- **Product page** (`?board=<id>`, works with the back button): photo gallery, sizes with yours highlighted, compare shops, price history, details and board stats, sticky "Buy at shop" bar.
+- **Find my size** (`SizeSheet`): one sheet for all sports with the Buddy flipbook preview. Snow: length from weight, skill, style, wide boots. Skate: deck width from shoe size and riding style. Surf: volume from weight × skill factor and wave size (plus a length range). Logic in `src/lib/sizing.ts` (`recommendFor`, `matchSizesFor`).
+- **Riders & buddies**, **accounts** (Better Auth), **deal alert emails**, **live price check** and **owner-only restock** (footer link) work as before.
+- **Static test build**: `DATABASE_URL=pglite:./data/pglite npm run build:static -- out.html`.
 
 ## Database & scheduled scraping
 
