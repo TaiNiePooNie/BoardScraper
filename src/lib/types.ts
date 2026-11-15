@@ -15,6 +15,10 @@ export type SkillLevel = z.infer<typeof SkillLevel>;
 export const FitPreference = z.enum(["any", "mens", "womens", "kids"]);
 export type FitPreference = z.infer<typeof FitPreference>;
 
+/** Who the boards are for; several can be chosen (empty = everyone). Skate/surf only distinguish kids vs adults. */
+export const Audience = z.enum(["kids", "mens", "womens"]);
+export type Audience = z.infer<typeof Audience>;
+
 /** Rider's chosen style; "any" = show boards for every style (sized as all-mountain). */
 export const RiderStyle = z.enum(["park", "all-mountain", "freeride", "any"]);
 export type RiderStyle = z.infer<typeof RiderStyle>;
@@ -61,7 +65,8 @@ export const RiderInput = z.object({
   bootSystem: BootSizeSystem.default("US"),
   style: RiderStyle,
   skill: SkillLevel.optional(), // default: intermediate
-  fit: FitPreference.optional(), // default: any
+  fit: FitPreference.optional(), // legacy single choice; `fits` wins when set
+  fits: z.array(Audience).optional(), // multi-select: kids / mens / womens (empty = all)
   skateStyle: SkateStyle.optional(), // default: street
   waves: SurfWaves.optional(), // default: small
   /** Rider-chosen size range per sport (snow cm, skate in, surf L, surfLength cm); default = the recommended range. */

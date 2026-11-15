@@ -2,7 +2,8 @@
 import clsx from "clsx";
 import { formatMoney } from "@/lib/pricing/currency";
 import { EMPTY_FILTERS, SORT_LABEL, type SortMode, type StoreFilters, type storeFacets } from "@/lib/store";
-import type { CurrencyCode, FitPreference } from "@/lib/types";
+import { AUDIENCE_CHOICES, choiceMembers, type AudienceChoice } from "@/lib/sizing";
+import type { CurrencyCode, Sport } from "@/lib/types";
 import { Sheet } from "./Sheet";
 
 function Toggle({ label, hint, on, onChange, disabled }: { label: string; hint?: string; on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -25,7 +26,10 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export function FilterSheet({ value, onChange, sort, onSort, facets, currency, hasRider, fitLabel, count, onClose }: {
+export const AUDIENCE_LABEL: Record<AudienceChoice, string> = { kids: "Kids", mens: "Men", womens: "Women", adults: "Adults" };
+
+export function FilterSheet({ value, onChange, sort, onSort, facets, currency, hasRider, fitLabel, count, onClose, sport }: {
+  sport: Sport;
   value: StoreFilters;
   onChange: (f: StoreFilters) => void;
   sort: SortMode;
@@ -61,10 +65,14 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
       <Group title="Fit">
         <Toggle label="Fits me" hint={hasRider ? `Only boards in your size${fitLabel ? ` (${fitLabel})` : ""}` : "Set your size first"} on={value.fitsMe} disabled={!hasRider} onChange={(v) => set({ fitsMe: v })} />
         <Toggle label="On sale" hint="At least 10% off the original price" on={value.saleOnly} onChange={(v) => set({ saleOnly: v })} />
-        <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Gender">
-          {([["any", "All"], ["mens", "Men"], ["womens", "Women"], ["kids", "Kids"]] as [FitPreference, string][]).map(([g, l]) => (
-            <button key={g} type="button" role="radio" aria-checked={value.gender === g} onClick={() => set({ gender: g })} className="chip">{l}</button>
-          ))}
+        <p className="mt-2 text-xs text-muted">Who it&apos;s for (pick one or more)</p>
+        <div className="mt-1 flex flex-wrap gap-1.5" role="group" aria-label="Who it's for">
+          {AUDIENCE_CHOICES[sport].map((c) => {
+            const members = choiceMembers(c);
+            const on = members.every((m) => value.audience.includes(m));
+            const next = on ? value.audience.filter((a) => !members.includes(a)) : [...new Set([...value.audience, ...members])];
+            return <button key={c} type="button" aria-pressed={on} onClick={() => set({ audience: next })} className="chip">{AUDIENCE_LABEL[c]}</button>;
+          })}
         </div>
       </Group>
       <Group title="Max price">

@@ -510,7 +510,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         />
       )}
       {sheet === "filters" && (
-        <FilterSheet value={filters} onChange={(f) => { setFilters(f); setShown(PAGE); }} sort={sort} onSort={setSort} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.rangeLabel ?? null} count={visible.length} onClose={() => setSheet(null)} />
+        <FilterSheet sport={sport} value={filters} onChange={(f) => { setFilters(f); setShown(PAGE); }} sort={sort} onSort={setSort} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.rangeLabel ?? null} count={visible.length} onClose={() => setSheet(null)} />
       )}
       {sheet === "locale" && <LocaleSheet value={locale} onChange={setLocale} onClose={() => setSheet(null)} />}
       {sheet === "account" && (
