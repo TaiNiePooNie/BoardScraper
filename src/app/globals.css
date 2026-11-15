@@ -1,39 +1,86 @@
 @import "tailwindcss";
 
-/* BoardBuddy v3: a light, modern web store. Sticker art (Buddy) adds personality.
- * Legacy token names are remapped for light: "paper" = ink text, "asphalt" = white surface. */
-@custom-variant dark (&:where(.dark, .dark *));
+/*
+ * BoardBuddy design system: a light, calm web store. Buddy's sticker art adds the personality,
+ * so the UI itself stays quiet: white pages, ink text, one accent (acid) and one sale colour.
+ *
+ * Everything on screen uses the tokens and the handful of component classes in this file.
+ * No other colours, shadows or font sizes: add a token here first if one is really missing.
+ *
+ * COLOURS      ink        text, primary buttons, selected chips
+ *              muted      secondary text (5.4:1 on white, 5.0:1 on surface)
+ *              line       borders and dividers
+ *              surface    soft grey fills (image wells, selected rows, search box)
+ *              white      page and sheet background
+ *              acid       brand accent: "fits you", size call-to-action (always with ink text)
+ *              sale       sale prices, −% badges, errors (4.6:1 on white)
+ *              ok         good news: your size, free shipping, buy now (5.4:1 on white)
+ *              warn / warn-bg     caution notes ("this range may not suit you")
+ *              alert / alert-bg   urgent notes and destructive actions ("last sizes", delete)
+ *              orange, pink, ice  sticker tints only (badges, avatar fallbacks, hero washes)
+ *
+ * RADII        rounded-full     buttons, chips, pills, icon buttons
+ *              rounded-control  inputs, notes, small tiles           (12px)
+ *              rounded-card     cards, list groups, image wells      (16px)
+ *              rounded-sheet    sheets, dialogs, hero                (24px)
+ *
+ * SHADOWS      shadow-card   resting cards / small raised controls
+ *              shadow-float  floating pills, toast, sticky bars
+ *              shadow-sheet  sheets and dialogs
+ *
+ * TYPE (Inter) text-2xs 11  badges, counters           text-lg  18  sheet titles
+ *              text-xs  12  hints, meta                text-xl  20  empty-state titles
+ *              text-sm  14  body UI                    text-2xl 24  page / product titles
+ *              text-md  15  buttons, card price        text-3xl 30  big price
+ *              text-base 16 inputs (no iOS zoom)       text-5xl 48  desktop hero only
+ *              Headings are bold, normal case. `.label` is the only uppercase style.
+ *
+ * COMPONENTS   .btn-primary .btn-lime .btn-ghost .btn-danger   buttons (44px tall on phones)
+ *              .icon-btn      round 44px icon button
+ *              .chip          filter / choice pill; selected via aria-pressed / aria-checked
+ *              .input         text fields and selects
+ *              .card          bordered white group
+ *              .tile          picture/option tile; selected via aria-pressed / aria-checked
+ *              .label         small uppercase field label
+ *              .link          inline text button / link
+ *              .note-warn .note-alert .note-info   one-line callouts
+ *              .switch        on/off toggle (checkbox or role=switch)
+ */
 
 @theme {
-  /* Brand accents (ui-art-requests.md Style Bible) */
-  --color-acid: #d4ff3a;
-  --color-acid-deep: #a8d400;
-  --color-pink: #ff3d8b;
-  --color-ice: #33d6ff;
-  --color-orange: #ff6a1a;
-  /* Light store neutrals */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-ink: #15161a;
-  --color-muted: #6b6f76;
+  --color-muted: #666a71;
   --color-line: #e6e7e3;
   --color-surface: #f5f6f3;
-  --color-white: #ffffff;
+  --color-acid: #d4ff3a;
   --color-sale: #e5145f;
-  --color-ok: #138a4b;
-  /* Legacy names (account panel, size sheet parts) mapped to the light theme */
-  --color-paper: #15161a;
-  --color-asphalt: #ffffff;
-  --color-concrete: #f5f6f3;
-  --color-snow: #ffffff;
-  --color-glacier: #d4ff3a;
-  /* Deal tiers (emails only) */
-  --color-tier-xg: #10b981;
-  --color-tier-vg: #22c55e;
-  --color-tier-g: #0ea5e9;
-  --color-tier-n: #94a3b8;
-  --color-tier-b: #f43f5e;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, sans-serif;
-  --font-marker: "Permanent Marker", "Comic Sans MS", cursive;
+  --color-ok: #0f7a41;
+  --color-warn: #8a5a00;
+  --color-warn-bg: #fff6e5;
+  --color-alert: #a33d00;
+  --color-alert-bg: #fff0e8;
+  --color-orange: #ff6a1a;
+  --color-pink: #ff3d8b;
+  --color-ice: #33d6ff;
+
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+
+  --shadow-*: initial;
+  --shadow-card: 0 1px 3px rgb(21 22 26 / 0.08);
+  --shadow-float: 0 6px 24px rgb(21 22 26 / 0.16);
+  --shadow-sheet: 0 0 48px rgb(21 22 26 / 0.22);
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-md: 0.9375rem;
+  --text-md--line-height: 1.375rem;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 :root {
@@ -54,51 +101,113 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-/* Display headings: condensed and heavy, used sparingly (hero, sheet titles). */
-.headline {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-style: italic;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  line-height: 0.95;
-  text-wrap: balance;
-}
-.marker {
-  font-family: var(--font-marker);
+/* ── components ─────────────────────────────────────────────────────────── */
+@layer components {
+  .btn-primary,
+  .btn-lime,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-center text-md font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-ink text-white hover:bg-black;
+  }
+  .btn-lime {
+    @apply bg-acid text-ink hover:brightness-95;
+  }
+  .btn-ghost {
+    @apply border border-line bg-white text-ink hover:border-ink;
+  }
+  .btn-danger {
+    @apply border border-alert/40 bg-white text-alert hover:border-alert;
+  }
+  .btn-danger[data-solid] {
+    @apply border-alert bg-alert text-white;
+  }
+  /* Smaller button for inline rows; still a comfortable tap on phones. */
+  .btn-sm {
+    @apply min-h-10 px-4 py-1.5 text-sm md:min-h-9;
+  }
+
+  .icon-btn {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink transition hover:bg-surface;
+  }
+
+  .chip {
+    @apply inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-white px-3.5 text-sm font-medium text-ink transition hover:border-ink md:min-h-9 md:px-3;
+  }
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
+    @apply border-ink bg-ink text-white;
+  }
+
+  .input {
+    @apply min-h-11 w-full rounded-control border border-line bg-white px-3 py-2 text-base text-ink outline-none placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10 md:min-h-10 md:text-sm;
+  }
+
+  .card {
+    @apply rounded-card border border-line bg-white;
+  }
+
+  .tile {
+    @apply flex flex-col items-center justify-center gap-1 rounded-card border border-line bg-white px-1 py-2 text-center text-xs font-semibold text-muted transition hover:border-ink;
+  }
+  .tile[aria-pressed="true"],
+  .tile[aria-checked="true"],
+  .tile[aria-expanded="true"] {
+    @apply border-ink bg-surface text-ink;
+  }
+
+  .label {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted;
+  }
+
+  .link {
+    @apply font-semibold text-ink underline underline-offset-2 hover:no-underline;
+  }
+
+  .note-warn,
+  .note-alert,
+  .note-info {
+    @apply flex items-start gap-1.5 rounded-control px-3 py-2 text-xs font-medium;
+  }
+  .note-warn {
+    @apply bg-warn-bg text-warn;
+  }
+  .note-alert {
+    @apply bg-alert-bg text-alert;
+  }
+  .note-info {
+    @apply bg-surface text-ink;
+  }
+
+  /* On/off switch: works on <input type="checkbox"> and on a <span> inside a role=switch button. */
+  .switch {
+    @apply relative inline-block h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-line transition-colors;
+  }
+  .switch::before {
+    content: "";
+    @apply absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-card transition-transform;
+  }
+  .switch:checked,
+  .switch[data-on="true"] {
+    @apply bg-ink;
+  }
+  .switch:checked::before,
+  .switch[data-on="true"]::before {
+    transform: translateX(1.25rem);
+  }
 }
 
-/* Card surface (legacy name kept for the account panel). */
-.sticker {
-  @apply rounded-2xl border border-line bg-white shadow-[0_8px_30px_rgba(21,22,26,0.08)];
-}
-.btn-acid,
-.btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-semibold text-white transition hover:bg-black active:scale-[0.98] disabled:opacity-50;
-}
-.btn-lime {
-  @apply inline-flex items-center justify-center gap-2 rounded-full bg-acid px-5 py-3 text-[15px] font-semibold text-ink transition hover:brightness-95 active:scale-[0.98] disabled:opacity-50;
-}
-.btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-ink;
-}
-.panel {
-  @apply rounded-2xl border border-line bg-white;
-}
-.input {
-  @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-ink focus:ring-2 focus:ring-ink/10;
-}
-.chip {
-  @apply whitespace-nowrap rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:border-ink;
-}
-.chip[aria-pressed="true"],
-.chip[aria-checked="true"] {
-  @apply border-ink bg-ink text-white;
-}
-
+/* ── focus + motion ─────────────────────────────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
+}
+/* Dialog containers take focus when they open; no ring for that. */
+[role="dialog"]:focus,
+[data-dialog-panel]:focus {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -108,16 +217,16 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-
-/* Range sliders: light track, ink fill, white thumb. */
+/* ── range sliders: light track, ink fill, acid thumb ───────────────────── */
 .bb-range {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 36px;
+  height: 44px;
   background: transparent;
   touch-action: pan-y;
 }
@@ -145,7 +254,7 @@ body {
   border-radius: 50%;
   background: var(--color-acid);
   border: 3px solid var(--color-ink);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-card);
   cursor: grab;
 }
 .bb-range::-moz-range-thumb {
@@ -156,10 +265,22 @@ body {
   border: 3px solid var(--color-ink);
   cursor: grab;
 }
-/* Dual-thumb budget slider: two stacked ranges, only thumbs take pointer events. */
+.bb-range:focus-visible {
+  outline: none;
+}
+.bb-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.bb-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+/* Two-handle range (size picker): two stacked sliders, only the thumbs take pointer events.
+ * Smaller thumbs so the green "best" band stays visible between them. */
 .bb-dual {
   position: relative;
-  height: 36px;
+  height: 44px;
 }
 .bb-dual .bb-range {
   position: absolute;
@@ -168,18 +289,24 @@ body {
 }
 .bb-dual .bb-range::-webkit-slider-runnable-track {
   background: transparent;
-  border-color: transparent;
-}
-.bb-dual .bb-range::-webkit-slider-thumb {
-  pointer-events: auto;
-}
-.bb-dual .bb-range::-moz-range-thumb {
-  pointer-events: auto;
 }
 .bb-dual .bb-range::-moz-range-track,
 .bb-dual .bb-range::-moz-range-progress {
   background: transparent;
 }
+.bb-dual .bb-range::-webkit-slider-thumb {
+  pointer-events: auto;
+  width: 24px;
+  height: 24px;
+  margin-top: -7px;
+}
+.bb-dual .bb-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+}
+
+/* Horizontal scrollers (quick filters, rider chips) without a visible scrollbar. */
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -187,54 +314,29 @@ body {
   display: none;
 }
 
-/* Logo morph (logo-full.svg: #bb-icon in x 0–300, #bb-word to the right). */
+/* Inline SVG logo (logo-full.svg) sized by its wrapper. */
 .bb-logo {
   display: inline-block;
   overflow: hidden;
-  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .bb-logo svg {
   height: 100%;
   width: auto;
   overflow: visible;
 }
-.bb-logo #bb-word,
-.bb-logo [id^="bb-l"] {
-  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transform-box: fill-box;
-}
-.bb-logo.is-compact #bb-word {
-  opacity: 0;
-  transform: translateX(-12%) scale(0.9);
-}
-.bb-logo #bb-icon {
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.bb-logo.is-compact #bb-icon {
-  transform: rotate(-8deg);
-}
 
-.legal h2 {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-style: italic;
-  text-transform: uppercase;
-  font-size: 1.6rem;
-  margin-top: 0.75rem;
-  color: var(--color-paper);
+/* Long-form text (privacy, terms). */
+.prose-legal {
+  @apply flex flex-col gap-4 text-md leading-relaxed text-ink;
 }
-.legal ul {
-  list-style: disc;
-  padding-left: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+.prose-legal h2 {
+  @apply mt-3 text-lg font-bold;
 }
-.legal a {
-  color: var(--color-acid);
-  text-decoration: underline;
+.prose-legal ul {
+  @apply flex list-disc flex-col gap-1.5 pl-5;
+}
+.prose-legal a {
+  @apply font-semibold underline underline-offset-2;
 }
 
 @keyframes fade {
@@ -248,15 +350,4 @@ body {
 }
 @keyframes page-in {
   from { opacity: 0; transform: translateY(16px); }
-}
-
-/* Range picker: smaller thumbs so the green "best" band stays visible between them. */
-.bb-dual .bb-range::-webkit-slider-thumb {
-  width: 22px;
-  height: 22px;
-  margin-top: -6px;
-}
-.bb-dual .bb-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
 }

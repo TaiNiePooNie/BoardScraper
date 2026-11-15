@@ -14,12 +14,8 @@ function loadLogoSvg() {
   return cached;
 }
 
-/**
- * BoardBuddy logo. With the v2 logo system it morphs between the full logo
- * (icon + wordmark) and the icon alone: the wordmark letters slide and fade
- * out while the icon stays put. Before that art lands it shows the v1 wordmark/mark.
- */
-export function Logo({ height = 40, compact = false, className }: { height?: number; compact?: boolean; className?: string }) {
+/** BoardBuddy logo (icon + wordmark). Inlines logo-full.svg once it has loaded; the v1 wordmark shows until then. */
+export function Logo({ height = 40, className }: { height?: number; className?: string }) {
   const [svg, setSvg] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
@@ -28,15 +24,8 @@ export function Logo({ height = 40, compact = false, className }: { height?: num
   }, []);
 
   if (!svg) {
-    return <img src={compact ? ASSETS.logoMark : ASSETS.logo} alt="BoardBuddy" className={className} style={{ height, width: "auto" }} />;
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={ASSETS.logo} alt="BoardBuddy" className={className} style={{ height, width: "auto" }} />;
   }
-  return (
-    <span
-      role="img"
-      aria-label="BoardBuddy"
-      className={`bb-logo ${compact ? "is-compact" : ""} ${className ?? ""}`}
-      style={{ height, width: compact ? height : height * 4 }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  );
+  return <span role="img" aria-label="BoardBuddy" className={`bb-logo ${className ?? ""}`} style={{ height, width: height * 4 }} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
