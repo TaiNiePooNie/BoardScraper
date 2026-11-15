@@ -14,9 +14,9 @@ import type { FitPreference, Sport } from "@/lib/types";
  * build: one still picture at a time, no blending; height scales the figure.
  * Until a sport's sheets exist it shows a simple fallback.
  */
-export const RATIOS = [0.5, 0.58, 0.66, 0.73, 0.8, 0.86, 0.91, 0.97, 1.05, 1.15];
-export const SURF_RATIOS = [0.95, 1.03, 1.1, 1.17, 1.24, 1.31, 1.38, 1.47, 1.56, 1.65];
-export const SKATE_WIDTHS = [7.0, 7.5, 7.75, 8.0, 8.25, 8.5, 9.0, 10.0];
+const RATIOS = [0.5, 0.58, 0.66, 0.73, 0.8, 0.86, 0.91, 0.97, 1.05, 1.15];
+const SURF_RATIOS = [0.95, 1.03, 1.1, 1.17, 1.24, 1.31, 1.38, 1.47, 1.56, 1.65];
+const SKATE_WIDTHS = [7.0, 7.5, 7.75, 8.0, 8.25, 8.5, 9.0, 10.0];
 const BUILDS = ["slim", "regular", "broad"] as const;
 type Build = (typeof BUILDS)[number];
 type Persona = "man" | "woman" | "kid";
@@ -34,17 +34,16 @@ const sheetUrl = (sport: Sport, p: Persona, b: Build) => {
 };
 
 /** Fractional index of `v` along ascending `stops` (piecewise linear, clamped). */
-export function stopIndex(v: number, stops: number[]): number {
+function stopIndex(v: number, stops: number[]): number {
   if (v <= stops[0]) return 0;
   for (let i = 1; i < stops.length; i++) {
     if (v <= stops[i]) return i - 1 + (v - stops[i - 1]) / (stops[i] - stops[i - 1]);
   }
   return stops.length - 1;
 }
-export const frameFor = (ratio: number) => stopIndex(ratio, RATIOS);
 
 /** Fractional build 0 (slim) … 2 (broad) from BMI; kids have lower thresholds. */
-export function buildFor(heightCm: number, weightKg: number, kid: boolean): number {
+function buildFor(heightCm: number, weightKg: number, kid: boolean): number {
   const bmi = weightKg / (heightCm / 100) ** 2;
   const [lo, mid, hi] = kid ? [14, 17, 21] : [19, 23, 29];
   if (bmi <= lo) return 0;

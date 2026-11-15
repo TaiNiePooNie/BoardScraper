@@ -3,23 +3,23 @@ import clsx from "clsx";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { AssetImg } from "@/components/AssetImg";
-import { Avatar } from "@/components/shop/account/Avatar";
-import { SizePreview } from "@/components/shop/setup/SizePreview";
-import { SliderField } from "@/components/shop/setup/SliderField";
+import { Avatar } from "@/components/store/account/Avatar";
 import { ASSETS } from "@/lib/assets";
 import type { Buddy } from "@/lib/profile";
 import { AUDIENCE_CHOICES, choiceMembers, fitFromSet, kidsOnly, recommendFor, riderFits } from "@/lib/sizing";
-import { AUDIENCE_LABEL } from "./FilterSheet";
+import { AUDIENCE_LABEL } from "../FilterSheet";
 import { SPORT_SHORT } from "@/lib/store";
-import { SPORTS, type FitPreference, type RiderInput, type RiderStyle, type SkateStyle, type SkillLevel, type Sport, type SurfWaves } from "@/lib/types";
-import { Sheet } from "./Sheet";
+import { SPORTS, type RiderInput, type RiderStyle, type SkateStyle, type SkillLevel, type Sport, type SurfWaves } from "@/lib/types";
+import { Sheet } from "../Sheet";
+import { SportIcon } from "../SportIcon";
+import { SizePreview } from "./SizePreview";
 import { SizeRange } from "./SizeRange";
-import { SportIcon } from "./SportIcon";
+import { SliderField } from "./SliderField";
 
 function Seg<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
+      <p className="mb-1.5 label">{label}</p>
       <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
         {options.map(([v, l]) => (
           <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => onChange(v)} className="chip">{l}</button>
@@ -39,12 +39,12 @@ function ShoeSize({ rider, onChange, label }: { rider: RiderInput; onChange: (r:
   };
   return (
     <div>
-      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
+      <p className="mb-1.5 label">{label}</p>
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center rounded-full border border-line">
-          <button type="button" onClick={() => step(-0.5)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface" aria-label="Smaller"><Minus className="h-4 w-4" /></button>
+          <button type="button" onClick={() => step(-0.5)} className="icon-btn" aria-label="Smaller size"><Minus className="h-4 w-4" /></button>
           <span className="min-w-[3.5rem] text-center text-xl font-bold tabular-nums" aria-live="polite">{Number.isInteger(rider.bootSize) ? rider.bootSize : rider.bootSize.toFixed(1)}</span>
-          <button type="button" onClick={() => step(0.5)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface" aria-label="Bigger"><Plus className="h-4 w-4" /></button>
+          <button type="button" onClick={() => step(0.5)} className="icon-btn" aria-label="Bigger size"><Plus className="h-4 w-4" /></button>
         </div>
         <div role="radiogroup" aria-label="Size system" className="flex gap-1">
           {(["US", "EU"] as const).map((s) => <button key={s} type="button" role="radio" aria-checked={sys === s} onClick={() => switchSys(s)} className="chip">{s}</button>)}
@@ -91,21 +91,21 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
         <div className="no-scrollbar -mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 py-0.5">
           {buddies.map((b) => (
             <button key={b.id} type="button" onClick={() => onSwitchBuddy(b.id)} aria-pressed={b.id === buddy.id}
-              className={clsx("flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-3 text-sm font-semibold", b.id === buddy.id ? "border-ink" : "border-line text-muted")}>
-              <Avatar n={b.avatar} name={b.name} size={26} />{b.name}
+              className={clsx("flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1.5 pr-3.5 text-sm font-semibold transition md:min-h-9", b.id === buddy.id ? "border-ink bg-surface" : "border-line text-muted hover:border-ink")}>
+              <Avatar n={b.avatar} name={b.name} size={28} />{b.name}
             </button>
           ))}
-          <button type="button" onClick={onAddBuddy} className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-line px-3 py-1 text-sm font-semibold text-muted hover:border-ink hover:text-ink"><Plus className="h-4 w-4" />Buddy</button>
+          <button type="button" onClick={onAddBuddy} className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-dashed border-line px-3.5 text-sm font-semibold text-muted transition hover:border-ink hover:text-ink md:min-h-9"><Plus className="h-4 w-4" />Buddy</button>
         </div>
       </div>
       <label className="sr-only" htmlFor="rider-name">Name</label>
-      <input id="rider-name" className="input !py-2.5 !text-base" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} placeholder={buddy.id === buddies[0]?.id ? "Your name or nickname" : "Buddy's name"} />
+      <input id="rider-name" className="input" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} placeholder={buddy.id === buddies[0]?.id ? "Your name or nickname" : "Buddy's name"} />
 
       {/* sport */}
       <div role="radiogroup" aria-label="Sport" className="grid grid-cols-3 gap-1 rounded-full bg-surface p-1">
         {SPORTS.map((s) => (
           <button key={s} type="button" role="radio" aria-checked={sport === s} onClick={() => setSport(s)}
-            className={clsx("flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold transition", sport === s ? "bg-white shadow-sm" : "text-muted")}>
+            className={clsx("flex min-h-11 items-center justify-center gap-1.5 rounded-full text-sm font-semibold transition md:min-h-9", sport === s ? "bg-white shadow-card" : "text-muted")}>
             <SportIcon sport={s} className="h-5 w-5" />{SPORT_SHORT[s]}
           </button>
         ))}
@@ -113,7 +113,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
 
       {/* fit */}
       <div>
-        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">Who&apos;s it for <span className="font-normal normal-case tracking-normal">(pick one or more)</span></p>
+        <p className="mb-1.5 label">Who&apos;s it for <span className="font-normal normal-case tracking-normal">(pick one or more)</span></p>
         <div role="group" aria-label="Who's it for" className={clsx("grid gap-1.5", AUDIENCE_CHOICES[sport].length === 3 ? "grid-cols-3" : "grid-cols-2")}>
           {AUDIENCE_CHOICES[sport].map((c) => {
             const members = choiceMembers(c);
@@ -125,8 +125,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
             };
             const art = c === "adults" ? "any" : c;
             return (
-              <button key={c} type="button" aria-pressed={on} onClick={toggle}
-                className={clsx("flex flex-col items-center gap-0.5 rounded-2xl border px-1 py-1.5 text-xs font-semibold", on ? "border-ink bg-surface" : "border-line text-muted")}>
+              <button key={c} type="button" aria-pressed={on} onClick={toggle} className="tile !gap-0.5 !py-1.5">
                 <AssetImg src={ASSETS.pickFit[art]} alt="" className="h-9 w-9" fallback={<AssetImg src={ASSETS.fit[art]} alt="" className="h-7 w-7" />} />
                 {AUDIENCE_LABEL[c]}
               </button>
@@ -190,7 +189,7 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
       title="Find my size"
       onClose={onClose}
       footer={
-        <button type="button" className="btn-primary w-full" onClick={() => onSave(r, name.trim() || buddy.name, sport)}>
+        <button type="button" className="btn-primary w-full !px-3" onClick={() => onSave(r, name.trim() || buddy.name, sport)}>
           Show {SPORT_SHORT[sport].toLowerCase()} boards in {fit.rangeLabel}
         </button>
       }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildMockCatalog } from "./data/mock";
 import { buildDeals } from "./deals";
-import { activeFilterCount, buildProducts, EMPTY_FILTERS, filterProducts, sortProducts } from "./store";
+import { activeFilterCount, buildProducts, EMPTY_FILTERS, filterProducts, MIN_DISCOUNT, sortProducts, viewFromQuery, viewToQuery, type Product, type StoreFilters } from "./store";
 import type { RiderInput, Sport } from "./types";
 
 const locale = { country: "DE", currency: "EUR" as const, source: "default" as const };
@@ -37,7 +37,7 @@ describe("store view model", () => {
     expect(filterProducts(products, { ...EMPTY_FILTERS, maxPrice: max }).every((p) => p.total <= max)).toBe(true);
     const brand = products[0].board.brand;
     expect(filterProducts(products, { ...EMPTY_FILTERS, q: brand.toLowerCase() }).every((p) => p.board.brand === brand || p.board.model.toLowerCase().includes(brand.toLowerCase()))).toBe(true);
-    expect(activeFilterCount({ ...EMPTY_FILTERS, saleOnly: true, brands: ["a", "b"] })).toBe(3);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, minDiscount: MIN_DISCOUNT, brands: ["a", "b"] })).toBe(3);
   });
 
   it("discount badges match the computed discount", () => {
@@ -134,5 +134,72 @@ describe("duplicates are merged", () => {
     expect(products[0].boardIds.sort()).toEqual(["x1", "x2"]);
     expect(products[0].offers).toHaveLength(1);
     expect(products[0].offers[0].listing.sizes.map((z) => z.label).sort()).toEqual(["154", "158"]);
+  });
+});
+
+describe("quick filters", () => {
+  const { products } = buildProducts(deals, "snow", rider);
+  const has = (p: Product, kind: string) => p.badges.some((b) => b.kind === kind);
+  /** A product with the given fields overridden, for cases the mock catalog may not contain. */
+  const fake = (over: Partial<Product>): Product => ({ ...products[0], discountPct: 0, dropPct: 0, badges: [], stock: { ...products[0].stock, level: "ok" }, ...over });
+
+  it("On sale and the discount steps keep boards with at least that discount", () => {
+    const sale = filterProducts(products, { ...EMPTY_FILTERS, minDiscount: MIN_DISCOUNT });
+    expect(sale.length).toBeGreaterThan(0);
+    expect(sale.every((p) => has(p, "discount"))).toBe(true);
+    expect(sale.length).toBe(products.filter((p) => has(p, "discount")).length);
+    const deep = filterProducts(products, { ...EMPTY_FILTERS, minDiscount: 0.3 });
+    expect(deep.every((p) => p.discountPct >= 0.3)).toBe(true);
+    expect(deep.length).toBeLessThanOrEqual(sale.length);
+  });
+
+  it("Price dropped, Lowest in 90 days and Last sizes match what the cards show", () => {
+    const list = [
+      fake({ id: "plain" }),
+      fake({ id: "drop", dropPct: 0.12, badges: [{ kind: "drop", label: "Price dropped" }] }),
+      // At a 90-day low after a recent drop: the card says "Lowest", but it did drop too.
+      fake({ id: "low", dropPct: 0.2, badges: [{ kind: "lowest", label: "Lowest in 90 days" }] }),
+      fake({ id: "last", stock: { ...products[0].stock, level: "last" }, badges: [{ kind: "stock", label: "Last sizes" }] }),
+      fake({ id: "few", stock: { ...products[0].stock, level: "low" }, badges: [{ kind: "stock", label: "Few left" }] }),
+    ];
+    const ids = (f: Partial<StoreFilters>) => filterProducts(list, { ...EMPTY_FILTERS, ...f }).map((p) => p.id);
+    expect(ids({ priceDrop: true })).toEqual(["drop", "low"]);
+    expect(ids({ lowest: true })).toEqual(["low"]);
+    expect(ids({ lastSizes: true })).toEqual(["last", "few"]);
+    expect(ids({ priceDrop: true, lowest: true })).toEqual(["low"]);
+    expect(sortProducts(list, "drop").slice(0, 2).map((p) => p.id)).toEqual(["low", "drop"]);
+
+    // On real data the filters agree with the badges.
+    expect(filterProducts(products, { ...EMPTY_FILTERS, lowest: true }).every((p) => has(p, "lowest"))).toBe(true);
+    expect(filterProducts(products, { ...EMPTY_FILTERS, lastSizes: true }).every((p) => has(p, "stock"))).toBe(true);
+    expect(products.filter((p) => has(p, "drop")).every((p) => p.dropPct > 0)).toBe(true);
+  });
+
+  it("counts every active filter once", () => {
+    expect(activeFilterCount(EMPTY_FILTERS)).toBe(0);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, q: "burton", category: "powder" })).toBe(0);
+    expect(activeFilterCount({ ...EMPTY_FILTERS, fitsMe: true, minDiscount: 0.2, priceDrop: true, lowest: true, lastSizes: true, maxPrice: 400, audience: ["kids"], shops: ["evo"] })).toBe(8);
+  });
+});
+
+describe("view in the URL", () => {
+  it("a default view is just the sport", () => {
+    expect(viewToQuery({ sport: "skate", filters: EMPTY_FILTERS, sort: "recommended" }).toString()).toBe("sport=skate");
+    expect(viewFromQuery(new URLSearchParams(""))).toEqual({ sport: null, filters: EMPTY_FILTERS, sort: "recommended" });
+  });
+
+  it("round-trips sport, type, search, sort and every filter", () => {
+    const filters: StoreFilters = { q: "fish & chips", fitsMe: true, category: "fish", audience: ["kids", "womens"], brands: ["Lib Tech", "A&B"], shops: ["evo", "blue-tomato"], maxPrice: 450, minDiscount: 0.2, priceDrop: true, lowest: true, lastSizes: true };
+    const q = viewToQuery({ sport: "surf", filters, sort: "drop" });
+    expect(viewFromQuery(new URLSearchParams(q.toString()))).toEqual({ sport: "surf", filters, sort: "drop" });
+    const onSale = viewToQuery({ sport: "snow", filters: { ...EMPTY_FILTERS, minDiscount: MIN_DISCOUNT }, sort: "recommended" });
+    expect(onSale.toString()).toBe("sport=snow&sale=1");
+    expect(viewFromQuery(onSale).filters.minDiscount).toBe(MIN_DISCOUNT);
+  });
+
+  it("ignores junk values and keeps unrelated params out", () => {
+    const v = viewFromQuery(new URLSearchParams("sport=bmx&type=nope&sort=cheapest&sale=abc&max=-5&for=dogs&drop=yes&board=b1&signedin=1"));
+    expect(v).toEqual({ sport: null, filters: EMPTY_FILTERS, sort: "recommended" });
+    expect(viewFromQuery(new URLSearchParams("sort=__proto__")).sort).toBe("recommended");
   });
 });

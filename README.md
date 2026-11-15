@@ -1,8 +1,8 @@
 # BoardBuddy (repo: BoardScraper)
 
-Snowboard deal finder that feels like browsing a streetwear snowboard shop: a short rider setup (size, boots, style, skill, budget) picks your ideal board, then live deals from real shops hang on shop walls. Every deal is graded against MSRP and price history and priced to your door (shipping, VAT, duties).
+Deal finder for snowboards, skateboards and surfboards, built for phones: it compares real shops, shows every price delivered to your door (shipping, VAT, duties) with its price history, and "Find my size" narrows the shop to boards that fit you.
 
-Stack: Next.js 15 (App Router) · React 19 · Tailwind v4 · TanStack Table · Recharts · Zod · Drizzle ORM (Postgres / PGlite) · Vitest.
+Stack: Next.js 15 (App Router) · React 19 · Tailwind v4 · Recharts (lazy-loaded) · Zod · Drizzle ORM (Postgres / PGlite) · Vitest.
 
 ```bash
 npm install
@@ -49,7 +49,10 @@ Adding retailers: `npm run survey [-- id,id]` (`scripts/survey-retailers.ts`) pr
 A light, modern web store for **snowboards, skateboards and surfboards** (`src/components/store/`, view model in `src/lib/store.ts`).
 
 - **Header**: sport switch (Snow · Skate · Surf), search, "Find my size", saved boards, profile. Phones get a bottom bar (Shop, Saved, My size, Profile).
-- **Shop**: hero per sport, "Shop by type" tiles, product grid (24 at a time, "Show more"), filter & sort sheet (fits me, on sale, gender, max price, brand, shop).
+- **Shop**: hero per sport (desktop), "Shop by type" tiles, product grid (24 at a time, "Show more"), filter & sort sheet (discount, price dropped, lowest in 90 days, last sizes, fits me, who it's for, max price, brand, websites).
+- **Quick filters**: one sticky, sideways-scrolling line above the grid: Filter · On sale · Price dropped · Lowest in 90 days · Last sizes · Fits me (once a size is set), each with a live count. They map to the card badges.
+- **Shareable views**: sport, type, search, sort and filters live in the query string (`?sport=skate&type=deck&sale=20&drop=1&sort=price-asc`; `viewToQuery` / `viewFromQuery` in `src/lib/store.ts`), written with `replaceState`, so a view survives a reload and can be bookmarked or sent to a friend. `?board=<id>` is the open product.
+- **Installable**: `src/app/manifest.ts` (web app manifest) + meta description / social cards in `src/app/layout.tsx`.
 - **Price badges** instead of deal tiers: −% off, "Lowest in 90 days", "Price dropped", "Last season", "Fits you". Prices are delivered prices (shipping, VAT, duties) for the chosen country.
 - **Product page** (`?board=<id>`, works with the back button): photo gallery, sizes with yours highlighted, compare shops, price history, details and board stats, sticky "Buy at shop" bar.
 - **Find my size** (`SizeSheet`): one sheet for all sports with the Buddy flipbook preview. Snow: length from weight, skill, style, wide boots. Skate: deck width from shoe size and riding style. Surf: volume from weight × skill factor and wave size (plus a length range). Logic in `src/lib/sizing.ts` (`recommendFor`, `matchSizesFor`).
@@ -78,7 +81,9 @@ A light, modern web store for **snowboards, skateboards and surfboards** (`src/c
 | `src/lib/retailers.ts` | Retailer config: country, currency, VAT policy, shipping rules |
 | `src/db/` | Drizzle schema, client (Postgres or PGlite), migrate, stats |
 | `src/app/api/catalog` | `GET /api/catalog?sport=snow|skate|surf&part=N`: compact, CDN-cached catalogue feed (buyable, fresh listings only; `src/lib/catalog-wire.ts`). The browser computes deals (delivered price, grade, fit) with `buildDeals()` |
-| `src/components/` | Rider form, tier tabs, filter panel, card grid (carousel + zoom lightbox + price chart), sortable table |
+| `src/app/globals.css` | **The design system**: colour / radius / shadow / type tokens and the component classes (`btn-*`, `chip`, `input`, `card`, `tile`, `label`, `note-*`, `switch`), documented at the top of the file |
+| `src/components/store/` | The app: `StoreApp` (shell, URL state), `Sheet` (the one overlay: bottom sheet on phones, drawer on desktop; focus trap in `useDialog`), `ProductCard` / `ProductPage`, `FilterSheet`, `size/` (Find my size), `account/` (profile, sign-in, deal emails), feedback, restock |
+| `src/components/shop/services.ts` | What the UI can call (deals, account, live check, feedback, restock) |
 | `src/scraper/` | Polite fetcher (`http.ts`), parsers (sizes, specs EN/FR/DE, names), retailer adapters, ingest, CLI; Playwright context (`browser.ts`) kept for future JS-only shops |
 | `ui-art-requests.md` | Branding/UI art briefs for the design agent → files land in `public/assets/` |
 

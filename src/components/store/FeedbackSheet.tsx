@@ -122,7 +122,7 @@ export function FeedbackSheet({ service, email, page, onClose, initialKind = "fe
           <CheckCircle2 className="h-12 w-12 text-ok" />
           <h3 className="text-xl font-bold">Thanks, we got it!</h3>
           <p className="text-sm text-muted">{mail.trim() ? `We'll reply to ${mail.trim()} if we need more info.` : "You didn't leave an email, so we can't reply, but we read everything."}</p>
-          {done.failed.length > 0 && <p className="text-sm text-[#8a5a00]">These files didn&apos;t upload: {done.failed.join(", ")}.</p>}
+          {done.failed.length > 0 && <p className="text-sm font-medium text-warn">These files didn&apos;t upload: {done.failed.join(", ")}.</p>}
         </div>
       </Sheet>
     );
@@ -145,42 +145,42 @@ export function FeedbackSheet({ service, email, page, onClose, initialKind = "fe
         <div role="radiogroup" aria-label="What's it about?" className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
           {KINDS.map(({ id, icon: Icon, hint }) => (
             <button key={id} type="button" role="radio" aria-checked={kind === id} onClick={() => setKind(id)} title={hint}
-              className={clsx("flex flex-col items-center gap-1 rounded-2xl border px-1 py-2 text-xs font-semibold transition", kind === id ? "border-ink bg-surface" : "border-line text-muted hover:border-ink")}>
+              className="tile min-h-14">
               <Icon className="h-5 w-5" />{KIND_LABEL[id]}
             </button>
           ))}
         </div>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted">Subject</span>
-          <input className="input mt-1 !py-2.5 !text-base" maxLength={140} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={TEMPLATE[kind].subject} />
+          <span className="label">Subject</span>
+          <input className="input mt-1" maxLength={140} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={TEMPLATE[kind].subject} />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted">Message</span>
-          <textarea className="input mt-1 min-h-[140px] resize-y !text-base leading-relaxed" maxLength={5000} value={message}
+          <span className="label">Message</span>
+          <textarea className="input mt-1 min-h-[140px] resize-y leading-relaxed" maxLength={5000} value={message}
             onChange={(e) => { touched.current = true; setMessage(e.target.value); }} placeholder={TEMPLATE[kind].message} />
         </label>
 
         <div>
           <div className="flex items-baseline justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Screenshots or video</span>
+            <span className="label">Screenshots or video</span>
             <span className="text-xs text-muted">{files.length}/{FEEDBACK_LIMITS.files}{total ? ` · ${fmtMB(total)}` : ""}</span>
           </div>
           <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-5">
             {files.map((a, i) => (
-              <div key={a.url} className={clsx("relative aspect-square overflow-hidden rounded-xl border bg-surface", a.error ? "border-sale" : "border-line")}>
+              <div key={a.url} className={clsx("relative aspect-square overflow-hidden rounded-control border bg-surface", a.error ? "border-sale" : "border-line")}>
                 {a.file.type.startsWith("video/") ? (
-                  <div className="flex h-full flex-col items-center justify-center gap-1 p-1 text-center text-[10px] text-muted"><Film className="h-6 w-6" /><span className="line-clamp-2 break-all">{a.file.name}</span></div>
+                  <div className="flex h-full flex-col items-center justify-center gap-1 p-1 text-center text-2xs text-muted"><Film className="h-6 w-6" /><span className="line-clamp-2 break-all">{a.file.name}</span></div>
                 ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={a.url} alt={a.file.name} className="h-full w-full object-cover" />
                 )}
-                <span className="absolute inset-x-0 bottom-0 bg-ink/70 px-1 text-center text-[10px] text-white">{a.error ?? fmtMB(a.file.size)}</span>
-                <button type="button" onClick={() => setFiles((cur) => cur.filter((_, k) => k !== i))} className="absolute right-1 top-1 rounded-full bg-white/90 p-0.5 shadow" aria-label={`Remove ${a.file.name}`}><X className="h-3.5 w-3.5" /></button>
+                <span className="absolute inset-x-0 bottom-0 bg-ink/70 px-1 text-center text-2xs text-white">{a.error ?? fmtMB(a.file.size)}</span>
+                <button type="button" onClick={() => setFiles((cur) => cur.filter((_, k) => k !== i))} className="absolute right-0 top-0 grid h-9 w-9 place-items-center" aria-label={`Remove ${a.file.name}`}><span className="grid h-6 w-6 place-items-center rounded-full bg-white/90 shadow-card"><X className="h-3.5 w-3.5" /></span></button>
               </div>
             ))}
             {files.length < FEEDBACK_LIMITS.files && (
-              <button type="button" onClick={() => input.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line text-xs font-semibold text-muted hover:border-ink hover:text-ink">
+              <button type="button" onClick={() => input.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line text-xs font-semibold text-muted transition hover:border-ink hover:text-ink">
                 <ImagePlus className="h-6 w-6" />Add
               </button>
             )}
@@ -190,13 +190,13 @@ export function FeedbackSheet({ service, email, page, onClose, initialKind = "fe
         </div>
 
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted">Your email {kind === "question" ? "(so we can answer)" : "(optional)"}</span>
-          <input type="email" inputMode="email" autoComplete="email" className="input mt-1 !py-2.5 !text-base" value={mail} onChange={(e) => setMail(e.target.value)} placeholder="you@example.com" />
+          <span className="label">Your email {kind === "question" ? "(so we can answer)" : "(optional)"}</span>
+          <input type="email" inputMode="email" autoComplete="email" className="input mt-1" value={mail} onChange={(e) => setMail(e.target.value)} placeholder="you@example.com" />
         </label>
         {/* honeypot */}
         <input tabIndex={-1} autoComplete="off" aria-hidden className="hidden" value={website} onChange={(e) => setWebsite(e.target.value)} name="website" />
 
-        <details className="rounded-2xl border border-line px-4 py-3 text-sm">
+        <details className="rounded-card border border-line px-4 py-3 text-sm">
           <summary className="flex cursor-pointer items-center gap-2">
             <input type="checkbox" checked={includeTech} onChange={(e) => setIncludeTech(e.target.checked)} onClick={(e) => e.stopPropagation()} className="h-4 w-4 accent-ink" />
             <span className="font-semibold">Include technical info</span><span className="text-muted">(helps with bugs)</span>

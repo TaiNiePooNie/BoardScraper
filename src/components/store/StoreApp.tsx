@@ -10,23 +10,23 @@ import type { DealsResult } from "@/lib/deals";
 import { BROWSE_ID, DEFAULT_PROFILE, loadStore, makeBuddy, saveStore, type Buddy, type Store } from "@/lib/profile";
 import { recommendFor } from "@/lib/sizing";
 import {
-  activeFilterCount, buildProducts, CATEGORY_LABEL, EMPTY_FILTERS, filterProducts, SORT_LABEL, sortProducts, SPORT_LABEL, SPORT_SHORT, storeFacets,
+  activeFilterCount, buildProducts, CATEGORY_LABEL, EMPTY_FILTERS, filterProducts, MIN_DISCOUNT, SORT_LABEL, sortProducts, SPORT_LABEL, SPORT_SHORT, storeFacets, viewFromQuery, viewToQuery,
   type Product, type SortMode, type StoreFilters,
 } from "@/lib/store";
 import { CATEGORIES_BY_SPORT, SPORTS, Sport as SportSchema, type BuyerLocale, type RiderInput, type Sport } from "@/lib/types";
-import { AccountPanel, type AccountState } from "../shop/account/AccountPanel";
-import { Avatar } from "../shop/account/Avatar";
-import { Logo } from "../shop/Logo";
-import { RestockSheet } from "../shop/RestockSheet";
 import type { ShopServices } from "../shop/services";
+import { AccountSheet, type AccountState } from "./account/AccountSheet";
+import { Avatar } from "./account/Avatar";
 import { FeedbackInbox } from "./FeedbackInbox";
-import { SaleBanner } from "./SaleBanner";
 import { FeedbackSheet } from "./FeedbackSheet";
-import { FilterSheet } from "./FilterSheet";
+import { discountLabel, FilterSheet } from "./FilterSheet";
 import { LocaleSheet } from "./LocaleSheet";
+import { Logo } from "./Logo";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
 import { ProductPage, type LiveCheck } from "./ProductPage";
-import { SizeSheet } from "./SizeSheet";
+import { RestockSheet } from "./RestockSheet";
+import { SaleBanner } from "./SaleBanner";
+import { SizeSheet } from "./size/SizeSheet";
 import { SportIcon } from "./SportIcon";
 
 const RELOAD_AFTER_MS = 10 * 60_000;
@@ -42,13 +42,16 @@ const firstStore = (): Store => ({
   alerts: DEFAULT_ALERTS,
 });
 
+/** Smooth scrolling, unless the visitor asked their device for less motion. */
+const scrollBehavior = (): ScrollBehavior => (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
+
 const safeGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const safeSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
 
 const HERO_TINT: Record<Sport, string> = {
-  snow: "from-[#e9f8ff] via-[#f5fbff] to-white",
-  skate: "from-[#f4ffd0] via-[#fbffe9] to-white",
-  surf: "from-[#ddf8ff] via-[#f0fcff] to-white",
+  snow: "from-ice/15 via-ice/5 to-white",
+  skate: "from-acid/35 via-acid/10 to-white",
+  surf: "from-ice/25 via-ice/10 to-white",
 };
 const HERO_LINE: Record<Sport, string> = {
   snow: "Snowboards that fit you, at the best price.",
@@ -58,7 +61,20 @@ const HERO_LINE: Record<Sport, string> = {
 
 type View = "shop" | "saved";
 
-export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLocale; services: ShopServices }) {
+/** One-tap filters above the grid; each maps to a price/stock badge on the cards. */
+type QuickKey = "sale" | "drop" | "lowest" | "last" | "fits";
+const QUICK: { key: QuickKey; label: (f: StoreFilters) => string; on: (f: StoreFilters) => boolean; set: (f: StoreFilters, on: boolean) => StoreFilters }[] = [
+  { key: "sale", label: (f) => (f.minDiscount > MIN_DISCOUNT ? discountLabel(f.minDiscount) : "On sale"), on: (f) => f.minDiscount > 0, set: (f, on) => ({ ...f, minDiscount: on ? Math.max(f.minDiscount, MIN_DISCOUNT) : 0 }) },
+  { key: "drop", label: () => "Price dropped", on: (f) => f.priceDrop, set: (f, on) => ({ ...f, priceDrop: on }) },
+  { key: "lowest", label: () => "Lowest in 90 days", on: (f) => f.lowest, set: (f, on) => ({ ...f, lowest: on }) },
+  { key: "last", label: () => "Last sizes", on: (f) => f.lastSizes, set: (f, on) => ({ ...f, lastSizes: on }) },
+  { key: "fits", label: () => "Fits me", on: (f) => f.fitsMe, set: (f, on) => ({ ...f, fitsMe: on }) },
+];
+
+/** The shop lives at "/" (or wherever the static page is); /board/<id> links open it on that board. */
+const basePath = () => (location.pathname.startsWith("/board/") ? "/" : location.pathname);
+
+export function StoreApp({ initialLocale, services, initialBoardId }: { initialLocale: BuyerLocale; services: ShopServices; initialBoardId?: string }) {
   const [store, setStore] = useState<Store>(firstStore);
   const [sized, setSized] = useState(false);
   const [ready, setReady] = useState(false);
@@ -82,9 +98,23 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const localeRef = useRef(locale);
   localeRef.current = locale;
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const deepLink = useRef<string | null>(null);
+  // The floating size pill slides away while you scroll down the list and returns when you scroll up.
+  const [pillHidden, setPillHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 12) return;
+      setPillHidden(y > last && y > 160);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  /** `?board=<id>` from the address bar, opened once the deals have loaded. */
+  const [pendingBoard, setPendingBoard] = useState<string | null>(null);
   const openInbox = useRef(false);
+  const urlTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const active = store.buddies.find((b) => b.id === store.activeId) ?? store.buddies[0];
   const rider: RiderInput | null = sized ? active.rider : null;
@@ -97,10 +127,14 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     safeSet(V3_KEY, "1");
     if (saved) setStore(saved.activeId === BROWSE_ID ? { ...saved, activeId: saved.buddies[0].id } : saved);
     if (safeGet(SIZED_KEY)) setSized(true);
-    const sp = SportSchema.safeParse(new URLSearchParams(location.search).get("sport") ?? safeGet(SPORT_KEY));
-    if (sp.success) setSportState(sp.data);
-
+    // The address bar wins (shared or bookmarked view); else the sport from last time.
     const q = new URLSearchParams(location.search);
+    const fromUrl = viewFromQuery(q);
+    const sp = SportSchema.safeParse(fromUrl.sport ?? safeGet(SPORT_KEY));
+    if (sp.success) setSportState(sp.data);
+    setFilters(fromUrl.filters);
+    setSort(fromUrl.sort);
+
     const notices: Record<string, string> = {
       signedin: "You're signed in. Your riders and saved boards sync to your account.",
       unsubscribed: "Done: no more deal emails. You can turn them back on in your profile.",
@@ -108,10 +142,10 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     };
     const key = Object.keys(notices).find((k) => q.has(k));
     if (key) setToast(notices[key]);
-    if (q.get("board")) deepLink.current = q.get("board");
+    if (q.get("board") ?? initialBoardId) setPendingBoard(q.get("board") ?? initialBoardId!);
     if (q.has("profile")) setSheet("account");
     if (q.has("inbox")) openInbox.current = true;
-    if (key || q.has("profile") || q.has("sport") || q.has("inbox")) history.replaceState(null, "", location.pathname + (q.get("board") ? `?board=${q.get("board")}` : ""));
+    // One-off params (signedin, profile, …) drop out when the view is written back to the URL below.
 
     const account = services.account;
     if (account) {
@@ -161,7 +195,8 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const setSport = (s: Sport) => {
     setSportState(s);
     safeSet(SPORT_KEY, s);
-    setFilters((f) => ({ ...f, category: null }));
+    // Types and brands belong to one sport; deal filters and search carry over.
+    setFilters((f) => ({ ...f, category: null, brands: [] }));
     setShown(PAGE);
     setView("shop");
     window.scrollTo({ top: 0 });
@@ -203,6 +238,12 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const { products, fit } = useMemo(() => buildProducts(deals, sport, rider), [deals, sport, rider]);
   const facets = useMemo(() => storeFacets(products), [products]);
   const visible = useMemo(() => sortProducts(filterProducts(products, filters), sort), [products, filters, sort]);
+  /** How many boards each quick filter would leave, given the other filters. */
+  const quickCounts = useMemo(() => {
+    const out = {} as Record<QuickKey, number>;
+    for (const c of QUICK) out[c.key] = c.on(filters) ? visible.length : filterProducts(products, c.set(filters, true)).length;
+    return out;
+  }, [products, filters, visible.length]);
   const fitCount = useMemo(() => products.filter((p) => p.fits).length, [products]);
   const shopCount = useMemo(() => new Set(deals.map((d) => d.retailer.id)).size, [deals]);
 
@@ -223,14 +264,35 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   }, [openId, deals, rider]);
   const openProduct = allProducts?.products.find((p) => p.boardIds.includes(openId!)) ?? null;
 
+  /* ── URL state ──────────────────────────────────────────────────────────
+   * Sport, type, search, sort and filters live in the query string (replaceState: no reload,
+   * no extra history entries), so a view can be shared, bookmarked and survives a reload.
+   * `?board=<id>` is the open product; opening one pushes a history entry so Back closes it. */
+  const viewUrl = useCallback((board: string | null) => {
+    const q = viewToQuery({ sport, filters, sort });
+    if (board) q.set("board", board);
+    return `${basePath()}?${q}`;
+  }, [sport, filters, sort]);
+  useEffect(() => {
+    if (!ready) return;
+    clearTimeout(urlTimer.current);
+    // Debounced: typing in search must not hit the browser's replaceState rate limit.
+    urlTimer.current = setTimeout(() => {
+      const url = viewUrl(openId ?? pendingBoard);
+      if (url === location.pathname + location.search) return;
+      try { history.replaceState(history.state, "", url); } catch { /* rate-limited: the next change catches up */ }
+    }, 200);
+    return () => clearTimeout(urlTimer.current);
+  }, [ready, viewUrl, openId, pendingBoard]);
+
   /* ── product page + browser back ────────────────────────────────────────── */
   const openBoard = (id: string) => {
     setOpenId(id);
-    history.pushState({ board: id }, "", `?board=${id}`);
+    try { history.pushState({ board: id }, "", viewUrl(id)); } catch { /* sandboxed page: the product still opens, Back just leaves */ }
   };
   const closeBoard = useCallback(() => {
     if (history.state?.board) history.back();
-    else { setOpenId(null); history.replaceState(null, "", location.pathname); }
+    else setOpenId(null); // opened from a link: stay on the site, the URL effect drops ?board
   }, []);
   useEffect(() => {
     const onPop = () => setOpenId(new URLSearchParams(location.search).get("board"));
@@ -238,12 +300,11 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
     return () => window.removeEventListener("popstate", onPop);
   }, []);
   useEffect(() => {
-    if (!deepLink.current || !deals.length) return;
-    const id = deepLink.current;
-    deepLink.current = null;
-    const d = deals.find((x) => x.board.id === id);
-    if (d) { setSportState(d.board.sport); setOpenId(id); }
-  }, [deals]);
+    if (!pendingBoard || !deals.length) return;
+    const d = deals.find((x) => x.board.id === pendingBoard);
+    if (d) { setSportState(d.board.sport); setOpenId(pendingBoard); }
+    setPendingBoard(null);
+  }, [deals, pendingBoard]);
 
   useEffect(() => {
     const listingId = openProduct?.best.listing.id;
@@ -286,48 +347,54 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
   const nFilters = activeFilterCount(filters);
   const list = view === "saved" ? savedProducts : visible;
   const firstName = active.id === store.buddies[0].id ? "you" : active.name;
+  const changeFilters = (fn: (f: StoreFilters) => StoreFilters) => { setFilters(fn); setShown(PAGE); };
+  const toGrid = () => document.getElementById("grid")?.scrollIntoView({ behavior: scrollBehavior() });
+  const goHome = () => { setView("shop"); setFilters(EMPTY_FILTERS); setSort("recommended"); setShown(PAGE); window.scrollTo({ top: 0, behavior: scrollBehavior() }); };
+  const title = view === "saved" ? "Saved boards" : filters.category ? CATEGORY_LABEL[filters.category] : searching ? `Results for “${filters.q.trim()}”` : `All ${SPORT_LABEL[sport].toLowerCase()}`;
+  const firstLoad = loading && !result;
+  const otherSport: Sport = sport === "snow" ? "skate" : "snow";
 
   return (
-    <div className="min-h-screen bg-white pb-32 md:pb-0">
+    <div className="min-h-screen bg-white pb-36 md:pb-0">
       {/* ── header ── */}
-      <header className="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="app-gutter mx-auto flex h-14 max-w-7xl items-center gap-3 md:h-16">
-          <button type="button" onClick={() => { setView("shop"); setFilters(EMPTY_FILTERS); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-label="BoardBuddy home" className="shrink-0">
+      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div className="app-gutter mx-auto flex h-14 max-w-7xl items-center gap-2 md:h-16 md:gap-3">
+          <button type="button" onClick={goHome} aria-label="BoardBuddy home" className="flex min-h-11 shrink-0 items-center rounded-control">
             <Logo height={30} />
           </button>
           <nav aria-label="Sport" className="ml-4 hidden items-center gap-1 md:flex">
             {SPORTS.map((s) => (
               <button key={s} type="button" onClick={() => setSport(s)} aria-current={sport === s && view === "shop" ? "page" : undefined}
-                className={clsx("rounded-full px-3 py-1.5 text-sm font-semibold transition", sport === s && view === "shop" ? "bg-ink text-white" : "text-ink hover:bg-surface")}>
+                className={clsx("min-h-9 rounded-full px-3 text-sm font-semibold transition", sport === s && view === "shop" ? "bg-ink text-white" : "text-ink hover:bg-surface")}>
                 {SPORT_LABEL[s]}
               </button>
             ))}
           </nav>
-          <SearchBox className="ml-auto hidden max-w-sm flex-1 md:flex" inputRef={searchRef} value={filters.q} onChange={(q) => { setFilters((f) => ({ ...f, q })); setView("shop"); setShown(PAGE); }} />
-          <div className="ml-auto flex items-center gap-1 md:ml-2">
-            <button type="button" onClick={() => openSize()} className="hidden items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-sm font-semibold hover:border-ink md:flex">
+          <SearchBox className="ml-auto hidden max-w-sm flex-1 md:flex" value={filters.q} onChange={(q) => { changeFilters((f) => ({ ...f, q })); setView("shop"); }} />
+          <div className="-mr-2 ml-auto flex items-center md:ml-1 md:mr-0">
+            <button type="button" onClick={() => openSize()} className="chip mr-1 !hidden font-semibold md:!inline-flex">
               <Ruler className="h-4 w-4" />{fit ? fit.label : "Find my size"}
             </button>
-            <button type="button" onClick={() => setView("saved")} className="relative hidden rounded-full p-2 hover:bg-surface md:block" aria-label={`Saved boards (${store.holds.length})`}>
+            <button type="button" onClick={() => { setView("saved"); window.scrollTo({ top: 0 }); }} className="icon-btn relative !hidden md:!grid" aria-label={`Saved boards (${store.holds.length})`}>
               <Heart className="h-5 w-5" />
-              {store.holds.length > 0 && <span className="absolute right-0.5 top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[10px] font-bold text-white">{store.holds.length}</span>}
+              {store.holds.length > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-2xs font-bold text-white">{store.holds.length}</span>}
             </button>
             {services.feedback && (
-              <button type="button" onClick={() => setSheet("feedback")} className="rounded-full p-2 hover:bg-surface" aria-label="Feedback & support" title="Feedback & support">
+              <button type="button" onClick={() => setSheet("feedback")} className="icon-btn" aria-label="Feedback & support" title="Feedback & support">
                 <MessageCircleQuestion className="h-5 w-5" />
               </button>
             )}
-            <button type="button" onClick={() => setSheet("account")} className="rounded-full p-1 hover:bg-surface" aria-label="Your profile">
+            <button type="button" onClick={() => setSheet("account")} className="icon-btn" aria-label="Your profile">
               <Avatar n={store.buddies[0].avatar} name={store.buddies[0].name} size={30} />
             </button>
           </div>
         </div>
-        {/* mobile: sport tabs */}
+        {/* phones: sport tabs */}
         {view === "shop" && (
           <nav aria-label="Sport" className="app-gutter flex gap-6 md:hidden">
             {SPORTS.map((s) => (
               <button key={s} type="button" onClick={() => setSport(s)} aria-current={sport === s ? "page" : undefined}
-                className={clsx("relative flex items-center gap-1.5 pb-2.5 pt-1 text-sm font-semibold", sport === s ? "text-ink" : "text-muted")}>
+                className={clsx("relative flex h-11 items-center gap-1.5 text-sm font-semibold", sport === s ? "text-ink" : "text-muted")}>
                 <SportIcon sport={s} className="h-5 w-5" art={false} />{SPORT_SHORT[s]}
                 {sport === s && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-ink" />}
               </button>
@@ -338,55 +405,56 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
 
       <main className="app-gutter mx-auto max-w-7xl">
         {view === "shop" && (
-          <SearchBox className="mt-3 flex md:hidden" value={filters.q} onChange={(q) => { setFilters((f) => ({ ...f, q })); setShown(PAGE); }} />
+          <SearchBox className="mt-3 flex md:hidden" value={filters.q} onChange={(q) => changeFilters((f) => ({ ...f, q }))} />
         )}
 
-        {/* ── hero ── */}
+        {/* ── hero (desktop; phones get the floating size pill instead) ── */}
         {showHero && (
-          <section className={clsx("relative mt-6 hidden overflow-hidden rounded-3xl bg-gradient-to-br md:block", HERO_TINT[sport])}>
-            {heroArt && <img src={ASSETS.hero[sport]} alt="" className="pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-right md:block" />}
-            <div className={clsx("relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-5 md:min-h-[320px] md:p-10", heroArt ? "pb-3" : "min-h-[220px]")}>
+          <section aria-label={SPORT_LABEL[sport]} className={clsx("relative mt-6 hidden overflow-hidden rounded-sheet bg-gradient-to-br md:block", HERO_TINT[sport])}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {heroArt && <img src={ASSETS.hero[sport]} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right" />}
+            <div className="relative grid min-h-[320px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-10">
               <div className="max-w-md">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">{SPORT_LABEL[sport]}</p>
-                <h1 className="mt-1 text-[1.65rem] font-extrabold leading-[1.1] tracking-tight md:text-5xl">{HERO_LINE[sport]}</h1>
-                <p className="mt-2 text-sm text-muted md:text-base">
-                  {loading && !result ? "Checking the shops…" : `${products.length} boards from ${shopCount} shops · delivered prices to ${countryName(locale.country)}`}
+                <p className="label">{SPORT_LABEL[sport]}</p>
+                <p className="mt-1 text-5xl font-extrabold leading-[1.1] tracking-tight">{HERO_LINE[sport]}</p>
+                <p className="mt-2 text-base text-muted">
+                  {firstLoad ? "Checking the shops…" : `${products.length} boards from ${shopCount} shops · delivered prices to ${countryName(locale.country)}`}
                 </p>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="mt-4 flex flex-wrap items-center gap-3">
                   {fit ? (
                     <>
-                      <button type="button" className="btn-lime !py-2.5" onClick={() => { setFilters((f) => ({ ...f, fitsMe: true })); document.getElementById("grid")?.scrollIntoView({ behavior: "smooth" }); }}>
+                      <button type="button" className="btn-lime" onClick={() => { changeFilters((f) => ({ ...f, fitsMe: true })); toGrid(); }}>
                         {fitCount} fit {firstName} · {fit.rangeLabel}
                       </button>
-                      <button type="button" className="text-sm font-semibold underline underline-offset-2" onClick={() => openSize()}>Edit size</button>
+                      <button type="button" className="link text-sm" onClick={() => openSize()}>Edit size</button>
                     </>
                   ) : (
-                    <button type="button" className="btn-lime !py-2.5" onClick={() => openSize()}><Ruler className="h-4 w-4" />Find my size</button>
+                    <button type="button" className="btn-lime" onClick={() => openSize()}><Ruler className="h-4 w-4" />Find my size</button>
                   )}
                 </div>
               </div>
-              {!heroArt && <AssetImg src={ASSETS.mascotSport[sport]} alt="" className="h-28 w-28 self-end md:h-56 md:w-56" fallback={<AssetImg src={ASSETS.mascot.wave} alt="" className="h-28 w-28 self-end md:h-56 md:w-56" />} />}
+              {!heroArt && <AssetImg src={ASSETS.mascotSport[sport]} alt="" className="h-56 w-56 self-end" fallback={<AssetImg src={ASSETS.mascot.wave} alt="" className="h-56 w-56 self-end" />} />}
             </div>
-            {heroArt && <img src={ASSETS.heroMobile[sport]} alt="" className="block aspect-[2/1] w-full object-cover object-[50%_75%] md:hidden" />}
           </section>
         )}
 
         {/* ── sale calendar ── */}
-        {view === "shop" && !searching && <SaleBanner sport={sport} country={locale.country} onShowSale={() => { setFilters((f) => ({ ...f, saleOnly: true })); document.getElementById("grid")?.scrollIntoView({ behavior: "smooth" }); }} onAlerts={() => setSheet("account")} />}
+        {view === "shop" && !searching && <SaleBanner sport={sport} country={locale.country} onShowSale={() => { changeFilters((f) => ({ ...f, minDiscount: Math.max(f.minDiscount, MIN_DISCOUNT) })); toGrid(); }} onAlerts={() => setSheet("account")} />}
 
         {/* ── shop by type ── */}
         {view === "shop" && !searching && facets.categories.size > 0 && (
-          <section className="mt-6" aria-label="Shop by type">
-            <h2 className="mb-3 text-base font-bold md:text-lg">Shop by type</h2>
-            <div className={clsx("grid gap-2", CATEGORIES_BY_SPORT[sport].length > 4 ? "grid-cols-5" : "grid-cols-4")}>
+          <section className="mt-5 md:mt-6" aria-label="Shop by type">
+            <h2 className="mb-2 text-base font-bold md:mb-3 md:text-lg">Shop by type</h2>
+            {/* phones: one swipeable line, so long names ("Longboards") never break mid-word */}
+            <div className={clsx("no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:grid sm:overflow-visible sm:px-0", CATEGORIES_BY_SPORT[sport].length > 4 ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
               {CATEGORIES_BY_SPORT[sport].filter((c) => facets.categories.has(c)).map((c) => {
                 const on = filters.category === c;
                 return (
-                  <button key={c} type="button" aria-pressed={on} onClick={() => { setFilters((f) => ({ ...f, category: on ? null : c })); setShown(PAGE); }}
-                    className={clsx("flex flex-col items-center gap-1 rounded-2xl border p-2 text-center transition md:p-3", on ? "border-ink bg-surface" : "border-transparent bg-surface hover:border-line")}>
+                  <button key={c} type="button" aria-pressed={on} onClick={() => changeFilters((f) => ({ ...f, category: on ? null : c }))}
+                    className={clsx("flex w-[5.25rem] shrink-0 flex-col items-center gap-1 rounded-card border px-1 py-2 text-center transition sm:w-auto sm:min-w-0 sm:shrink md:p-3", on ? "border-ink bg-surface" : "border-transparent bg-surface hover:border-line")}>
                     <AssetImg src={ASSETS.type[c]} alt="" className="h-10 w-10 md:h-14 md:w-14" fallback={<SportIcon sport={sport} className="h-10 w-10 p-2 text-muted md:h-14 md:w-14" art={false} />} />
-                    <span className="line-clamp-2 text-[11px] font-semibold leading-tight md:text-sm">{CATEGORY_LABEL[c]}</span>
-                    <span className="text-[10px] text-muted md:text-xs">{facets.categories.get(c)}</span>
+                    <span className="line-clamp-2 max-w-full text-2xs font-semibold leading-tight md:text-sm">{CATEGORY_LABEL[c]}</span>
+                    <span className="text-2xs text-muted md:text-xs">{facets.categories.get(c)}</span>
                   </button>
                 );
               })}
@@ -394,44 +462,67 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           </section>
         )}
 
-        {/* ── toolbar ── */}
-        <div id="grid" className={clsx("sticky top-[calc(env(safe-area-inset-top,0px)+5.75rem)] z-30 -mx-4 flex items-center gap-2 bg-white/95 px-4 py-2.5 backdrop-blur md:top-16 md:mx-0 md:px-0", showHero || facets.categories.size ? "mt-3 md:mt-6" : "mt-2")}>
-          <h2 className="min-w-0 flex-1 truncate text-base font-bold md:text-lg">
-            {view === "saved" ? `Saved (${list.length})` : filters.category ? CATEGORY_LABEL[filters.category] : searching ? `Results for “${filters.q.trim()}”` : `All ${SPORT_LABEL[sport].toLowerCase()}`}
-            {view === "shop" && <span className="ml-2 text-sm font-medium text-muted">{visible.length}</span>}
-          </h2>
+        {/* ── title ── */}
+        <div id="grid" className="mt-5 flex min-h-11 scroll-mt-28 items-center gap-3 md:mt-8 md:scroll-mt-20">
+          <h1 className="min-w-0 flex-1 truncate text-lg font-bold md:text-xl">
+            {title}
+            {result && <span className="ml-2 text-sm font-medium text-muted">{list.length}</span>}
+          </h1>
           {view === "shop" ? (
-            <>
-              {fit && (
-                <button type="button" aria-pressed={filters.fitsMe} onClick={() => setFilters((f) => ({ ...f, fitsMe: !f.fitsMe }))} className="chip shrink-0">Fits me</button>
-              )}
-              <label className="hidden items-center gap-2 text-sm md:flex">
-                <span className="text-muted">Sort</span>
-                <select className="input !w-auto !py-1.5" value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
-                  {(Object.keys(SORT_LABEL) as SortMode[]).map((s) => <option key={s} value={s}>{SORT_LABEL[s]}</option>)}
-                </select>
-              </label>
-              <button type="button" onClick={() => setSheet("filters")} className="chip flex shrink-0 items-center gap-1.5" aria-label={`Filter and sort${nFilters ? `, ${nFilters} active` : ""}`}>
-                <SlidersHorizontal className="h-4 w-4" />Filter{nFilters > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-[11px] text-white">{nFilters}</span>}
-              </button>
-            </>
+            <label className="hidden shrink-0 items-center gap-2 text-sm md:flex">
+              <span className="text-muted">Sort</span>
+              <select className="input !w-auto" value={sort} onChange={(e) => { setSort(e.target.value as SortMode); setShown(PAGE); }}>
+                {(Object.keys(SORT_LABEL) as SortMode[]).map((s) => <option key={s} value={s}>{SORT_LABEL[s]}</option>)}
+              </select>
+            </label>
           ) : (
-            <button type="button" onClick={() => setView("shop")} className="chip shrink-0">Back to shop</button>
+            <button type="button" onClick={() => setView("shop")} className="chip">Back to shop</button>
           )}
         </div>
 
+        {/* ── quick filters: one sticky line, scrolls sideways ── */}
+        {view === "shop" && (
+          <div className="sticky top-[calc(env(safe-area-inset-top,0px)+6.25rem)] z-30 -mx-4 flex items-center bg-white/95 py-2 backdrop-blur md:top-16 md:mx-0">
+            <div className="shrink-0 pl-4 pr-2 md:pl-0">
+              <button type="button" onClick={() => setSheet("filters")} className="chip font-semibold" aria-label={`Filter and sort${nFilters ? `, ${nFilters} active` : ""}`}>
+                <SlidersHorizontal className="h-4 w-4" />Filter{nFilters > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-2xs font-bold text-white">{nFilters}</span>}
+              </button>
+            </div>
+            <div role="group" aria-label="Quick filters" className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto border-l border-line pl-2 pr-4 md:pr-0">
+              {QUICK.filter((c) => c.key !== "fits" || fit).map((c) => {
+                const on = c.on(filters);
+                const n = quickCounts[c.key];
+                return (
+                  <button key={c.key} type="button" aria-pressed={on} disabled={!on && n === 0 && !!result} onClick={() => changeFilters((f) => c.set(f, !on))} className="chip disabled:opacity-50 disabled:hover:border-line">
+                    {c.label(filters)}{result && !on && <span className="text-xs text-muted">{n}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <p className="sr-only" role="status" aria-live="polite">{!result ? "Loading boards" : `${list.length} board${list.length === 1 ? "" : "s"} shown`}</p>
+
         {/* ── grid ── */}
-        {error ? (
-          <Empty art={ASSETS.mascot.shrug} title="The shop is closed for a sec" text="Couldn't load prices. Check your connection and try again." action={<button type="button" className="btn-primary" onClick={load}>Try again</button>} />
-        ) : loading && !result ? (
-          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}</div>
+        {error && result && view === "shop" && (
+          <p className="note-warn mt-1 items-center" role="alert">
+            <span className="flex-1">Couldn&apos;t refresh the prices just now. You&apos;re seeing the last ones we loaded.</span>
+            <button type="button" className="link shrink-0 !text-warn" onClick={load}>Try again</button>
+          </p>
+        )}
+        {error && !result ? (
+          <Empty art={ASSETS.mascot.shrug} title="Couldn't load the boards" text="The prices didn't come through. Check your connection and try again." action={<button type="button" className="btn-primary" onClick={load} disabled={loading}>{loading ? "Trying…" : "Try again"}</button>} />
+        ) : firstLoad || !result ? (
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5" aria-busy="true">{Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={i} />)}</div>
         ) : list.length === 0 ? (
           view === "saved" ? (
             <Empty art={ASSETS.emptySaved} fallbackArt={ASSETS.mascot.thinking} title="No saved boards yet" text="Tap the heart on any board to keep it here. We'll tell you when it gets cheaper." action={<button type="button" className="btn-primary" onClick={() => setView("shop")}>Browse boards</button>} />
           ) : products.length === 0 ? (
-            <Empty art={ASSETS.mascotSport[sport]} fallbackArt={ASSETS.mascot.thinking} title={`${SPORT_LABEL[sport]} are on their way`} text={`We're adding ${SPORT_LABEL[sport].toLowerCase()} from the shops. Check back soon, or browse ${sport === "snow" ? "skate" : "snow"} in the meantime.`} />
+            <Empty art={ASSETS.mascotSport[sport]} fallbackArt={ASSETS.mascot.thinking} title={`${SPORT_LABEL[sport]} are on their way`} text={`We're adding ${SPORT_LABEL[sport].toLowerCase()} from the shops. Check back soon.`}
+              action={sportCounts[otherSport] > 0 ? <button type="button" className="btn-primary" onClick={() => setSport(otherSport)}>Browse {SPORT_LABEL[otherSport].toLowerCase()}</button> : undefined} />
           ) : (
-            <Empty art={ASSETS.emptySearch} fallbackArt={ASSETS.emptyNoBoards} title="Nothing matches" text="Try fewer filters or a different search." action={<button type="button" className="btn-primary" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</button>} />
+            <Empty art={ASSETS.emptySearch} fallbackArt={ASSETS.emptyNoBoards} title="Nothing matches" text={searching ? `No ${SPORT_LABEL[sport].toLowerCase()} match “${filters.q.trim()}” with these filters.` : "No boards match all of these filters. Try removing one."}
+              action={<button type="button" className="btn-primary" onClick={() => changeFilters(() => EMPTY_FILTERS)}>Clear search and filters</button>} />
           )
         ) : (
           <>
@@ -443,7 +534,7 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
             {view === "shop" && visible.length > shown && (
               <div className="mt-10 flex flex-col items-center gap-2">
                 <p className="text-sm text-muted">Showing {shown} of {visible.length}</p>
-                <div className="h-1 w-48 overflow-hidden rounded-full bg-line"><div className="h-full bg-ink" style={{ width: `${(shown / visible.length) * 100}%` }} /></div>
+                <div className="h-1 w-48 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full bg-ink" style={{ width: `${(shown / visible.length) * 100}%` }} /></div>
                 <button type="button" className="btn-ghost mt-2 px-8" onClick={() => setShown((n) => n + PAGE)}>Show more</button>
               </div>
             )}
@@ -452,51 +543,56 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
       </main>
 
       {/* ── footer ── */}
-      <footer className="app-gutter mx-auto mt-16 max-w-7xl border-t border-line py-8 text-sm text-muted">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <button type="button" onClick={() => setSheet("locale")} className="font-semibold text-ink underline underline-offset-2">Ship to {countryName(locale.country)} · {locale.currency}</button>
-          {result?.updatedAt && <span>Prices from {new Date(result.updatedAt).toLocaleDateString()}</span>}
-          {services.feedback && <button type="button" onClick={() => setSheet("feedback")} className="font-semibold text-ink underline underline-offset-2">Feedback & support</button>}
-          {acct.user?.isOwner && services.feedback && <button type="button" onClick={() => setSheet("inbox")} className="font-semibold text-ink underline underline-offset-2">Feedback inbox</button>}
-          {acct.user?.isOwner && <button type="button" onClick={() => setSheet("restock")} className="font-semibold text-ink underline underline-offset-2">Restock now</button>}
-          <span className="ml-auto flex gap-4"><a href="/privacy" className="hover:text-ink">Privacy</a><a href="/terms" className="hover:text-ink">Terms</a></span>
+      <footer className="app-gutter mx-auto mt-16 max-w-7xl border-t border-line py-6 text-sm text-muted">
+        <div className="flex flex-wrap items-center gap-x-5">
+          <button type="button" onClick={() => setSheet("locale")} className="link min-h-11">Ship to {countryName(locale.country)} · {locale.currency}</button>
+          {services.feedback && <button type="button" onClick={() => setSheet("feedback")} className="link min-h-11">Feedback & support</button>}
+          {acct.user?.isOwner && services.feedback && <button type="button" onClick={() => setSheet("inbox")} className="link min-h-11">Feedback inbox</button>}
+          {acct.user?.isOwner && <button type="button" onClick={() => setSheet("restock")} className="link min-h-11">Restock now</button>}
+          <span className="flex gap-5 md:ml-auto">
+            <a href="/privacy" className="flex min-h-11 items-center hover:text-ink hover:underline">Privacy</a>
+            <a href="/terms" className="flex min-h-11 items-center hover:text-ink hover:underline">Terms</a>
+          </span>
         </div>
-        <p className="mt-3 text-xs">Prices come from the shops and can change. We may earn nothing from these links; we just like a good deal.</p>
+        <p className="mt-2 text-xs">
+          {result?.updatedAt && <>Prices from {new Date(result.updatedAt).toLocaleDateString()}. </>}
+          Prices come from the shops and can change. We may earn nothing from these links; we just like a good deal.
+        </p>
       </footer>
 
-      {/* ── phones: small floating size reminder (replaces the hero card) ── */}
-      {view === "shop" && !openProduct && !sheet && (
-        <div className="pointer-events-none fixed inset-x-0 z-30 flex justify-center md:hidden" style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
+      {/* ── phones: small floating size pill (replaces the hero card) ── */}
+      {view === "shop" && !openProduct && !sheet && visible.length > 0 && (
+        <div className={clsx("pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4 transition duration-200 md:hidden", pillHidden && "translate-y-24 opacity-0")} style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
           {fit ? (
-            <div className="pointer-events-auto flex items-center overflow-hidden rounded-full border border-ink/10 bg-white/95 text-sm font-semibold shadow-lg backdrop-blur">
-              <button type="button" aria-pressed={filters.fitsMe} onClick={() => { setFilters((f) => ({ ...f, fitsMe: !f.fitsMe })); setShown(PAGE); }}
-                className={clsx("flex items-center gap-1.5 py-2 pl-3.5 pr-3", filters.fitsMe ? "bg-ink text-white" : "text-ink")}>
-                <span className={clsx("grid h-4 w-4 place-items-center rounded-full border", filters.fitsMe ? "border-acid bg-acid text-ink" : "border-ink/40")}>{filters.fitsMe && <Check className="h-3 w-3" />}</span>
-                {filters.fitsMe ? `${fitCount} fit ${firstName}` : `Only my size`} · {fit.rangeLabel}
+            <div className="pointer-events-auto flex max-w-full items-center overflow-hidden rounded-full border border-line bg-white text-sm font-semibold shadow-float">
+              <button type="button" aria-pressed={filters.fitsMe} onClick={() => changeFilters((f) => ({ ...f, fitsMe: !f.fitsMe }))}
+                className={clsx("flex min-h-11 min-w-0 items-center gap-1.5 pl-3.5 pr-3 focus-visible:outline-offset-[-2px]", filters.fitsMe ? "bg-ink text-white" : "text-ink")}>
+                <span aria-hidden className={clsx("grid h-4 w-4 shrink-0 place-items-center rounded-full border", filters.fitsMe ? "border-acid bg-acid text-ink" : "border-muted")}>{filters.fitsMe && <Check className="h-3 w-3" />}</span>
+                <span className="truncate">{filters.fitsMe ? `${fitCount} fit ${firstName}` : "Only my size"} · {fit.rangeLabel}</span>
               </button>
-              <button type="button" onClick={() => openSize()} className="border-l border-line px-3 py-2 text-muted" aria-label="Edit size"><Ruler className="h-4 w-4" /></button>
+              <button type="button" onClick={() => openSize()} className="grid min-h-11 w-11 shrink-0 place-items-center border-l border-line text-muted focus-visible:outline-offset-[-2px]" aria-label="Edit my size"><Ruler className="h-4 w-4" /></button>
             </div>
           ) : (
-            <button type="button" onClick={() => openSize()} className="btn-lime pointer-events-auto !py-2 !text-sm shadow-lg"><Ruler className="h-4 w-4" />Find my size</button>
+            <button type="button" onClick={() => openSize()} className="btn-lime pointer-events-auto shadow-float"><Ruler className="h-4 w-4" />Find my size</button>
           )}
         </div>
       )}
 
-      {/* ── mobile bottom nav ── */}
+      {/* ── phones: bottom nav ── */}
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-4">
           {([
-            ["shop", "Shop", Home, () => { setView("shop"); window.scrollTo({ top: 0, behavior: "smooth" }); }],
+            ["shop", "Shop", Home, () => { setView("shop"); window.scrollTo({ top: 0, behavior: scrollBehavior() }); }],
             ["saved", "Saved", Heart, () => { setView("saved"); window.scrollTo({ top: 0 }); }],
             ["size", fit ? fit.label : "My size", Ruler, () => openSize()],
             ["account", "Profile", User, () => setSheet("account")],
           ] as const).map(([id, label, Icon, go]) => {
             const on = id === view || (id === "size" && sheet === "size") || (id === "account" && sheet === "account");
             return (
-              <button key={id} type="button" onClick={go} aria-current={on ? "page" : undefined} className={clsx("relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-semibold", on ? "text-ink" : "text-muted")}>
-                <Icon className={clsx("h-[22px] w-[22px]", on && id === "saved" && "fill-ink")} />
+              <button key={id} type="button" onClick={go} aria-current={on ? "page" : undefined} className={clsx("relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 text-2xs font-semibold focus-visible:outline-offset-[-2px]", on ? "text-ink" : "text-muted")}>
+                <Icon className={clsx("h-[22px] w-[22px]", on && id === "saved" && "fill-ink")} aria-hidden />
                 <span className="max-w-full truncate px-1">{label}</span>
-                {id === "saved" && store.holds.length > 0 && <span className="absolute left-1/2 top-1 ml-2 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-[10px] font-bold text-white">{store.holds.length}</span>}
+                {id === "saved" && store.holds.length > 0 && <span className="absolute left-1/2 top-1 ml-2 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-2xs font-bold text-white"><span className="sr-only">: </span>{store.holds.length}</span>}
               </button>
             );
           })}
@@ -530,11 +626,11 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
         />
       )}
       {sheet === "filters" && (
-        <FilterSheet sport={sport} value={filters} onChange={(f) => { setFilters(f); setShown(PAGE); }} sort={sort} onSort={setSort} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.rangeLabel ?? null} count={visible.length} onClose={() => setSheet(null)} />
+        <FilterSheet sport={sport} value={filters} onChange={(f) => changeFilters(() => f)} sort={sort} onSort={(s) => { setSort(s); setShown(PAGE); }} facets={facets} currency={locale.currency} hasRider={!!fit} fitLabel={fit?.rangeLabel ?? null} count={visible.length} onClose={() => setSheet(null)} />
       )}
       {sheet === "locale" && <LocaleSheet value={locale} onChange={setLocale} onClose={() => setSheet(null)} />}
       {sheet === "account" && (
-        <AccountPanel
+        <AccountSheet
           account={services.account}
           state={acct}
           buddies={store.buddies}
@@ -548,10 +644,10 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
           onClose={() => setSheet(null)}
           summary={summary}
           extra={services.feedback ? (
-            <section className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" onClick={() => setSheet("feedback")} className="btn-ghost flex-1 !justify-start !py-3"><MessageCircleQuestion className="h-5 w-5" />Feedback & support</button>
-              {acct.user?.isOwner && <button type="button" onClick={() => setSheet("inbox")} className="btn-ghost flex-1 !justify-start !py-3"><Inbox className="h-5 w-5" />Feedback inbox</button>}
-            </section>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" onClick={() => setSheet("feedback")} className="btn-ghost flex-1 !justify-start"><MessageCircleQuestion className="h-5 w-5" />Feedback & support</button>
+              {acct.user?.isOwner && <button type="button" onClick={() => setSheet("inbox")} className="btn-ghost flex-1 !justify-start"><Inbox className="h-5 w-5" />Feedback inbox</button>}
+            </div>
           ) : undefined}
         />
       )}
@@ -567,10 +663,10 @@ export function StoreApp({ initialLocale, services }: { initialLocale: BuyerLoca
       {sheet === "restock" && acct.user?.isOwner && <RestockSheet services={services} onClose={() => setSheet(null)} onFinished={load} />}
 
       {toast && (
-        <div role="status" className="fixed inset-x-0 bottom-20 z-[70] flex justify-center px-4 md:bottom-6">
-          <div className="flex max-w-md items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-sm font-medium text-white shadow-xl">
-            <span>{toast}</span>
-            <button type="button" onClick={() => setToast(null)} aria-label="Dismiss"><X className="h-4 w-4" /></button>
+        <div role="status" className="pointer-events-none fixed inset-x-0 bottom-36 z-[70] flex justify-center px-4 md:bottom-6">
+          <div className="pointer-events-auto flex max-w-md items-center gap-1 rounded-card bg-ink py-1 pl-4 pr-1 text-sm font-medium text-white shadow-float">
+            <span className="py-2">{toast}</span>
+            <button type="button" onClick={() => setToast(null)} className="icon-btn !text-white hover:!bg-white/15 focus-visible:outline-white" aria-label="Dismiss"><X className="h-4 w-4" /></button>
           </div>
         </div>
       )}
@@ -595,23 +691,24 @@ function useArtReady(src: string): boolean {
   return ok;
 }
 
-function SearchBox({ value, onChange, className, inputRef }: { value: string; onChange: (q: string) => void; className?: string; inputRef?: React.Ref<HTMLInputElement> }) {
+function SearchBox({ value, onChange, className }: { value: string; onChange: (q: string) => void; className?: string }) {
   return (
     <label className={clsx("relative items-center", className)}>
       <span className="sr-only">Search boards</span>
-      <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted" />
-      <input ref={inputRef} type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search brands and models"
-        className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-10 text-[15px] outline-none transition placeholder:text-muted focus:border-ink focus:bg-white md:h-10 md:text-sm" />
-      {value && <button type="button" onClick={() => onChange("")} className="absolute right-2 rounded-full p-1.5 hover:bg-line" aria-label="Clear search"><X className="h-4 w-4" /></button>}
+      <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted" aria-hidden />
+      <input type="search" enterKeyHint="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search brands and models"
+        className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-11 text-base outline-none transition placeholder:text-muted focus:border-ink focus:bg-white md:h-10 md:text-sm [&::-webkit-search-cancel-button]:hidden" />
+      {value && <button type="button" onClick={() => onChange("")} className="icon-btn absolute right-0 !h-11 !w-11 hover:!bg-transparent md:!h-10" aria-label="Clear search"><X className="h-4 w-4" /></button>}
     </label>
   );
 }
 
+/** Empty, error and "coming soon" states: Buddy, a title, one line, one action. */
 function Empty({ art, fallbackArt, title, text, action }: { art: string; fallbackArt?: string; title: string; text: string; action?: React.ReactNode }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-12 text-center">
-      <AssetImg src={art} alt="" className="h-40 w-auto" fallback={fallbackArt ? <AssetImg src={fallbackArt} alt="" className="h-40 w-auto" /> : null} />
-      <h3 className="text-xl font-bold">{title}</h3>
+      <AssetImg src={art} alt="" className="h-36 w-auto" fallback={fallbackArt ? <AssetImg src={fallbackArt} alt="" className="h-36 w-auto" /> : null} />
+      <h2 className="text-xl font-bold">{title}</h2>
       <p className="text-sm text-muted">{text}</p>
       {action}
     </div>

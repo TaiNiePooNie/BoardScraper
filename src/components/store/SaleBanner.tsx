@@ -27,16 +27,16 @@ export function SaleBanner({ sport, country, onShowSale, onAlerts }: { sport: Sp
   };
   const range = `${Math.round(e.typical[0] * 100)}–${Math.round(e.typical[1] * 100)}%`;
   return (
-    <section aria-label="Sale calendar" className={clsx("mt-3 flex items-center gap-2 rounded-full border py-1.5 pl-3 pr-1.5 text-sm md:mt-4", now ? "border-sale/30 bg-sale/5" : "border-line bg-surface")}>
+    <section aria-label="Sale calendar" className={clsx("mt-3 flex min-h-11 items-center gap-2 rounded-full border pl-3.5 text-sm md:mt-4", now ? "border-sale/30 bg-sale/5" : "border-line bg-surface")}>
       {now ? <Sparkles className="h-4 w-4 shrink-0 text-sale" /> : <CalendarClock className="h-4 w-4 shrink-0" />}
-      <button type="button" onClick={now ? onShowSale : onAlerts} className="min-w-0 flex-1 truncate text-left" title={e.why}>
+      <button type="button" onClick={now ? onShowSale : onAlerts} className="min-h-11 min-w-0 flex-1 truncate rounded-full text-left" title={e.why}>
         {now ? <><b>{now.name}</b> on now · up to −{Math.round(e.typical[1] * 100)}%</> : <><b>{next!.name}</b> {next!.inDays === 1 ? "tomorrow" : `in ${next!.inDays} days`} · usually −{range}</>}
         <span className="hidden text-muted md:inline"> · {now ? `until ${fmtDate(now.end)}` : `${fmtDate(next!.start)}. Save boards with ♥ to get price-drop emails.`}</span>
       </button>
-      <button type="button" onClick={now ? onShowSale : onAlerts} className="shrink-0 rounded-full p-1.5 text-muted hover:bg-white hover:text-ink" aria-label={now ? "Show sale boards" : "Price alert settings"} title={now ? "Show sale boards" : "Price alert settings"}>
+      <button type="button" onClick={now ? onShowSale : onAlerts} className="icon-btn -mr-2 hidden !text-muted hover:!bg-white hover:!text-ink sm:grid" aria-label={now ? "Show sale boards" : "Price alert settings"} title={now ? "Show sale boards" : "Price alert settings"}>
         {now ? <TrendingDown className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
       </button>
-      <button type="button" onClick={close} className="shrink-0 rounded-full p-1.5 text-muted hover:bg-white hover:text-ink" aria-label="Dismiss"><X className="h-4 w-4" /></button>
+      <button type="button" onClick={close} className="icon-btn !text-muted hover:!bg-white hover:!text-ink" aria-label="Dismiss sale notice"><X className="h-4 w-4" /></button>
     </section>
   );
 }
@@ -47,11 +47,11 @@ export function BuyOrWait({ p, country, saved, onSave }: { p: Product; country: 
   if (!v) return null;
   const Icon = v.kind === "wait" ? CalendarClock : TrendingDown;
   return (
-    <section aria-label="Buy now or wait" className={clsx("rounded-2xl border px-4 py-3 text-sm", v.kind === "wait" ? "border-line bg-surface" : "border-ok/30 bg-ok/5")}>
+    <section aria-label="Buy now or wait" className={clsx("rounded-card border px-4 py-3 text-sm", v.kind === "wait" ? "border-line bg-surface" : "border-ok/30 bg-white")}>
       <p className={clsx("flex items-center gap-2 font-bold", v.kind !== "wait" && "text-ok")}><Icon className="h-4 w-4 shrink-0" />{v.title}</p>
       <p className="mt-1 text-muted">{v.text}</p>
       {v.kind !== "buy" && !saved && (
-        <button type="button" onClick={onSave} className="btn-ghost mt-2 !py-1.5 !text-xs"><Heart className="h-3.5 w-3.5" />Save and watch the price</button>
+        <button type="button" onClick={onSave} className="btn-ghost btn-sm mt-2"><Heart className="h-4 w-4" />Save and watch the price</button>
       )}
     </section>
   );

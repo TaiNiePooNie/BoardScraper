@@ -139,9 +139,3 @@ export function sortGroups(groups: BoardGroup[], mode: SortMode): BoardGroup[] {
   };
   return [...groups].sort(cmp[mode]);
 }
-
-export function countGroupsByTier(groups: BoardGroup[]): Record<DealTier, number> {
-  const c: Record<DealTier, number> = { "extremely-good": 0, "very-good": 0, good: 0, normal: 0, bad: 0 };
-  for (const g of groups) c[g.tier]++;
-  return c;
-}
