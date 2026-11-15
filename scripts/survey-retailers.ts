@@ -142,7 +142,9 @@ async function main() {
   for (const l of lines) console.log(l);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (process.argv[1]?.includes("survey-retailers")) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
