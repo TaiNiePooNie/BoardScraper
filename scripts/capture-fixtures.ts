@@ -17,7 +17,12 @@ const BOARD = /snowboard|splitboard|skateboard|skate-?deck|\bdecks?\b|complete|c
 const GEAR = /binding|boot|wheel|truck|bearing|griptape|grip-tape|wetsuit|leash|\bfins?\b|bag|helmet|jacket|pant|shoe|sock|hood|tee|shirt|cap|beanie|glove|goggle|wax|sticker|gift|hardware|tool|wax/i;
 const MAX_HTML = 700_000;
 /** Inline CSS can be most of a page (skatedeluxe: 560 kB): drop it so the markup fits. */
-const trim = (html: string) => html.replace(/(<style[^>]*>)[\s\S]*?(<\/style>)/gi, "$1$2").slice(0, MAX_HTML);
+const trim = (html: string) =>
+  html
+    .replace(/(<style[^>]*>)[\s\S]*?(<\/style>)/gi, "$1$2")
+    // …and so can bundled JS (kept: JSON-LD and other data scripts under 20 kB)
+    .replace(/(<script(?![^>]*ld\+json)[^>]*>)([\s\S]*?)(<\/script>)/gi, (m, a, body, b) => (body.length > 20_000 ? `${a}/* ${body.length} bytes */${b}` : m))
+    .slice(0, MAX_HTML);
 
 async function capture(id: string, out: string) {
   const t = FIXTURE_TARGETS[id] ?? {};
