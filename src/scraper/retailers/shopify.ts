@@ -36,10 +36,14 @@ function volumeFromCopy(text: string): { volumeL?: number } {
  * One Shopify product → ScrapedProduct. `sportHint` is the collection's sport;
  * without it (live re-check) the sport is read from product type + title.
  */
+/** Board-like products we don't compare: bags, wake/kite/foil/skim boards, used stock, footwear. */
+export const NOT_OUR_BOARDS = /board ?bags?|\bbagpacks?\b|\bwake\w*|\bkite\w*|\bfoil(?:board)?s?\b|\bskim\w*|\bpre[- ]?loved\b|\bsecond[- ]?hand\b|\bshoes?\b|\bsneakers?\b|\bfootwear\b|\bsup\b|\bstand ?up paddle/i;
+
 export function parseShopifyProduct(p: ShopifyProduct, origin: string, scrapedAt: string, sportHint?: Sport, currency: CurrencyCode = "USD"): ScrapedProduct | null {
   const sport = sportHint ?? detectSport(`${p.product_type} ${p.title}`) ?? "snow";
   // Kids boards are kept (Kids filter).
   if (sport === "snow" ? NOT_A_BOARD.test(p.title) || isBundle(p) : isSkateSurfGear(p.title) || isBundle(p)) return null;
+  if (NOT_OUR_BOARDS.test(p.title) || NOT_OUR_BOARDS.test(p.product_type)) return null;
   const sizeOpt = p.options.find((o) => /size|length|width|taille|größe|grösse|サイズ/i.test(o.name));
   const pick = (v: ShopifyVariant) => (sizeOpt ? [v.option1, v.option2, v.option3][sizeOpt.position - 1] : v.title) ?? "";
   const body = htmlToText(p.body_html);
@@ -51,6 +55,8 @@ export function parseShopifyProduct(p: ShopifyProduct, origin: string, scrapedAt
     sport === "surf" ? { ...volumeFromCopy(body), ...pageFeatures(sport, body) } : {},
   );
   if (!sizes.length) return null;
+  // Whole-number "widths" 9, 10, 11… are shoe sizes (e.g. a sneaker called "Authentic Deck").
+  if (sport === "skate" && sizes.length > 1 && sizes.every((z) => z.widthIn !== undefined && Number.isInteger(z.widthIn) && z.widthIn >= 9)) return null;
   const price = headlinePrice(sizes, []);
   if (price === null) return null;
   const compare = p.variants.map((v) => parsePrice(v.compare_at_price)).filter((n): n is number => n !== null && n >= price);
