@@ -1,0 +1,36 @@
+name: Capture shop fixtures
+
+# Manual: saves sample pages (robots-allowed only) from candidate shops to the
+# `survey-fixtures` branch, so parsers can be written and tested offline.
+on:
+  workflow_dispatch:
+    inputs:
+      sites:
+        description: "Candidate ids, comma-separated"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+        env: { PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1" }
+      - name: Capture
+        env: { SITES: "${{ inputs.sites }}" }
+        run: npx tsx scripts/capture-fixtures.ts /tmp/fixtures "$SITES" | tee /tmp/capture.txt
+      - name: Push to survey-fixtures branch
+        run: |
+          cp /tmp/capture.txt /tmp/fixtures/CAPTURE.txt
+          cd /tmp/fixtures
+          git init -q -b survey-fixtures
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -qm "Shop fixtures $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" survey-fixtures
