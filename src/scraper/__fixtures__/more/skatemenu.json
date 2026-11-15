@@ -1,0 +1,148 @@
+{
+ "products": [
+  {
+   "title": "Yow Teahupoo 34\" Complete Surfskate",
+   "handle": "yow-teahupoo-34-complete-surfskate-2026c",
+   "body_html": "",
+   "vendor": "YOW",
+   "product_type": "SURFSKATE",
+   "tags": [
+    "2026 Holiday",
+    "NEW"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "239.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/YOW_-_Surfskate_Complete_-_Teahupoo_-_10_x_34_-_Bottom_-_8433975454097.jpg?v=1793633085"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/YOW_-_Surfskate_Complete_-_Teahupoo_-_10_x_34_-_Top_-_8433975454097.jpg?v=1793633086"
+    }
+   ]
+  },
+  {
+   "title": "Yow Teahupoo 34\" Surfskate Deck",
+   "handle": "yow-teahupoo-34-surfskate-deck-2026c",
+   "body_html": "",
+   "vendor": "YOW",
+   "product_type": "SURFSKATE",
+   "tags": [
+    "2026 Holiday",
+    "NEW"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "89.90",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/YOW_-_Surfskate_Deck_-_Teahupoo_-_10_x_34_-_Bottom_-_88433975454042.png?v=1793633093"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/YOW_-_Surfskate_Deck_-_Teahupoo_-_10_x_34_-_Top_-_88433975454042.png?v=1793633095"
+    }
+   ]
+  },
+  {
+   "title": "Jart The Weed Is Yours 8.5\" Skate Deck",
+   "handle": "jart-the-weed-is-yours-8-5-skate-deck-2026c",
+   "body_html": "",
+   "vendor": "JART",
+   "product_type": "SKATE",
+   "tags": [
+    "2026 Holiday",
+    "NEW"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "69.95",
+     "compare_at_price": null,
+     "available": true,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/jart_the_weed_is_yours_8.5_skate_deck_01_3f866b37-e8cf-4028-8b3e-d5577465819c.jpg?v=1793009909"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/jart_the_weed_is_yours_8.5_skate_deck_02_8ce84fa4-b036-41d1-8b88-aa6a031ecfd4.jpg?v=1793009909"
+    }
+   ]
+  },
+  {
+   "title": "Tricks Alligator 8.25\" Complete Skateboard",
+   "handle": "tricks-alligator-8-25-complete-skateboard",
+   "body_html": "<p><meta charset=\"utf-8\"><img src=\"https://cdn.shopify.com/s/files/1/0638/3861/7795/files/MIDI-SPECS.svg?v=1793962905\" alt=\"\" width=\"313\" height=\"117\"></p>",
+   "vendor": "TRICKS",
+   "product_type": "SKATE",
+   "tags": [
+    "2026 Holiday",
+    "NEW"
+   ],
+   "options": [
+    {
+     "name": "Title",
+     "position": 1
+    }
+   ],
+   "variants": [
+    {
+     "title": "Default Title",
+     "price": "94.95",
+     "compare_at_price": null,
+     "available": false,
+     "option1": "Default Title",
+     "option2": null,
+     "option3": null
+    }
+   ],
+   "images": [
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/tricks_alligator_8.25_complete_skateboard_01.jpg?v=1793010129"
+    },
+    {
+     "src": "https://cdn.shopify.com/s/files/1/0638/3861/7795/files/tricks_alligator_8.25_complete_skateboard_02.jpg?v=1793010130"
+    }
+   ]
+  }
+ ]
+}

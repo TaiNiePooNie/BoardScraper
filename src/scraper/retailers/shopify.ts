@@ -118,6 +118,8 @@ export interface ShopifyConfig extends Omit<ShopifyClassifyOptions, "sports"> {
   sports?: readonly Sport[];
   /** Page cap per feed (250 products per page). */
   maxPages?: number;
+  /** Shop-specific clean-up before parsing (titles with SKU codes, vendor spelled "Brand USA"…). */
+  rewrite?: (p: ShopifyProduct) => ShopifyProduct;
 }
 
 const ALL_SPORTS: readonly Sport[] = ["snow", "skate", "surf"];
@@ -134,6 +136,7 @@ export function shopifyAdapter(cfg: ShopifyConfig): RetailerAdapter {
   const sports = cfg.collections ? [...new Set(cfg.collections.map((c) => c.sport))] : (cfg.sports ?? ALL_SPORTS);
   const classify: ShopifyClassifyOptions = { productTypes: cfg.productTypes, defaultSport: cfg.defaultSport, sports };
   const maxPages = cfg.maxPages ?? (cfg.collections ? 40 : 120);
+  const retitle = (p: ShopifyProduct): ShopifyProduct => (cfg.rewrite ? cfg.rewrite(p) : p);
 
   /** The feed's prices are in the shop's base currency: confirm it against `/meta.json` once per crawl. */
   async function shopCurrency(ctx: CrawlContext): Promise<CurrencyCode> {
@@ -156,7 +159,7 @@ export function shopifyAdapter(cfg: ShopifyConfig): RetailerAdapter {
     sports,
     async fetchOne(http, url) {
       const handleUrl = url.replace(/[?#].*$/, "").replace(/\/$/, "");
-      const p = fromShopifyJs(await http.getJson<ShopifyJsProduct>(`${handleUrl}.js`));
+      const p = retitle(fromShopifyJs(await http.getJson<ShopifyJsProduct>(`${handleUrl}.js`)));
       const now = new Date().toISOString();
       return shopifyBoard(p, origin, now, retailer.currency, classify) ?? parseShopifyProduct(p, origin, now, undefined, retailer.currency);
     },
@@ -177,7 +180,8 @@ export function shopifyAdapter(cfg: ShopifyConfig): RetailerAdapter {
           ctx.log(`${feed.label} page ${page}: ${products.length} products`);
           if (!products.length) break;
           const now = new Date().toISOString();
-          for (const p of products) {
+          for (const raw of products) {
+            const p = retitle(raw);
             if (seen.has(p.handle)) continue;
             seen.add(p.handle);
             const parsed = feed.sport

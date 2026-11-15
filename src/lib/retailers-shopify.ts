@@ -6,6 +6,8 @@ import type { Retailer, ShippingRule, Sport } from "./types";
  * and the classifier found boards). Destinations come from each store's own
  * /meta.json "ships_to_countries"; costs from its public shipping policy where it
  * states them, otherwise ESTIMATES for a board-size parcel (marked "est."). Re-check each season.
+ * The 17 surveyed shops that are not plain Shopify (added via HTML/JSON-LD adapters, via the
+ * brand's separate store, or left out with the reason) are listed in retailers-more.ts.
  */
 
 const EU = ["AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"];

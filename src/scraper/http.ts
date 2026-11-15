@@ -12,7 +12,7 @@ export class DisallowedError extends Error {}
 
 const BOT_TOKEN = "BoardScraperBot";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
-const CHALLENGE = /challenges\.cloudflare\.com|cf-chl-|<title>\s*(just a moment|attention required|access denied)/i;
+const CHALLENGE = /challenges\.cloudflare\.com|cf-chl-|\/\.webscale\/i-am-a-human|<title>\s*(just a moment|attention required|access denied)/i;
 
 export interface FetchResult {
   status: number;

@@ -39,7 +39,7 @@ jobs:
           ids="$DRYRUN"; [ "$ids" = "all" ] && ids=$(npm run -s retailers | tr -d '[]"')
           for r in ${ids//,/ }; do
             echo "=== $r"
-            timeout 300 npx tsx src/scraper/run.ts --retailer=$r --dry-run --limit=2 2>&1 | grep -E '✓|⚠|Error|"sport"' | cut -c1-260 | head -8 || true
+            timeout 300 npx tsx src/scraper/run.ts --retailer=$r --dry-run --limit=2 2>&1 | grep -E '✓|✗|⚠|Error|discovered|new product links|"sport"' | cut -c1-300 | head -14 || true
           done
       - name: Robots + platform
         if: ${{ inputs.dryrun == '' && inputs.dbcheck != 'yes' }}
