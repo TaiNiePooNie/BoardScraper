@@ -7,10 +7,16 @@ import type { Retailer } from "./types";
  *
  * Evaluated and excluded:
  *  - snowleader.com, sportconrad.com, absolute-snow.co.uk — 403/429 to automated clients
+ *    (snowleader.com and absolute-snow.co.uk re-checked 2026-11-15: robots.txt itself answers 403)
  *  - the-house.com — Cloudflare bot challenge
  *  - snowboard-asylum.com — robots.txt disallows /product and /category
  *  - bergzeit.de — board pages not identifiable from sitemap; category pages on another host
  *  - tradeinn.com (snowinn) — no structured product data; HTML-only (candidate for a Playwright adapter)
+ *
+ * Candidates not yet surveyed (~75 shops and brand stores, incl. absolutesnow.com): the
+ * list lives in scripts/survey-retailers.ts. Run `npm run survey` from a network that
+ * can reach them, then add Shopify shops with `shopifyAdapter` (src/scraper/retailers/
+ * shopify.ts) and sitemap + JSON-LD shops with `sitemapJsonLdAdapter`.
  */
 const EU_EXCEPT_HOME = ["BE", "BG", "CZ", "DK", "EE", "FI", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "ES", "CY", "MT"];
 
