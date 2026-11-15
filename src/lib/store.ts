@@ -122,6 +122,8 @@ export interface StoreFilters {
   /** Kids / men / women (several allowed; empty = all). Skate & surf: kids vs adults. */
   audience: Audience[];
   brands: string[];
+  /** Board colours from the photo (any of). */
+  colors: string[];
   shops: string[];
   maxPrice: number | null;
   /** Least discount off the original price, 0..1 (0 = off; MIN_DISCOUNT = anything "on sale"). */
@@ -133,7 +135,7 @@ export interface StoreFilters {
   /** Selling out ("Few left" / "Last sizes"). */
   lastSizes: boolean;
 }
-export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, audience: [], brands: [], shops: [], maxPrice: null, minDiscount: 0, priceDrop: false, lowest: false, lastSizes: false };
+export const EMPTY_FILTERS: StoreFilters = { q: "", fitsMe: false, category: null, audience: [], brands: [], colors: [], shops: [], maxPrice: null, minDiscount: 0, priceDrop: false, lowest: false, lastSizes: false };
 
 export const CATEGORY_LABEL: Record<BoardCategory, string> = {
   "all-mountain": "All-mountain",
@@ -302,6 +304,7 @@ export function filterProducts(products: Product[], f: StoreFilters): Product[] 
     if (f.category && p.board.category !== f.category) return false;
     if (f.audience.length && !audienceAllows(f.audience, p.board.sport, p.board.model)) return false;
     if (f.brands.length && !f.brands.includes(p.board.brand)) return false;
+    if (f.colors.length && !p.board.colors?.some((c) => f.colors.includes(c))) return false;
     if (f.shops.length && !p.offers.some((o) => f.shops.includes(o.retailer.id))) return false;
     if (f.maxPrice !== null && p.total > f.maxPrice) return false;
     if (f.minDiscount > 0 && p.discountPct < f.minDiscount) return false;
@@ -331,11 +334,13 @@ export function sortProducts(products: Product[], mode: SortMode): Product[] {
 /** Facets for the filter sheet (from the sport's products, before filtering). */
 export function storeFacets(products: Product[]) {
   const brands = new Map<string, number>();
+  const colors = new Map<string, number>();
   const shops = new Map<string, { name: string; n: number }>();
   const cats = new Map<BoardCategory, number>();
   let maxTotal = 0;
   for (const p of products) {
     brands.set(p.board.brand, (brands.get(p.board.brand) ?? 0) + 1);
+    for (const c of p.board.colors ?? []) colors.set(c, (colors.get(c) ?? 0) + 1);
     if (p.board.category) cats.set(p.board.category, (cats.get(p.board.category) ?? 0) + 1);
     for (const o of p.offers) {
       const s = shops.get(o.retailer.id);
@@ -346,6 +351,7 @@ export function storeFacets(products: Product[]) {
   }
   return {
     brands: [...brands.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    colors,
     shops: [...shops.entries()].map(([id, v]) => ({ id, ...v })),
     categories: cats,
     maxTotal: Math.ceil(maxTotal / 50) * 50,
@@ -354,7 +360,7 @@ export function storeFacets(products: Product[]) {
 
 /** Filters counted on the Filter button (search and category have their own UI). */
 export const activeFilterCount = (f: StoreFilters) =>
-  (f.fitsMe ? 1 : 0) + (f.audience.length ? 1 : 0) + f.brands.length + f.shops.length + (f.maxPrice !== null ? 1 : 0)
+  (f.fitsMe ? 1 : 0) + (f.audience.length ? 1 : 0) + f.brands.length + f.colors.length + f.shops.length + (f.maxPrice !== null ? 1 : 0)
   + (f.minDiscount > 0 ? 1 : 0) + (f.priceDrop ? 1 : 0) + (f.lowest ? 1 : 0) + (f.lastSizes ? 1 : 0);
 
 /* ── URL state: a filtered view can be shared, bookmarked and survives a reload ── */
@@ -383,6 +389,7 @@ export function viewToQuery({ sport, filters: f, sort }: StoreView): URLSearchPa
   if (f.maxPrice !== null) q.set("max", String(f.maxPrice));
   for (const a of f.audience) q.append("for", a);
   for (const b of f.brands) q.append("brand", b);
+  for (const c of f.colors) q.append("color", c);
   for (const s of f.shops) q.append("shop", s);
   return q;
 }
@@ -409,6 +416,7 @@ export function viewFromQuery(q: URLSearchParams): { sport: Sport | null; filter
       maxPrice: q.has("max") && Number.isFinite(max) && max > 0 ? max : null,
       audience: q.getAll("for").filter((a): a is Audience => AudienceSchema.safeParse(a).success),
       brands: q.getAll("brand").slice(0, 30),
+      colors: q.getAll("color").slice(0, 11),
       shops: q.getAll("shop").slice(0, 60),
     },
   };

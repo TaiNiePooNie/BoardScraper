@@ -94,6 +94,7 @@ export function buildMockCatalog() {
     brand, model, season: "2025/26", profile, shape, flex, styles,
     msrp: { amount: msrp, currency: "EUR" },
     images: [0, 1, 2].map((v) => boardImage((i * 37) % 360, v)),
+    colors: [["red", "orange", "yellow", "green", "blue", "purple", "pink"][Math.floor((((i * 37) % 360) / 360) * 7)], i % 3 ? "black" : "white"],
     ambassadors: RIDERS.filter((x) => riderIds.includes(x.id)),
     reviews: r() > 0.15 ? { average: Math.round((3.4 + r() * 1.6) * 10) / 10, count: Math.floor(5 + r() * 300), sources: [] } : null,
   }));

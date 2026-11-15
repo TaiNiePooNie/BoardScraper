@@ -189,7 +189,7 @@ describe("view in the URL", () => {
   });
 
   it("round-trips sport, type, search, sort and every filter", () => {
-    const filters: StoreFilters = { q: "fish & chips", fitsMe: true, category: "fish", audience: ["kids", "womens"], brands: ["Lib Tech", "A&B"], shops: ["evo", "blue-tomato"], maxPrice: 450, minDiscount: 0.2, priceDrop: true, lowest: true, lastSizes: true };
+    const filters: StoreFilters = { q: "fish & chips", fitsMe: true, category: "fish", audience: ["kids", "womens"], brands: ["Lib Tech", "A&B"], colors: ["blue", "black"], shops: ["evo", "blue-tomato"], maxPrice: 450, minDiscount: 0.2, priceDrop: true, lowest: true, lastSizes: true };
     const q = viewToQuery({ sport: "surf", filters, sort: "drop" });
     expect(viewFromQuery(new URLSearchParams(q.toString()))).toEqual({ sport: "surf", filters, sort: "drop" });
     const onSale = viewToQuery({ sport: "snow", filters: { ...EMPTY_FILTERS, minDiscount: MIN_DISCOUNT }, sort: "recommended" });

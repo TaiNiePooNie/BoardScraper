@@ -1,4 +1,6 @@
 "use client";
+import clsx from "clsx";
+import { BOARD_COLORS, COLOR_HEX, COLOR_LABEL } from "@/lib/colors";
 import { formatMoney } from "@/lib/pricing/currency";
 import { DISCOUNT_STEPS, EMPTY_FILTERS, MIN_DISCOUNT, SORT_LABEL, type SortMode, type StoreFilters, type storeFacets } from "@/lib/store";
 import { AUDIENCE_CHOICES, choiceMembers, type AudienceChoice } from "@/lib/sizing";
@@ -72,6 +74,23 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
           style={{ ["--fill" as string]: `${((price - 50) / Math.max(1, max - 50)) * 100}%` }}
           onChange={(e) => { const n = Number(e.target.value); set({ maxPrice: n >= max ? null : n }); }} />
       </Group>
+      {facets.colors.size > 0 && (
+        <Group title="Colour" action={value.colors.length > 0 ? <button type="button" className="link text-xs" onClick={() => set({ colors: [] })}>Show all</button> : undefined}>
+          <div className="flex flex-wrap gap-2">
+            {BOARD_COLORS.filter((c) => facets.colors.has(c)).map((c) => {
+              const on = value.colors.includes(c);
+              return (
+                <button key={c} type="button" aria-pressed={on} title={COLOR_LABEL[c]} onClick={() => set({ colors: toggleIn(value.colors, c) })}
+                  className={clsx("flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1.5 pr-3 text-sm font-medium", on ? "border-ink bg-surface" : "border-line")}>
+                  <span className={clsx("h-7 w-7 rounded-full border", on ? "border-ink ring-2 ring-ink ring-offset-2" : "border-line")} style={{ background: COLOR_HEX[c] }} />
+                  {COLOR_LABEL[c]} <span className="text-muted">{facets.colors.get(c)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted">Read from the main product photo, so multi-coloured graphics show under each of their main colours.</p>
+        </Group>
+      )}
       {facets.brands.length > 1 && (
         <Group title="Brand" action={value.brands.length > 0 ? <button type="button" className="link text-xs" onClick={() => set({ brands: [] })}>Show all</button> : undefined}>
           <div className="flex flex-wrap gap-1.5">
