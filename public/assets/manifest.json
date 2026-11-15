@@ -1698,6 +1698,321 @@
     "width": 3000,
     "height": 2400,
     "format": "png",
-    "alt": "Review of all size-finder source art; surf exports are pending a sizing decision."
+    "alt": "All 135 illustrated size-finder stills in a labelled grid on white."
+  },
+  {
+    "file": "size-surf-man-slim-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, slim build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-man-slim-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, slim build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-man-slim-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, slim build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-man-slim-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, slim build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-man-slim-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, slim build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-man-regular-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, regular build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-man-regular-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, regular build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-man-regular-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, regular build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-man-regular-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, regular build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-man-regular-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, regular build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-man-broad-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, broad build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-man-broad-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, broad build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-man-broad-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, broad build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-man-broad-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, broad build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-man-broad-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Man Buddy, broad build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-woman-slim-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, slim build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-woman-slim-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, slim build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-woman-slim-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, slim build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-woman-slim-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, slim build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-woman-slim-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, slim build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-woman-regular-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, regular build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-woman-regular-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, regular build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-woman-regular-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, regular build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-woman-regular-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, regular build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-woman-regular-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, regular build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-woman-broad-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, broad build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-woman-broad-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, broad build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-woman-broad-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, broad build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-woman-broad-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, broad build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-woman-broad-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Woman Buddy, broad build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-kid-slim-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, slim build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-kid-slim-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, slim build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-kid-slim-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, slim build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-kid-slim-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, slim build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-kid-slim-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, slim build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-kid-regular-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, regular build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-kid-regular-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, regular build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-kid-regular-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, regular build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-kid-regular-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, regular build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-kid-regular-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, regular build, holding a stage 5 surfboard."
+  },
+  {
+    "file": "size-surf-kid-broad-1.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, broad build, holding a stage 1 surfboard."
+  },
+  {
+    "file": "size-surf-kid-broad-2.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, broad build, holding a stage 2 surfboard."
+  },
+  {
+    "file": "size-surf-kid-broad-3.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, broad build, holding a stage 3 surfboard."
+  },
+  {
+    "file": "size-surf-kid-broad-4.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, broad build, holding a stage 4 surfboard."
+  },
+  {
+    "file": "size-surf-kid-broad-5.webp",
+    "width": 600,
+    "height": 800,
+    "format": "webp",
+    "alt": "Kid Buddy, broad build, holding a stage 5 surfboard."
   }
 ]
