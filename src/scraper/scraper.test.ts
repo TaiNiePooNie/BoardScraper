@@ -132,7 +132,7 @@ describe("JSON-LD ProductGroup", () => {
 describe("ingest (PGlite)", () => {
   let h: DbHandle;
   const product = (over: Partial<ScrapedProduct> = {}): ScrapedProduct => ({
-    url: "https://www.glisshop.com/planche-de-snowboard/nitro/beast1", title: "Beast", brand: "Nitro", model: "Beast", season: "2026/27", seasonKnown: false,
+    url: "https://www.glisshop.com/planche-de-snowboard/nitro/beast1", title: "Beast", sport: "snow", category: null, brand: "Nitro", model: "Beast", season: "2026/27", seasonKnown: false,
     price: 400, listPrice: 600, currency: "EUR",
     sizes: [{ lengthCm: 158, waist: "regular", label: "158", inStock: true, price: 400 }, { lengthCm: 159, waist: "wide", label: "159W", inStock: true, price: 420 }],
     images: [], specs: { profile: null, shape: null, flex: null, styles: [] }, rating: null, scrapedAt: new Date().toISOString(), ...over,
