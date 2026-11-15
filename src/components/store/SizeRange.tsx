@@ -99,8 +99,7 @@ export function SizeRange({ fit, onChange, onLengthChange }: {
             range: len.lengthCustom ? len.lengthRangeCm! : len.lengthRecommendedCm!,
             recommended: len.lengthRecommendedCm!,
             custom: !!len.lengthCustom,
-            // 2.54 cm steps = 1 inch
-            bounds: { min: Math.max(120, Math.floor(len.lengthRecommendedCm![0] - 60)), max: Math.min(330, Math.ceil(len.lengthRecommendedCm![1] + 60)), step: 2.54 },
+            bounds: { min: Math.max(120, Math.floor(len.lengthRecommendedCm![0] - 60)), max: Math.min(330, Math.ceil(len.lengthRecommendedCm![1] + 60)), step: 1 },
             fmt: cmAndFeet,
             fmtRange: fmtLengthRange,
           }}

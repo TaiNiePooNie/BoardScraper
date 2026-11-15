@@ -102,6 +102,9 @@ export const ASSETS = {
   hero: { snow: a("hero-snow.webp"), skate: a("hero-skate.webp"), surf: a("hero-surf.webp") } satisfies Record<Sport, string>,
   heroMobile: { snow: a("hero-snow-mobile.webp"), skate: a("hero-skate-mobile.webp"), surf: a("hero-surf-mobile.webp") } satisfies Record<Sport, string>,
   mascotSport: { snow: a("mascot-ride.png"), skate: a("mascot-skate.png"), surf: a("mascot-surf.png") } satisfies Record<Sport, string>,
+  // Size-finder stickers (CHATGPT_CALL_size-finder-stickers.md); fall back to sport-*/fit-* until delivered
+  pickSport: { snow: a("pick-sport-snow.png"), skate: a("pick-sport-skate.png"), surf: a("pick-sport-surf.png") } satisfies Record<Sport, string>,
+  pickFit: { kids: a("pick-fit-kids.png"), mens: a("pick-fit-men.png"), womens: a("pick-fit-women.png"), any: a("pick-fit-all.png") } satisfies Record<FitPreference, string>,
   emptySearch: a("empty-search.png"),
   emptySaved: a("empty-saved.png"),
   placeholder: { snow: a("placeholder-snow.png"), skate: a("placeholder-skate.png"), surf: a("placeholder-surf.png") } satisfies Record<Sport, string>,
