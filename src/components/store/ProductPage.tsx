@@ -1,0 +1,258 @@
+"use client";
+import clsx from "clsx";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Heart, Info, Share2, Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+import { ProductImg } from "@/components/ProductImg";
+import { ASSETS } from "@/lib/assets";
+import { formatMoney } from "@/lib/pricing/currency";
+import type { SportFit } from "@/lib/sizing";
+import { boardStats, STAT_KEYS, STAT_LABELS } from "@/lib/stats";
+import { CATEGORY_LABEL, type Product } from "@/lib/store";
+import { effectiveMsrp } from "@/lib/deals";
+import type { Deal } from "@/lib/types";
+import { BadgePill, Price } from "./ProductCard";
+
+export interface LiveCheck {
+  status: "checking" | "fresh" | "updated" | "failed";
+  message: string;
+}
+
+const PROFILE_LABEL: Record<string, string> = {
+  camber: "Camber", rocker: "Rocker", flat: "Flat", "hybrid-camber": "Hybrid camber", "hybrid-rocker": "Hybrid rocker", "directional-camber": "Directional camber",
+};
+const SHAPE_LABEL: Record<string, string> = { "true-twin": "True twin", "directional-twin": "Directional twin", directional: "Directional", tapered: "Tapered" };
+
+export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, live, shipTo }: {
+  p: Product;
+  fit: SportFit | null;
+  saved: boolean;
+  onToggleSave: () => void;
+  onClose: () => void;
+  onEditSize: () => void;
+  live?: LiveCheck;
+  shipTo: string;
+}) {
+  const [offerId, setOfferId] = useState(p.best.listing.id);
+  const offer = p.offers.find((o) => o.listing.id === offerId) ?? p.best;
+  const top = useRef<HTMLDivElement>(null);
+  useEffect(() => { setOfferId(p.best.listing.id); top.current?.scrollTo({ top: 0 }); }, [p.id, p.best.listing.id]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+
+  const fittingLabels = new Set(p.fitSizes.map((m) => m.size.label));
+  const offerFits = fit ? new Set(offer.listing.sizes.filter((s) => fittingLabels.has(s.label)).map((s) => s.label)) : new Set<string>();
+  const images = p.board.images.length ? p.board.images : [""];
+  const share = async () => {
+    const url = `${location.origin}${location.pathname}?board=${p.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: `${p.board.brand} ${p.board.model}`, url });
+      else await navigator.clipboard.writeText(url);
+    } catch { /* cancelled */ }
+  };
+
+  return (
+    <div ref={top} className="fixed inset-0 z-50 overflow-y-auto bg-white animate-[page-in_.25s_ease-out]" role="dialog" aria-modal="true" aria-label={`${p.board.brand} ${p.board.model}`}>
+      {/* top bar */}
+      <div className="sticky top-0 z-10 border-b border-line bg-white/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div className="app-gutter mx-auto flex h-14 max-w-6xl items-center gap-2">
+          <button type="button" onClick={onClose} className="-ml-2 flex items-center gap-1 rounded-full px-2 py-2 text-sm font-semibold hover:bg-surface" aria-label="Back to the shop">
+            <ArrowLeft className="h-5 w-5" /><span className="hidden sm:inline">Back</span>
+          </button>
+          <p className="min-w-0 flex-1 truncate text-center text-sm font-semibold sm:hidden">{p.board.brand}</p>
+          <button type="button" onClick={share} className="rounded-full p-2 hover:bg-surface" aria-label="Share"><Share2 className="h-5 w-5" /></button>
+          <button type="button" onClick={onToggleSave} aria-pressed={saved} className="rounded-full p-2 hover:bg-surface" aria-label={saved ? "Remove from saved" : "Save"}>
+            <Heart className={clsx("h-5 w-5", saved && "fill-sale text-sale")} />
+          </button>
+        </div>
+      </div>
+
+      <div className="app-gutter mx-auto grid max-w-6xl gap-6 pb-32 pt-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:pb-16 md:pt-8">
+        <Gallery images={images} alt={`${p.board.brand} ${p.board.model}`} placeholder={ASSETS.placeholder[p.board.sport]} />
+
+        <div className="flex min-w-0 flex-col gap-6">
+          <header>
+            <p className="text-sm font-semibold text-muted">{p.board.brand}</p>
+            <h1 className="mt-0.5 text-2xl font-bold leading-tight sm:text-3xl">{p.board.model}</h1>
+            <p className="mt-1 text-sm text-muted">
+              {[p.board.category ? CATEGORY_LABEL[p.board.category] : null, p.board.season].filter(Boolean).join(" · ")}
+              {p.board.reviews && p.board.reviews.count > 0 && (
+                <span className="ml-2 inline-flex items-center gap-0.5 font-semibold text-ink"><Star className="h-3.5 w-3.5 fill-ink" />{p.board.reviews.average.toFixed(1)} <span className="font-normal text-muted">({p.board.reviews.count})</span></span>
+              )}
+            </p>
+            {p.badges.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{p.badges.map((b) => <BadgePill key={b.kind} badge={b} className="!text-xs" />)}</div>}
+          </header>
+
+          <section aria-label="Price">
+            <OfferPrice d={offer} p={p} isBest={offer === p.best} />
+            <p className="mt-1 text-sm text-muted">Delivered to {shipTo} from <b className="font-semibold text-ink">{offer.retailer.name}</b>{offer.landed.notes.length ? ` · ${offer.landed.notes.join(" · ")}` : ""}</p>
+            {live && (
+              <p className={clsx("mt-2 flex items-center gap-1.5 text-xs font-medium", live.status === "failed" ? "text-muted" : live.status === "checking" ? "text-muted" : "text-ok")}>
+                {live.status === "checking" ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted border-t-transparent" /> : <Check className="h-3.5 w-3.5" />}{live.message}
+              </p>
+            )}
+          </section>
+
+          <section aria-label="Sizes">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-bold">Sizes at {offer.retailer.name}</h2>
+              <button type="button" onClick={onEditSize} className="text-sm font-semibold underline underline-offset-2">{fit ? `Your size: ${fit.label}` : "Find my size"}</button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {offer.listing.sizes.map((s) => {
+                const yours = offerFits.has(s.label);
+                return (
+                  <span key={s.label} className={clsx(
+                    "relative min-w-[3.25rem] rounded-xl border px-3 py-2 text-center text-sm font-semibold tabular-nums",
+                    !s.inStock ? "border-line text-muted line-through" : yours ? "border-ink bg-acid" : "border-line",
+                  )}>
+                    {s.label}{s.volumeL ? <span className="block text-[10px] font-medium text-muted">{s.volumeL} L</span> : null}
+                    {yours && <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-white"><Check className="h-3 w-3" /></span>}
+                  </span>
+                );
+              })}
+            </div>
+            {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here fits your {fit.label} recommendation{p.board.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
+          </section>
+
+          {/* desktop CTA (mobile: sticky bar) */}
+          <a href={offer.listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary hidden !py-3.5 md:flex">
+            Buy at {offer.retailer.name}<ExternalLink className="h-4 w-4" />
+          </a>
+
+          {p.offers.length > 1 && (
+            <section aria-label="Compare shops">
+              <h2 className="text-sm font-bold">Compare {p.offers.length} offers</h2>
+              <ul className="mt-2 divide-y divide-line rounded-2xl border border-line">
+                {p.offers.map((o) => {
+                  const sel = o === offer;
+                  const n = fit ? o.listing.sizes.filter((s) => s.inStock && fittingLabels.has(s.label)).length : null;
+                  return (
+                    <li key={o.listing.id}>
+                      <button type="button" onClick={() => setOfferId(o.listing.id)} aria-pressed={sel} className={clsx("flex w-full items-center gap-3 px-4 py-3 text-left", sel && "bg-surface")}>
+                        <span className={clsx("grid h-4 w-4 shrink-0 place-items-center rounded-full border-2", sel ? "border-ink bg-ink" : "border-line")}>{sel && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{o.retailer.name}</span>
+                          <span className="block truncate text-xs text-muted">{o.board.season}{n !== null ? ` · ${n ? `${n} size${n > 1 ? "s" : ""} fit you` : "no size fits you"}` : ""}</span>
+                        </span>
+                        <span className="text-right text-sm font-bold tabular-nums">{formatMoney(o.landed.total, o.landed.currency)}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {offer.listing.history.length > 1 && (
+            <section aria-label="Price history">
+              <h2 className="text-sm font-bold">Price history at {offer.retailer.name}</h2>
+              <p className="text-xs text-muted">In {offer.listing.price.currency}, before delivery{offer.stats ? ` · lowest ever ${formatMoney(offer.stats.allTimeLow, offer.listing.price.currency)}` : ""}</p>
+              <div className="mt-2 text-muted"><PriceHistoryChart history={offer.listing.history} msrp={effectiveMsrp(offer.listing, offer.board)} stats={offer.stats} currency={offer.listing.price.currency} height={170} /></div>
+            </section>
+          )}
+
+          <Details p={p} fit={fit} />
+        </div>
+      </div>
+
+      {/* mobile sticky buy bar */}
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="app-gutter flex items-center gap-3 py-3">
+          <div className="min-w-0">
+            <p className="text-lg font-bold tabular-nums leading-tight">{formatMoney(offer.landed.total, offer.landed.currency)}</p>
+            <p className="truncate text-xs text-muted">{offer.retailer.name}</p>
+          </div>
+          <a href={offer.listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0">
+            Buy at shop<ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OfferPrice({ d, p, isBest }: { d: Deal; p: Product; isBest: boolean }) {
+  if (isBest) return <Price p={p} size="lg" />;
+  return <span className="text-3xl font-bold tabular-nums">{formatMoney(d.landed.total, d.landed.currency)}</span>;
+}
+
+function Gallery({ images, alt, placeholder }: { images: string[]; alt: string; placeholder: string }) {
+  const [i, setI] = useState(0);
+  const strip = useRef<HTMLDivElement>(null);
+  const go = (n: number) => {
+    const k = (n + images.length) % images.length;
+    setI(k);
+    strip.current?.scrollTo({ left: k * strip.current.clientWidth, behavior: "smooth" });
+  };
+  return (
+    <div className="md:sticky md:top-20 md:self-start">
+      <div className="relative overflow-hidden rounded-3xl bg-surface">
+        <div ref={strip} className="no-scrollbar flex aspect-[4/5] snap-x snap-mandatory overflow-x-auto"
+          onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
+          {images.map((src, k) => (
+            <div key={k} className="h-full w-full shrink-0 snap-center">
+              <ProductImg src={src} alt={k === 0 ? alt : ""} size={1200} loading={k === 0 ? "eager" : "lazy"} placeholder={placeholder} fillAspect={4 / 5} className="h-full w-full object-contain p-[6%] mix-blend-multiply" coverClassName="h-full w-full object-cover" />
+            </div>
+          ))}
+        </div>
+        {images.length > 1 && (
+          <>
+            <button type="button" onClick={() => go(i - 1)} className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white p-2 shadow md:block" aria-label="Previous photo"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" onClick={() => go(i + 1)} className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white p-2 shadow md:block" aria-label="Next photo"><ChevronRight className="h-5 w-5" /></button>
+            <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+              {images.map((_, k) => <button key={k} type="button" onClick={() => go(k)} aria-label={`Photo ${k + 1}`} className={clsx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-ink" : "w-1.5 bg-ink/25")} />)}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
+  const b = p.board;
+  const rows: [string, string][] = [];
+  if (b.profile) rows.push(["Profile", PROFILE_LABEL[b.profile] ?? b.profile]);
+  if (b.shape) rows.push(["Shape", SHAPE_LABEL[b.shape] ?? b.shape]);
+  if (b.flex) rows.push(["Flex", `${b.flex}/10 (${b.flex <= 3 ? "soft" : b.flex <= 6 ? "medium" : "stiff"})`]);
+  if (b.sport === "snow" && b.styles.length) rows.push(["Made for", b.styles.map((s) => (s === "park" ? "Park" : s === "freeride" ? "Freeride" : "All-mountain")).join(", ")]);
+  const stats = b.sport === "snow" ? boardStats(b) : null;
+  return (
+    <>
+      {(rows.length > 0 || stats) && (
+        <section aria-label="Details">
+          <h2 className="text-sm font-bold">Details</h2>
+          {rows.length > 0 && (
+            <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {rows.map(([k, v]) => <div key={k}><dt className="text-xs text-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
+            </dl>
+          )}
+          {stats && (
+            <ul className="mt-4 flex flex-col gap-2">
+              {STAT_KEYS.map((k) => (
+                <li key={k} className="grid grid-cols-[6.5rem_minmax(0,1fr)_1.5rem] items-center gap-3 text-sm" title={STAT_LABELS[k].hint}>
+                  <span className="text-muted">{STAT_LABELS[k].label}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-surface"><span className="block h-full rounded-full bg-ink" style={{ width: `${stats[k] * 10}%` }} /></span>
+                  <span className="text-right font-semibold tabular-nums">{stats[k]}</span>
+                </li>
+              ))}
+              {stats.estimated && <li className="flex items-center gap-1 text-xs text-muted"><Info className="h-3.5 w-3.5" />Estimated: the shop doesn&apos;t list every spec.</li>}
+            </ul>
+          )}
+        </section>
+      )}
+      {fit && (
+        <details className="rounded-2xl border border-line px-4 py-3 text-sm">
+          <summary className="cursor-pointer font-bold">How we picked your size ({fit.label})</summary>
+          <ul className="mt-2 list-disc pl-5 text-muted">{fit.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+        </details>
+      )}
+    </>
+  );
+}

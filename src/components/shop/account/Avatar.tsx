@@ -17,7 +17,7 @@ export function Avatar({ n, name, size = 36, className }: { n: number; name: str
   }, [src]);
   return failed ? (
     <span
-      className={clsx("inline-flex shrink-0 items-center justify-center rounded-full border-2 border-paper font-bold text-asphalt", TINTS[(n - 1) % TINTS.length], className)}
+      className={clsx("inline-flex shrink-0 items-center justify-center rounded-full border-2 border-paper font-bold text-ink", TINTS[(n - 1) % TINTS.length], className)}
       style={{ width: size, height: size, fontSize: size * 0.45 }}
       aria-hidden
     >

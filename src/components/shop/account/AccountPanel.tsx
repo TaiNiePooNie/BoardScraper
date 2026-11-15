@@ -120,7 +120,7 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
                     <span>Remove {b.name}?</span>
                     <span className="flex gap-2">
                       <button type="button" onClick={() => setRemoving(null)} className="btn-ghost !py-1.5">Keep</button>
-                      <button type="button" onClick={() => { onRemove(b.id); setRemoving(null); }} className="rounded-xl bg-orange px-3 py-1.5 font-bold text-asphalt">Remove</button>
+                      <button type="button" onClick={() => { onRemove(b.id); setRemoving(null); }} className="rounded-xl bg-orange px-3 py-1.5 font-bold text-ink">Remove</button>
                     </span>
                   </div>
                 )}
@@ -165,7 +165,7 @@ export function AccountPanel({ account, state, buddies, activeId, alerts, onAler
                 <input id="delete-confirm" className="input mt-3" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />
                 <div className="mt-3 flex gap-2">
                   <button type="button" onClick={() => { setDeleting(false); setConfirmText(""); }} className="btn-ghost flex-1">Cancel</button>
-                  <button type="button" disabled={confirmText !== "DELETE" || busy} onClick={deleteAccount} className="flex-1 rounded-xl bg-orange px-4 py-2.5 font-bold text-asphalt disabled:opacity-40">
+                  <button type="button" disabled={confirmText !== "DELETE" || busy} onClick={deleteAccount} className="flex-1 rounded-xl bg-orange px-4 py-2.5 font-bold text-ink disabled:opacity-40">
                     {busy ? "Deleting…" : "Delete forever"}
                   </button>
                 </div>

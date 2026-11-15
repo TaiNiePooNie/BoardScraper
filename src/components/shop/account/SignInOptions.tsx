@@ -92,7 +92,7 @@ export function SignInOptions({ account, providers, beforeSignIn, defaultName = 
           </button>
         )}
         {providers.password && (
-          <button type="button" onClick={() => setEmailOpen((o) => !o)} aria-expanded={emailOpen} className={clsx(tile, emailOpen ? "border-acid bg-acid text-asphalt" : "border-paper/40 text-paper hover:border-paper")} aria-label="Continue with email">
+          <button type="button" onClick={() => setEmailOpen((o) => !o)} aria-expanded={emailOpen} className={clsx(tile, emailOpen ? "border-acid bg-acid text-ink" : "border-paper/40 text-paper hover:border-paper")} aria-label="Continue with email">
             <Mail className="h-6 w-6" />Email
           </button>
         )}
