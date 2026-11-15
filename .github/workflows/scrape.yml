@@ -55,6 +55,10 @@ jobs:
     timeout-minutes: 150 # Blue Tomato: ~1,400 board pages (snow + skate + surf) at >= 2.5 s each
     strategy:
       fail-fast: false
+      # One job per retailer (each host has its own politeness delay, so jobs don't
+      # compete); cap parallelism so dozens of retailers don't exhaust runner minutes
+      # or hit the database with many concurrent writers.
+      max-parallel: 8
       matrix:
         retailer: ${{ fromJSON(needs.migrate.outputs.retailers) }}
     steps:

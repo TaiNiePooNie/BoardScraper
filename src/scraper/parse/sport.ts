@@ -115,3 +115,69 @@ export function classifyCategory(sport: Sport, taxonomy: string, title: string, 
   }
   return snowCategory(`${title} ${taxonomy}`, specs);
 }
+
+/**
+ * Shop taxonomy (Shopify product_type, collection or tag) naming gear rather than a
+ * board: snow bindings/boots/packages, skate trucks/wheels/hardware, surf fins/leashes/
+ * wetsuits, apparel and accessories. Used on the taxonomy only — titles go through
+ * NOT_A_BOARD / isSkateSurfGear, which know board titles can contain gear words.
+ */
+export const GEAR_TAXONOMY = new RegExp(
+  "\\b(" +
+    [
+      // snow (and other mountain gear)
+      "bindings?", "boots?", "packages?", "bundles?", "skins?", "skis?", "poles?", "goggles?", "helmets?", "gloves?", "mitt(?:en)?s?",
+      "stomp\\w*", "locks?", "tuning", "leash(?:es)?", "parts?", "spares?",
+      // skate
+      "trucks?", "wheels?", "bearings?", "grip ?tape", "griptape", "hardware", "bushings?", "risers?", "tools?", "protect\\w*", "pads?",
+      "fingerboards?", "e-?skates?", "electric",
+      // surf
+      "wetsuits?", "neoprene", "booties", "hoods?", "rash ?guards?", "lycras?", "fins?", "leg ?ropes?", "traction", "wax", "racks?",
+      "straps?", "bodyboards?", "skimboards?", "sup", "paddles?", "repair", "kits?",
+      // apparel & misc
+      "apparel", "clothing", "outerwear", "jackets?", "pants", "bibs?", "shells?", "fleece", "hoodies?", "sweat\\w*", "t-?shirts?", "tees?",
+      "shirts?", "shorts", "boardshorts?", "swim\\w*", "bikinis?", "dress(?:es)?", "hats?", "beanies?", "caps?", "headwear", "socks?",
+      "shoes?", "footwear", "sandals?", "bags?", "backpacks?", "covers?", "accessor\\w*", "gift ?cards?", "stickers?",
+      "posters?", "books?", "dvds?", "magazines?", "lights?", "sunglasses", "eyewear", "watch(?:es)?", "jewel\\w*", "candles?", "mugs?",
+    ].join("|") +
+    ")\\b",
+  "i",
+);
+
+export interface ShopifyClassifyOptions {
+  /** Shop-specific product_type → sport mapping, checked first (e.g. { snow: /^boards$/i } for a snowboard brand). */
+  productTypes?: Partial<Record<Sport, RegExp>>;
+  /** Sport for a brand store that sells one board sport, when the product says nothing more specific. */
+  defaultSport?: Sport;
+  /** Sports this shop is crawled for; other sports are dropped. */
+  sports?: readonly Sport[];
+}
+
+/**
+ * Sport of a Shopify catalogue product, or null when it is not a board: the
+ * product_type is the shop's own taxonomy and decides first (gear types are
+ * rejected outright), then the title, then the tags. Title-level gear and bundles
+ * are filtered later by parseShopifyProduct.
+ */
+export function classifyShopifySport(
+  p: { product_type: string; tags: readonly string[]; title: string },
+  opts: ShopifyClassifyOptions = {},
+): Sport | null {
+  const type = (p.product_type ?? "").trim();
+  const keep = (s: Sport | null | undefined) => (s && (!opts.sports || opts.sports.includes(s)) ? s : null);
+  if (type) {
+    for (const [sport, re] of Object.entries(opts.productTypes ?? {}) as [Sport, RegExp][]) if (re.test(type)) return keep(sport);
+    if (GEAR_TAXONOMY.test(type)) return null;
+    const byType = detectSport(type);
+    if (byType) return keep(byType);
+  }
+  const byTitle = detectSport(p.title);
+  if (byTitle) return keep(byTitle);
+  // Tags are noisy ("surf" on a wetsuit): only tags that themselves name a board type, never a gear tag.
+  if (!p.tags.some((t) => GEAR_TAXONOMY.test(t))) {
+    const byTags = detectSport(p.tags.join(" "));
+    if (byTags) return keep(byTags);
+  }
+  // Brand stores: an untyped product or a generic "Boards" type is the brand's board sport.
+  return !type || /\b(boards?|hard ?goods)\b/i.test(type) ? keep(opts.defaultSport) : null;
+}
