@@ -30,11 +30,15 @@ export async function latestScrapeRun(): Promise<RunState> {
   return { state, conclusion: run.conclusion, url: run.html_url, startedAt: run.run_started_at };
 }
 
-/** Start a full scrape unless one is already queued or running. */
-export async function startScrape(): Promise<RunState & { started: boolean }> {
+/** Shop groups: "fast" = catalogue-feed shops (quick), "slow" = one page per product. */
+export type ScrapeGroup = "fast" | "slow" | "all";
+export const parseGroup = (v: string | null | undefined): ScrapeGroup => (v === "slow" || v === "all" ? v : "fast");
+
+/** Start a scrape of one shop group unless a scrape is already queued or running. */
+export async function startScrape(group: ScrapeGroup = "fast"): Promise<RunState & { started: boolean }> {
   const current = await latestScrapeRun();
   if (current.state === "queued" || current.state === "in_progress") return { ...current, started: false };
-  const res = await gh("/dispatches", { method: "POST", body: JSON.stringify({ ref: "main" }), headers: { "content-type": "application/json" } });
+  const res = await gh("/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { group } }), headers: { "content-type": "application/json" } });
   if (!res.ok) throw new Error(`GitHub refused to start the scrape (${res.status}).`);
   return { state: "queued", started: true };
 }

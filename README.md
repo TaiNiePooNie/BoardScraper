@@ -63,7 +63,7 @@ A light, modern web store for **snowboards, skateboards and surfboards** (`src/c
 
 - Schema: `src/db/schema.ts` (Drizzle) → migrations in `drizzle/` (`npm run db:generate` after schema edits). The same migrations run on hosted Postgres and PGlite.
 - Ingest (`src/scraper/ingest.ts`): canonical board per sport + brand + model + season (cross-shop matching; skate also per type, so a deck and a complete don't merge), board `sport` + `category`, sizes with skate deck width (`width_in`) and surf volume (`volume_l`), listing per URL, per-size price/stock, one price point per listing per day (lowest), review sources, MSRP (best RRP, else highest observed), denormalized tier/score. Listings missing from a complete run are deactivated; partial/blocked runs never deactivate.
-- **GitHub Actions** (`.github/workflows/scrape.yml`): daily 04:17 UTC + manual dispatch (optional retailer/limit). Migrates once, scrapes each retailer in parallel, writes a stats summary to the run page. Requires repository secret **`DATABASE_URL`** (hosted Postgres).
+- **GitHub Actions** (`.github/workflows/scrape.yml`): weekly, in one job per run: **fast** shops (catalogue feeds) Monday, **slow** shops (one page per product, max 150 min per shop, known boards stalest-first) Thursday, + manual dispatch (group/retailer/limit/sport). All shops of a group run side by side, each at its own polite pace; then colours, stats and deal alerts. Requires repository secret **`DATABASE_URL`** (hosted Postgres). Listings unseen for 10 days are hidden (`FRESH_DAYS`).
 - CI (`.github/workflows/ci.yml`): typecheck, tests, build on PRs and `main`.
 - Deploying the web app: set the same `DATABASE_URL`; the API reads the catalog (60 s in-process cache).
 
@@ -105,7 +105,7 @@ A light, modern web store for **snowboards, skateboards and surfboards** (`src/c
 | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET` | "Continue with Apple" (needs an Apple Developer account) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Email sign-in links and deal emails (also GitHub secrets for the alerts job) |
 | `OWNER_EMAILS` | Your sign-in email(s), comma-separated: shows the Restock button (Pro mode) to you only |
-| `CRON_SECRET` | Nightly price check: Vercel Cron calls `/api/cron/scrape` (01:17 UTC, `vercel.json`) with this secret, which starts the scrape workflow (needs `GITHUB_TOKEN` too). GitHub's own 05:17 schedule is a backup that skips itself when that already ran |
+| `CRON_SECRET` | Weekly price checks: Vercel Cron calls `/api/cron/scrape` Mon + Thu 01:17 UTC (`vercel.json`; Monday = fast shops, Thursday = slow shops) with this secret, which starts the scrape workflow (needs `GITHUB_TOKEN` too). GitHub's own 05:17 schedule is a backup that skips itself when that already ran |
 | `GITHUB_TOKEN` | Restock (fine-grained token, this repo, *Actions: Read and write*) |
 | `RESTOCK_PASSCODE` | Optional: lets the restock API be called with a passcode instead of an owner sign-in |
 | `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` | Faster builds |

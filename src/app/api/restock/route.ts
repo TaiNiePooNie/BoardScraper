@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
   }
   try {
-    const { started: _, ...state } = await startScrape(); // already restocking → current state
+    const { started: _, ...state } = await startScrape("fast"); // fast shops only (cheap); already restocking → current state
     return NextResponse.json(state);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });

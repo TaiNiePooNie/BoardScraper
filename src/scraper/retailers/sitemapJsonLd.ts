@@ -224,6 +224,7 @@ export function sitemapJsonLdAdapter(cfg: SitemapJsonLdConfig): RetailerAdapter 
   return {
     retailer: cfg.retailer,
     sports,
+    slow: true,
     async fetchOne(http, url) {
       const { text, url: finalUrl } = await http.get(url);
       return parsePage(text, finalUrl, sportOf(url));
@@ -257,7 +258,16 @@ export function sitemapJsonLdAdapter(cfg: SitemapJsonLdConfig): RetailerAdapter 
       }
       const seen = new Set(products.keys());
       async function* candidates(): AsyncGenerator<[string, Sport]> {
-        yield* products;
+        // Boards we already list first: a time-boxed run keeps their prices fresh and spends
+        // what time is left on discovering new ones.
+        // Known URLs come stalest first, so time-boxed runs rotate through all of them.
+        // Shops without a sitemap only list products on category pages: re-check those directly.
+        const known = ctx.knownUrls ?? new Set<string>();
+        for (const u of known) {
+          const sport = products.get(u) ?? (cfg.sitemaps.length ? undefined : sportOf(u, allowed));
+          if (sport) { seen.add(u); yield [u, sport]; }
+        }
+        for (const entry of products) if (!known.has(entry[0])) yield entry;
         for (const listing of cfg.listings ?? []) {
           if (!allowed.includes(listing.sport)) continue;
           for (let page = 1; page <= (cfg.maxListingPages ?? 40) && count(listing.sport) < ctx.limit; page++) {

@@ -1,9 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { scrapeDispatchConfigured, startScrape } from "@/lib/scrape-dispatch";
+import { parseGroup, scrapeDispatchConfigured, startScrape } from "@/lib/scrape-dispatch";
 
 /**
- * Nightly price check, started by Vercel Cron (vercel.json) at a fixed time.
+ * Weekly price checks, started by Vercel Cron (vercel.json) at a fixed time:
+ * catalogue-feed shops ("fast") on Monday, page-by-page shops ("slow") on Thursday (UTC).
+ * ?group=fast|slow|all overrides the weekday choice.
  * GitHub's own schedule runs hours late, so Vercel starts the GitHub workflow instead;
  * the workflow's schedule stays as a backup and skips itself when this already ran.
  * Vercel sends "Authorization: Bearer $CRON_SECRET" when CRON_SECRET is set.
@@ -19,11 +21,12 @@ export async function GET(req: Request) {
   }
   if (!scrapeDispatchConfigured()) return NextResponse.json({ error: "GITHUB_TOKEN is not set in Vercel." }, { status: 503 });
   try {
-    const r = await startScrape();
-    console.log(r.started ? "Nightly scrape started." : `Scrape already ${r.state}; not starting another.`);
+    const group = parseGroup(new URL(req.url).searchParams.get("group") ?? (new Date().getUTCDay() === 4 ? "slow" : "fast"));
+    const r = await startScrape(group);
+    console.log(r.started ? `Scrape (${group} shops) started.` : `Scrape already ${r.state}; not starting another.`);
     return NextResponse.json(r);
   } catch (e) {
-    console.error("Nightly scrape failed to start", e);
+    console.error("Scrape failed to start", e);
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }
 }

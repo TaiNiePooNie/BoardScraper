@@ -1,6 +1,6 @@
 /**
  * Read each board's main colours from its product photo (once per board) and store
- * them for the colour filter. Runs after the daily scrape:
+ * them for the colour filter. Runs after each scrape:
  *
  *   npm run colors [-- --limit=4000]
  *
