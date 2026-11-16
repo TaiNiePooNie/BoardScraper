@@ -123,6 +123,13 @@ export async function refreshBoards(db: DB, boardIds: number[]) {
   const byBoard = new Map<number, typeof rows>();
   for (const r of rows) byBoard.set(r.boardId, [...(byBoard.get(r.boardId) ?? []), r]);
 
+  const reviewsBy = new Map<number, typeof reviews>();
+  for (const r of reviews) reviewsBy.set(r.boardId, [...(reviewsBy.get(r.boardId) ?? []), r]);
+
+  // Compute everything first, then write in batches: one UPDATE … FROM (VALUES …) per
+  // chunk instead of one round trip per board and per listing (big shops have ~10k).
+  const boardRows: { id: number; msrp: number | null; avg: number | null; count: number | null }[] = [];
+  const listingRows: { id: number; tier: string; score: number }[] = [];
   for (const boardId of boardIds) {
     const ls = byBoard.get(boardId) ?? [];
     const eur = (n: number, c: string) => convert(n, c as CurrencyCode, "EUR");
@@ -130,20 +137,26 @@ export async function refreshBoards(db: DB, boardIds: number[]) {
     const observed = ls.flatMap((l) => [l.priceAmount, ...l.history.map((h) => h.price)].map((n) => eur(n, l.priceCurrency)));
     const msrpEur = rrps.length ? Math.max(...rrps) : observed.length ? Math.max(...observed) : null;
 
-    const rv = reviews.filter((r) => r.boardId === boardId && r.count > 0);
+    const rv = (reviewsBy.get(boardId) ?? []).filter((r) => r.count > 0);
     const count = rv.reduce((n, r) => n + r.count, 0);
     const avg = count ? Math.round((rv.reduce((n, r) => n + r.average * r.count, 0) / count) * 10) / 10 : null;
-
-    await db
-      .update(boards)
-      .set({ msrpAmount: msrpEur === null ? null : Math.round(msrpEur * 100) / 100, msrpCurrency: "EUR", reviewAvg: avg, reviewCount: count || null })
-      .where(eq(boards.id, boardId));
+    boardRows.push({ id: boardId, msrp: msrpEur === null ? null : Math.round(msrpEur * 100) / 100, avg, count: count || null });
 
     for (const l of ls) {
       const msrp = l.listPrice ?? (msrpEur === null ? l.priceAmount : convert(msrpEur, "EUR", l.priceCurrency as CurrencyCode));
       const g = gradeDeal(l.priceAmount, msrp, computeStats(l.history));
-      await db.update(listings).set({ tier: g.tier, score: g.score }).where(eq(listings.id, l.id));
+      listingRows.push({ id: l.id, tier: g.tier, score: g.score });
     }
+  }
+
+  const CHUNK = 500;
+  for (let i = 0; i < boardRows.length; i += CHUNK) {
+    const vals = sql.join(boardRows.slice(i, i + CHUNK).map((r) => sql`(${r.id}::int, ${r.msrp}::numeric, ${r.avg}::real, ${r.count}::int)`), sql`, `);
+    await db.execute(sql`update ${boards} set msrp_amount = v.m, msrp_currency = 'EUR', review_avg = v.a, review_count = v.c from (values ${vals}) as v(id, m, a, c) where ${boards.id} = v.id`);
+  }
+  for (let i = 0; i < listingRows.length; i += CHUNK) {
+    const vals = sql.join(listingRows.slice(i, i + CHUNK).map((r) => sql`(${r.id}::int, ${r.tier}::deal_tier, ${r.score}::int)`), sql`, `);
+    await db.execute(sql`update ${listings} set tier = v.t, score = v.s from (values ${vals}) as v(id, t, s) where ${listings.id} = v.id`);
   }
 }
 
