@@ -29,6 +29,22 @@ const limit = args.limit ? Number(args.limit) : Infinity;
 const dryRun = args["dry-run"] === "true";
 const sports = args.sport ? String(args.sport).split(",").map((s) => Sport.parse(s.trim())) : undefined;
 
+// PGlite is a single in-process connection: one transaction at a time there.
+const INGEST_CONCURRENCY = process.env.DATABASE_URL?.startsWith("pglite:") ? 1 : 6;
+
+/** Parallel upserts can rarely collide (deadlock / unique race on a shared board): retry. */
+async function ingestWithRetry(db: Parameters<typeof ingestProduct>[0], id: string, p: Parameters<typeof ingestProduct>[2]) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await ingestProduct(db, id, p);
+    } catch (e) {
+      const code = (e as { code?: string }).code ?? (e as { cause?: { code?: string } }).cause?.code;
+      if (attempt >= 3 || !["40P01", "40001", "23505"].includes(code ?? "")) throw e;
+      await new Promise((r) => setTimeout(r, 200 * attempt));
+    }
+  }
+}
+
 async function main() {
   for (const id of ids) if (!ADAPTERS[id]) throw new Error(`Unknown retailer "${id}". Known: ${Object.keys(ADAPTERS).join(", ")}`);
   // Retailers that sell none of the requested sports are skipped.
@@ -62,16 +78,30 @@ async function main() {
       };
 
       try {
+        // Saving is the slow part (several database round trips per product), so up to
+        // INGEST_CONCURRENCY products are written in parallel while the crawl goes on.
+        // Requests to the shop are unaffected: the fetcher keeps its per-host delay.
+        const inflight = new Set<Promise<void>>();
+        let ingestError: unknown = null;
+        const save = (p: Parameters<typeof ingestProduct>[2]) => {
+          const job = ingestWithRetry(handle!.db, id, p)
+            .then((r) => { boardIds.add(r.boardId); listingIds.push(r.listingId); })
+            .catch((e) => { ingestError ??= e; })
+            .finally(() => inflight.delete(job));
+          inflight.add(job);
+        };
         for await (const p of adapter.crawl({ http, limit, log, sports })) {
           seen++;
+          if (ingestError) throw ingestError;
           if (!handle) {
             console.log(JSON.stringify({ sport: p.sport, category: p.category, brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.volumeL ? ` ${s.volumeL}L` : ""}${s.lengthCm && p.sport === "skate" ? ` (${s.lengthCm}cm)` : ""}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
             continue;
           }
-          const r = await ingestProduct(handle.db, id, p);
-          boardIds.add(r.boardId);
-          listingIds.push(r.listingId);
+          save(p);
+          while (inflight.size >= INGEST_CONCURRENCY) await Promise.race(inflight);
         }
+        await Promise.all(inflight);
+        if (ingestError) throw ingestError;
         if (handle) {
           await refreshBoards(handle.db, [...boardIds]);
           const off = Number.isFinite(limit) || sports ? 0 : await deactivateMissing(handle.db, id, listingIds);

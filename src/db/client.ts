@@ -33,7 +33,7 @@ export async function openDb(url = process.env.DATABASE_URL): Promise<DbHandle> 
     import("postgres"), import("drizzle-orm/postgres-js"), import("drizzle-orm/postgres-js/migrator"),
   ]);
   const local = /@(localhost|127\.0\.0\.1)[:/]/.test(url);
-  const client = postgres(url, { max: 5, prepare: false, ssl: local ? false : "require", onnotice: () => {} });
+  const client = postgres(url, { max: 8, prepare: false, ssl: local ? false : "require", onnotice: () => {} });
   const db = drizzle(client, { schema });
   return { db: db as unknown as DB, migrate: () => migrate(db, { migrationsFolder }), close: () => client.end() };
 }
