@@ -52,7 +52,7 @@ jobs:
   scrape:
     needs: migrate
     runs-on: ubuntu-latest
-    timeout-minutes: 150 # Blue Tomato: ~1,400 board pages (snow + skate + surf) at >= 2.5 s each
+    timeout-minutes: 300 # big sitemap shops (SkateHut, Zumiez…) fetch thousands of pages at >= 2.5 s each
     strategy:
       fail-fast: false
       # One job per retailer (each host has its own politeness delay, so jobs don't
