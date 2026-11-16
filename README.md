@@ -105,6 +105,7 @@ A light, modern web store for **snowboards, skateboards and surfboards** (`src/c
 | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET` | "Continue with Apple" (needs an Apple Developer account) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Email sign-in links and deal emails (also GitHub secrets for the alerts job) |
 | `OWNER_EMAILS` | Your sign-in email(s), comma-separated: shows the Restock button (Pro mode) to you only |
+| `CRON_SECRET` | Nightly price check: Vercel Cron calls `/api/cron/scrape` (01:17 UTC, `vercel.json`) with this secret, which starts the scrape workflow (needs `GITHUB_TOKEN` too). GitHub's own 05:17 schedule is a backup that skips itself when that already ran |
 | `GITHUB_TOKEN` | Restock (fine-grained token, this repo, *Actions: Read and write*) |
 | `RESTOCK_PASSCODE` | Optional: lets the restock API be called with a passcode instead of an owner sign-in |
 | `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` | Faster builds |

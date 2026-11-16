@@ -1,8 +1,11 @@
 name: Scheduled scrape
 
+# Nightly start: Vercel Cron calls /api/cron/scrape at ~01:17 UTC (vercel.json), which
+# dispatches this workflow. GitHub's own schedule (often hours late) is only a backup:
+# it skips itself when a run was already started in the last 20 hours.
 on:
   schedule:
-    - cron: "17 4 * * *" # daily 04:17 UTC
+    - cron: "17 5 * * *" # backup, daily 05:17 UTC
   workflow_dispatch:
     inputs:
       retailer:
@@ -17,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # the backup schedule checks for today's run
 
 concurrency:
   group: scrape
@@ -26,7 +30,28 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          skip=false
+          if [ "$EVENT" = "schedule" ]; then
+            since=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+            n=$(gh api "repos/${{ github.repository }}/actions/workflows/scrape.yml/runs?event=workflow_dispatch&created=>=$since" --jq '.total_count')
+            if [ "${n:-0}" -gt 0 ]; then skip=true; echo "A run was already started since $since (Vercel or manual): skipping the backup schedule."; fi
+          fi
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
   migrate:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
