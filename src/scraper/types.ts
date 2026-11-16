@@ -41,6 +41,8 @@ export interface CrawlContext {
   log: (msg: string) => void;
   /** Only crawl these sports (all the adapter supports when omitted). */
   sports?: readonly Sport[];
+  /** Product URLs we already list for this shop: page-by-page adapters re-check these first. */
+  knownUrls?: ReadonlySet<string>;
 }
 
 /** One per retailer. Yields products as they are parsed so ingest can stream. */
@@ -48,6 +50,8 @@ export interface RetailerAdapter {
   retailer: Retailer;
   /** Sports this retailer is crawled for. */
   sports: readonly Sport[];
+  /** Fetches one page per product (slow, scheduled less often); catalogue feeds are fast. */
+  slow?: boolean;
   crawl(ctx: CrawlContext): AsyncGenerator<ScrapedProduct>;
   /** Re-check one product page (live price check). */
   fetchOne(http: PoliteFetcher, url: string): Promise<ScrapedProduct | null>;

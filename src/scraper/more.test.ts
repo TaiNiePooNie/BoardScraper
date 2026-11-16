@@ -7,7 +7,7 @@ import { Retailer } from "@/lib/types";
 import type { PoliteFetcher } from "./http";
 import { ADAPTERS } from "./retailers";
 import { nhsTitle, pukasTitle, remodel, unshout } from "./retailers/more";
-import { ogProductNode } from "./retailers/sitemapJsonLd";
+import { ogProductNode, sitemapJsonLdAdapter } from "./retailers/sitemapJsonLd";
 import type { ScrapedProduct } from "./types";
 
 const FIX = path.join(__dirname, "__fixtures__/more");
@@ -181,5 +181,35 @@ describe("helpers", () => {
   it("remodel strips a differently spelled brand prefix", () => {
     const p = { sport: "skate", title: "Santa Cruz Winkowski Dope Planet VX 8.80\" Skateboard Deck", brand: "Santa Cruz Skate", model: "x" } as ScrapedProduct;
     expect(remodel(p).model).toBe("Winkowski Dope Planet VX");
+  });
+});
+
+describe("slow shops (page by page)", () => {
+  it("are flagged slow; Shopify shops are fast", () => {
+    expect(ADAPTERS["blue-tomato"].slow).toBe(true);
+    expect(ADAPTERS.skatehut.slow).toBe(true);
+    expect(ADAPTERS.evo.slow).toBeFalsy();
+  });
+  it("re-check known boards first, stalest first, then discover new ones", async () => {
+    const adapter = sitemapJsonLdAdapter({
+      retailer: RETAILERS["blue-tomato"],
+      sitemaps: ["https://shop.test/sitemap.xml"],
+      productUrls: { snow: /\/p\// },
+    });
+    const fetched: string[] = [];
+    const http = {
+      async get(u: string) {
+        if (u.endsWith("sitemap.xml")) {
+          const locs = ["a", "b", "c", "d"].map((x) => `<url><loc>https://shop.test/p/${x}</loc></url>`).join("");
+          return { status: 200, url: u, text: `<urlset>${locs}</urlset>` };
+        }
+        fetched.push(u.split("/").pop()!);
+        return { status: 200, url: u, text: "<html></html>" };
+      },
+    } as unknown as PoliteFetcher;
+    // "gone" is no longer in the sitemap: skipped.
+    const knownUrls = new Set(["https://shop.test/p/gone", "https://shop.test/p/c", "https://shop.test/p/a"]);
+    for await (const _ of adapter.crawl({ http, limit: 50, log: () => {}, knownUrls })) void _;
+    expect(fetched).toEqual(["c", "a", "b", "d"]);
   });
 });

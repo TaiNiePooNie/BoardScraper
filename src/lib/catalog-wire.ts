@@ -8,7 +8,7 @@ import type { BoardModel, BoardSize, Listing, PricePoint, Retailer, Sport, Waist
  */
 export const PART_SIZE = 2000;
 /** Listings not seen by a price check for this long are hidden (shop blocked us or page gone). */
-export const FRESH_DAYS = 6;
+export const FRESH_DAYS = 10;
 const HISTORY_POINTS = 40;
 const WAIST: WaistClass[] = ["regular", "mid-wide", "wide"];
 
