@@ -3,7 +3,7 @@ name: Scheduled scrape
 # Weekly price checks (kept low until the site earns money; each run bills its minutes):
 #   Monday   01:17 UTC  fast shops (catalogue feeds, Shopify)
 #   Thursday 01:17 UTC  slow shops (one page per product), max 150 min per shop
-# Vercel Cron starts these at a fixed time (vercel.json → /api/cron/scrape?group=…).
+# Vercel Cron starts these at a fixed time (vercel.json → /api/cron/scrape; Thursday = slow).
 # GitHub's own schedule (often hours late) is only a backup and skips itself when a
 # run was already started in the last 20 hours.
 # Everything runs in ONE job: all shops of the group side by side, each at its own
