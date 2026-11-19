@@ -3,6 +3,7 @@
  * Claude artifact / any static host:
  *   DATABASE_URL=pglite:./data/pglite npx tsx scripts/build-static.ts [out.html]
  */
+import { cutoutWebp } from "../src/lib/server/cutout";
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -31,12 +32,8 @@ if (!process.argv.includes("--no-photos")) {
       try {
         const res = await fetch(src.startsWith("//") ? `https:${src}` : src, { signal: AbortSignal.timeout(20_000), headers: { "user-agent": "Mozilla/5.0 BoardBuddy-static-build" } });
         if (!res.ok) throw new Error(String(res.status));
-        const img = await sharp(Buffer.from(await res.arrayBuffer()))
-          .flatten({ background: "#ffffff" })
-          .trim({ background: "#ffffff", threshold: 18 }) // drop the shop's white canvas, like /api/img
-          .resize({ height: 440, width: 360, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 68 })
-          .toBuffer();
+        // Cut-out on a transparent background, like /api/img?cut=1 (boards float on the tinted UI).
+        const img = await cutoutWebp(sharp(Buffer.from(await res.arrayBuffer())), 560);
         b.images = [`data:image/webp;base64,${img.toString("base64")}`];
         ok++;
       } catch {
@@ -84,7 +81,7 @@ const html = `<meta charset="utf-8">
 <title>BoardBuddy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500..900&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 :root { color-scheme: light; }
 body { background: #ffffff; color: #15161a; }

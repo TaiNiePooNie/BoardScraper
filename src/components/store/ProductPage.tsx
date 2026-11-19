@@ -1,6 +1,6 @@
 "use client";
 import clsx from "clsx";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Heart, Info, Share2, Star, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Heart, Info, Share2, Star, TriangleAlert } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ProductImg } from "@/components/ProductImg";
 import { ASSETS } from "@/lib/assets";
@@ -10,7 +10,9 @@ import { boardStats, STAT_KEYS, STAT_LABELS } from "@/lib/stats";
 import { CATEGORY_LABEL, type Product } from "@/lib/store";
 import { effectiveMsrp } from "@/lib/deals";
 import type { Deal } from "@/lib/types";
-import { BadgePill, Price } from "./ProductCard";
+import { BadgePill } from "./ProductCard";
+import { FitWord, SidewaysBoard } from "./look";
+import { boardHue, heroWord, hueStyle } from "@/lib/look";
 import { BuyOrWait } from "./SaleBanner";
 import { useDialog } from "./useDialog";
 
@@ -28,6 +30,8 @@ export interface LiveCheck {
 const PROFILE_LABEL: Record<string, string> = {
   camber: "Camber", rocker: "Rocker", flat: "Flat", "hybrid-camber": "Hybrid camber", "hybrid-rocker": "Hybrid rocker", "directional-camber": "Directional camber",
 };
+const SPORT_KIND: Record<string, string> = { snow: "Snowboard", skate: "Skateboard", surf: "Surfboard" };
+const STYLE_LABEL: Record<string, string> = { park: "Park", freeride: "Freeride", "all-mountain": "All-mountain", powder: "Powder" };
 const SHAPE_LABEL: Record<string, string> = { "true-twin": "True twin", "directional-twin": "Directional twin", directional: "Directional", tapered: "Tapered" };
 
 export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, live, shipTo, country }: {
@@ -49,6 +53,9 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
   useEffect(() => { setOfferId(p.best.listing.id); top.current?.scrollTo({ top: 0 }); }, [p.id, p.best.listing.id]);
   useDialog(top, onClose);
 
+  const b = p.board;
+  const shops = new Set(p.offers.map((o) => o.retailer.id)).size;
+  const heroHeight = useHeroHeight();
   const fittingLabels = new Set(p.fitSizes.map((m) => m.size.label));
   const offerFits = fit ? new Set(offer.listing.sizes.filter((s) => fittingLabels.has(s.label)).map((s) => s.label)) : new Set<string>();
   const images = p.board.images.length ? p.board.images : [""];
@@ -67,61 +74,81 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
     } catch { /* cancelled */ }
   };
 
+  const word = heroWord(b.model);
+  // Category names are plural ("Longboards"): one board here.
+  const cat = b.category ? CATEGORY_LABEL[b.category].replace(/^(\w+)s$/, "$1") : SPORT_KIND[b.sport];
+  const left = [cat, ...(b.sport === "snow" ? b.styles.slice(0, 2).map((s) => STYLE_LABEL[s] ?? s) : []), b.season].filter(Boolean).join(" · ");
+  const right = [b.flex ? `Flex ${b.flex}` : null, b.profile ? PROFILE_LABEL[b.profile] : null, b.shape ? SHAPE_LABEL[b.shape] : null].filter(Boolean).join(" · ")
+    || `${shops} shop${shops === 1 ? "" : "s"}`;
+  const isBest = offer === p.best;
+  const total = offer.landed.total;
+  const was = isBest ? p.wasTotal : null;
+  const off = was ? Math.round((1 - total / was) * 100) : 0;
+  const { shipping } = costParts(offer);
+
   return (
-    <div ref={top} tabIndex={-1} className="fixed inset-0 z-50 overflow-y-auto bg-white animate-[page-in_.25s_ease-out]" role="dialog" aria-modal="true" aria-label={`${p.board.brand} ${p.board.model}`}>
-      {/* top bar */}
-      <div className="sticky top-0 z-10 border-b border-line bg-white/90 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        <div className="app-gutter mx-auto flex h-14 max-w-6xl items-center gap-2">
-          <button type="button" onClick={onClose} className="-ml-3 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-sm font-semibold transition hover:bg-surface" aria-label="Back to the shop">
-            <ArrowLeft className="h-5 w-5" /><span className="hidden sm:inline">Back</span>
-          </button>
-          <p className="min-w-0 flex-1 truncate text-center text-sm font-semibold sm:hidden">{p.board.brand}</p>
-          <button type="button" onClick={share} className="icon-btn" aria-label={shared ? "Link copied" : "Share this board"}>{shared ? <Check className="h-5 w-5 text-ok" /> : <Share2 className="h-5 w-5" />}</button>
-          <button type="button" onClick={onToggleSave} aria-pressed={saved} className="icon-btn -mr-2" aria-label={saved ? "Remove from saved" : "Save this board"}>
-            <Heart className={clsx("h-5 w-5", saved && "fill-sale text-sale")} />
+    <div ref={top} tabIndex={-1} className="hue fixed inset-0 z-50 overflow-y-auto bg-cream text-ink animate-[page-in_.25s_ease-out]" style={hueStyle(boardHue(b))} role="dialog" aria-modal="true" aria-label={`${b.brand} ${b.model}`}>
+      {/* top bar: part of the band, stays put while scrolling */}
+      <div className="sticky top-0 z-10 bg-deep text-word" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+        <div className="app-gutter mx-auto flex h-14 max-w-6xl items-center gap-1">
+          <button type="button" onClick={onClose} className="icon-btn -ml-3 text-word hover:bg-white/10" aria-label="Back to the shop"><ArrowLeft className="h-5 w-5" /></button>
+          <span className="flex-1" />
+          <button type="button" onClick={share} className="icon-btn text-word hover:bg-white/10" aria-label={shared ? "Link copied" : "Share this board"}>{shared ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}</button>
+          <button type="button" onClick={onToggleSave} aria-pressed={saved} className="icon-btn -mr-2 text-word hover:bg-white/10" aria-label={saved ? "Remove from saved" : "Save this board"}>
+            <Heart className={clsx("h-5 w-5", saved && "fill-current")} />
           </button>
         </div>
       </div>
 
-      <div className="app-gutter mx-auto grid max-w-6xl gap-6 pb-32 pt-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:pb-16 md:pt-8">
-        <Gallery images={images} alt={`${p.board.brand} ${p.board.model}`} placeholder={ASSETS.placeholder[p.board.sport]} />
+      {/* hero: giant model word with the board lying across it */}
+      <header className="bg-deep text-word">
+        <div className="app-gutter mx-auto max-w-6xl pb-1 pt-1">
+          <div className="eyebrow flex justify-between gap-4"><span>{left}</span><span className="text-right">{right}</span></div>
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.22em] opacity-80">{b.brand}</p>
+          <FitWord as="h2" max={280}>{word}</FitWord>
+        </div>
+      </header>
+      <div className="relative" style={{ background: "linear-gradient(var(--color-deep) 0 62%, var(--color-cream) 62%)" }}>
+        <div className="app-gutter mx-auto max-w-6xl pb-3">
+          <SidewaysBoard src={images[0]} alt={`${b.brand} ${b.model}`} placeholder={ASSETS.placeholder[b.sport]} maxHeight={heroHeight} className="-mt-[0.4rem] md:-mt-4" eager />
+        </div>
+      </div>
 
+      <div className="app-gutter mx-auto grid max-w-6xl gap-7 pb-36 pt-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12 md:pb-16">
         <div className="flex min-w-0 flex-col gap-6">
-          <header>
-            <p className="text-sm font-semibold text-muted">{p.board.brand}</p>
-            <h2 className="mt-0.5 break-words text-2xl font-bold leading-tight sm:text-3xl">{p.board.model}</h2>
-            <p className="mt-1 text-sm text-muted">
-              {[p.board.category ? CATEGORY_LABEL[p.board.category] : null, p.board.season].filter(Boolean).join(" · ")}
-              {p.board.reviews && p.board.reviews.count > 0 && (
-                <span className="ml-2 inline-flex items-center gap-0.5 font-semibold text-ink"><Star className="h-3.5 w-3.5 fill-ink" />{p.board.reviews.average.toFixed(1)} <span className="font-normal text-muted">({p.board.reviews.count})</span></span>
-              )}
-            </p>
-            {p.badges.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{p.badges.map((b) => <BadgePill key={b.kind} badge={b} className="!px-2.5 !py-1 !text-xs" />)}</div>}
-          </header>
-
           <section aria-label="Price">
-            <OfferPrice d={offer} p={p} isBest={offer === p.best} />
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="label">{isBest ? `Best price${shops > 1 ? ` · ${shops} shops` : ""}` : `At ${offer.retailer.name}`}</p>
+                <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                  <span className="num text-[2.75rem] leading-none">{formatMoney(total, offer.landed.currency)}</span>
+                  {was && <s className="text-base text-muted tabular-nums" title={p.wasSource === "rrp" ? "Recommended retail price" : "Highest price we've seen"}><span className="sr-only">was </span>{formatMoney(was, offer.landed.currency)}</s>}
+                </p>
+              </div>
+              {off > 0 ? (
+                <p className="shrink-0 text-right font-display text-3xl font-black leading-none tracking-tight text-sale">−{off}%<span className="label mt-1 block">{p.wasSource === "rrp" ? "under RRP" : "under its high"}</span></p>
+              ) : (
+                <p className="shrink-0 text-right font-display text-lg font-black leading-none">Full price<span className="label mt-1 block">{isBest ? "wait for a sale?" : `${shipping > 0 ? "plus shipping" : "free shipping"}`}</span></p>
+              )}
+            </div>
             <CostBreakdown d={offer} shipTo={shipTo} />
-            {live && offer === p.best && <LiveLine live={live} d={offer} />}
+            {live && isBest && <LiveLine live={live} d={offer} />}
           </section>
-
-          <BuyOrWait p={p} country={country} saved={saved} onSave={onToggleSave} />
 
           <section aria-label="Sizes">
             <div className="flex items-baseline justify-between gap-3">
-              <h3 className="min-w-0 truncate text-sm font-bold">Sizes at {offer.retailer.name}</h3>
+              <h3 className="label min-w-0 truncate">Sizes at {offer.retailer.name}</h3>
               <button type="button" onClick={onEditSize} className="link shrink-0 py-1.5 text-sm">{fit ? `Your size: ${fit.rangeLabel}` : "Find my size"}</button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
               {offer.listing.sizes.map((s) => {
                 const yours = offerFits.has(s.label);
                 return (
                   <span key={s.label} className={clsx(
-                    "relative min-w-[3.25rem] rounded-control border px-3 py-2 text-center text-sm font-semibold tabular-nums",
-                    !s.inStock ? "border-line text-muted line-through" : yours ? "border-ink bg-acid" : "border-line",
+                    "relative shrink-0 min-w-[3.5rem] rounded-full border-[1.5px] px-3.5 py-2.5 text-center text-sm font-bold tabular-nums",
+                    !s.inStock ? "border-line text-muted line-through opacity-60" : yours ? "border-ink bg-ink text-white" : "border-line",
                   )}>
-                    {!s.inStock && <span className="sr-only">Sold out: </span>}{yours && <span className="sr-only">Your size: </span>}{s.label}{s.volumeL ? <span className="block text-2xs font-medium text-muted">{s.volumeL} L</span> : null}
-                    {yours && <span aria-hidden className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-white"><Check className="h-3 w-3" /></span>}
+                    {!s.inStock && <span className="sr-only">Sold out: </span>}{yours && <span className="sr-only">Your size: </span>}{s.label}{s.volumeL ? <span className="block text-2xs font-medium opacity-70">{s.volumeL} L</span> : null}
                   </span>
                 );
               })}
@@ -132,18 +159,27 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
               </p>
             )}
             {p.stock.level === "ok" && p.stock.sizesTotal > 1 && <p className="mt-2 text-xs text-muted">{p.stock.sizesLeft} of {p.stock.sizesTotal} sizes in stock across {p.stock.shops} shop{p.stock.shops === 1 ? "" : "s"}{p.stock.shopsWithYourSize ? ` · your size at ${p.stock.shopsWithYourSize}` : ""}.</p>}
-            {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here is in your {fit.rangeLabel} range{p.board.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
+            {fit && p.fits === false && <p className="mt-2 text-sm text-muted">No size here is in your {fit.rangeLabel} range{b.sport === "snow" && fit.snow?.requiresWide ? " (you need a wide board)" : ""}.</p>}
           </section>
 
-          {/* desktop CTA (mobile: sticky bar) */}
-          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary hidden min-h-12 md:flex">
-            Buy at {offer.retailer.name}<ExternalLink className="h-4 w-4" />
-          </a>
+          <div>
+            <p className="text-sm text-muted">{b.brand} {b.model}{b.reviews && b.reviews.count > 0 && (
+              <span className="ml-2 inline-flex items-center gap-0.5 font-semibold text-ink"><Star className="h-3.5 w-3.5 fill-ink" />{b.reviews.average.toFixed(1)} <span className="font-normal text-muted">({b.reviews.count})</span></span>
+            )}</p>
+            {p.badges.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{p.badges.map((x) => <BadgePill key={x.kind} badge={x} className="!px-2.5 !py-1 !text-xs" />)}</div>}
+          </div>
 
+          <BuyOrWait p={p} country={country} saved={saved} onSave={onToggleSave} />
+
+          {/* desktop CTA (phones: the bar at the bottom) */}
+          <BuyBar href={buyUrl} shop={offer.retailer.name} shipping={shipping} currency={offer.landed.currency} className="hidden md:flex" />
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-7">
           {p.offers.length > 1 && (
-            <section aria-label="Compare shops">
-              <h3 className="text-sm font-bold">Compare {p.offers.length} offers</h3>
-              <ul className="card mt-2 divide-y divide-line overflow-hidden">
+            <section aria-label="Compare shops" className="border-t border-line pt-5 md:border-0 md:pt-0">
+              <h3 className="font-display text-base font-black uppercase tracking-wide">Compare {p.offers.length} offers</h3>
+              <ul className="mt-2 divide-y divide-line overflow-hidden rounded-card border-[1.5px] border-line bg-paper">
                 {p.offers.map((o) => {
                   const sel = o === offer;
                   const n = fit ? o.listing.sizes.filter((s) => s.inStock && fittingLabels.has(s.label)).length : null;
@@ -155,7 +191,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
                           <span className="block truncate text-sm font-semibold">{o.retailer.name}</span>
                           <span className="block truncate text-xs text-muted">{o.board.season}{n !== null ? ` · ${n ? `${n} size${n > 1 ? "s" : ""} fit you` : "no size fits you"}` : ""}</span>
                         </span>
-                        <span className="text-right text-sm font-bold tabular-nums">{formatMoney(o.landed.total, o.landed.currency)}</span>
+                        <span className="num text-right text-lg">{formatMoney(o.landed.total, o.landed.currency)}</span>
                       </button>
                     </li>
                   );
@@ -165,8 +201,8 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
           )}
 
           {offer.listing.history.length > 1 && (
-            <section aria-label="Price history">
-              <h3 className="text-sm font-bold">Price history at {offer.retailer.name}</h3>
+            <section aria-label="Price history" className="border-t border-line pt-5">
+              <h3 className="font-display text-base font-black uppercase tracking-wide">Price history at {offer.retailer.name}</h3>
               <p className="text-xs text-muted">In {offer.listing.price.currency}, before delivery{offer.stats ? ` · lowest ever ${formatMoney(offer.stats.allTimeLow, offer.listing.price.currency)}` : ""}</p>
               <div className="mt-2 h-[170px] text-muted">
                 <Suspense fallback={<div className="h-full animate-pulse rounded-card bg-surface" aria-hidden />}>
@@ -176,23 +212,28 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
             </section>
           )}
 
+          {images.length > 1 && <Photos images={images} alt={`${b.brand} ${b.model}`} placeholder={ASSETS.placeholder[b.sport]} />}
+
           <Details p={p} fit={fit} />
         </div>
       </div>
 
-      {/* mobile sticky buy bar */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="app-gutter flex items-center gap-3 py-3">
-          <div className="min-w-0">
-            <p className="text-lg font-bold tabular-nums leading-tight">{formatMoney(offer.landed.total, offer.landed.currency)}</p>
-            <p className="truncate text-xs text-muted">delivered · {offer.retailer.name}</p>
-          </div>
-          <a href={buyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary ml-auto shrink-0" aria-label={`Buy at ${offer.retailer.name} (opens the shop)`}>
-            Buy at shop<ExternalLink className="h-4 w-4" />
-          </a>
-        </div>
+      {/* phones: dark buy bar */}
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-cream from-60% to-transparent pt-6 md:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}>
+        <div className="app-gutter"><BuyBar href={buyUrl} shop={offer.retailer.name} shipping={shipping} currency={offer.landed.currency} /></div>
       </div>
     </div>
+  );
+}
+
+/** The dark "Buy at shop · delivery" bar. */
+function BuyBar({ href, shop, shipping, currency, className }: { href: string; shop: string; shipping: number; currency: Deal["landed"]["currency"]; className?: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Buy at ${shop} (opens the shop)`}
+      className={clsx("flex min-h-14 items-center justify-between gap-3 rounded-[18px] bg-deeper px-5 py-3.5 text-white shadow-float transition active:scale-[0.99]", className ?? "flex")}>
+      <span className="flex min-w-0 items-center gap-2 truncate text-md font-bold">Buy at {shop}<ExternalLink className="h-4 w-4 shrink-0 opacity-70" /></span>
+      <span className="shrink-0 text-sm text-on-deep">{shipping > 0 ? `+ ${formatMoney(shipping, currency)} delivery` : "Free delivery"}</span>
+    </a>
   );
 }
 
@@ -236,47 +277,33 @@ function LiveLine({ live, d }: { live: LiveCheck; d: Deal }) {
   );
 }
 
-function OfferPrice({ d, p, isBest }: { d: Deal; p: Product; isBest: boolean }) {
-  if (isBest) return <Price p={p} size="lg" />;
-  return <span className="text-3xl font-bold tabular-nums">{formatMoney(d.landed.total, d.landed.currency)}</span>;
+/** Every shop photo, upright, in a sideways-scrolling strip. */
+function Photos({ images, alt, placeholder }: { images: string[]; alt: string; placeholder: string }) {
+  return (
+    <section aria-label="Photos" className="border-t border-line pt-5">
+      <h3 className="font-display text-base font-black uppercase tracking-wide">Photos</h3>
+      <div className="no-scrollbar -mx-4 mt-2 flex snap-x gap-3 overflow-x-auto px-4 md:mx-0 md:px-0">
+        {images.map((src, k) => (
+          <div key={k} className="grid h-56 w-40 shrink-0 snap-start place-items-center rounded-card bg-paper p-3">
+            <ProductImg src={src} alt={k === 0 ? alt : ""} size={440} loading="lazy" placeholder={placeholder} className="h-full w-full object-contain mix-blend-multiply" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-function Gallery({ images, alt, placeholder }: { images: string[]; alt: string; placeholder: string }) {
-  const [i, setI] = useState(0);
-  const strip = useRef<HTMLDivElement>(null);
-  const go = (n: number) => {
-    const k = (n + images.length) % images.length;
-    setI(k);
-    strip.current?.scrollTo({ left: k * strip.current.clientWidth, behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-  };
-  return (
-    <div className="md:sticky md:top-20 md:self-start">
-      <div className="relative overflow-hidden rounded-sheet bg-surface">
-        <div ref={strip} className="no-scrollbar flex aspect-[4/5] max-h-[62dvh] w-full snap-x snap-mandatory overflow-x-auto md:max-h-none"
-          onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
-          {images.map((src, k) => (
-            <div key={k} className="h-full w-full shrink-0 snap-center">
-              <ProductImg src={src} alt={k === 0 ? alt : ""} size={1200} loading={k === 0 ? "eager" : "lazy"} placeholder={placeholder} fillAspect={4 / 5} className="h-full w-full object-contain p-[6%] mix-blend-multiply" coverClassName="h-full w-full object-cover" />
-            </div>
-          ))}
-        </div>
-        {images.length > 1 && (
-          <>
-            <button type="button" onClick={() => go(i - 1)} className="icon-btn absolute left-3 top-1/2 !hidden -translate-y-1/2 bg-white shadow-card md:!grid" aria-label="Previous photo"><ChevronLeft className="h-5 w-5" /></button>
-            <button type="button" onClick={() => go(i + 1)} className="icon-btn absolute right-3 top-1/2 !hidden -translate-y-1/2 bg-white shadow-card md:!grid" aria-label="Next photo"><ChevronRight className="h-5 w-5" /></button>
-            {/* phones swipe the photos; the dots are only buttons where there's a pointer or keyboard */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center md:pointer-events-auto">
-              {images.map((_, k) => (
-                <button key={k} type="button" onClick={() => go(k)} aria-label={`Photo ${k + 1} of ${images.length}`} aria-current={k === i} className="grid h-8 place-items-center px-1">
-                  <span className={clsx("h-1.5 rounded-full transition-all", k === i ? "w-5 bg-ink" : "w-1.5 bg-ink/30")} />
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+/** Board height in the hero: phones ~190px, wider screens up to 300px. */
+function useHeroHeight() {
+  const [h, setH] = useState(190);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(min-width: 768px)");
+    const set = () => setH(mq?.matches ? 260 : 190);
+    set();
+    mq?.addEventListener("change", set);
+    return () => mq?.removeEventListener("change", set);
+  }, []);
+  return h;
 }
 
 function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
@@ -290,8 +317,8 @@ function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
   return (
     <>
       {(rows.length > 0 || stats) && (
-        <section aria-label="Details">
-          <h3 className="text-sm font-bold">Details</h3>
+        <section aria-label="Details" className="border-t border-line pt-5">
+          <h3 className="font-display text-base font-black uppercase tracking-wide">Details</h3>
           {rows.length > 0 && (
             <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               {rows.map(([k, v]) => <div key={k}><dt className="text-xs text-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
