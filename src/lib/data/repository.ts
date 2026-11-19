@@ -65,7 +65,7 @@ export class DbRepository implements CatalogRepository {
       ? and(eq(s.listings.active, true), inArray(s.listings.boardId, db.select({ id: s.boards.id }).from(s.boards).where(eq(s.boards.sport, sport))))
       : eq(s.listings.active, true);
 
-    const [retailerRows, listingRows] = await Promise.all([
+    const [retailerRows, listingRows, cutoutRows] = await Promise.all([
       db.select().from(s.retailers).where(eq(s.retailers.enabled, true)),
       db.query.listings.findMany({
         where: active,
@@ -75,7 +75,10 @@ export class DbRepository implements CatalogRepository {
           board: { with: { ambassadors: { with: { rider: true } } } },
         },
       }),
+      // Before the cut-out migration has run the table doesn't exist: no cut-outs then.
+      db.select({ boardId: s.boardCutouts.boardId, at: s.boardCutouts.createdAt }).from(s.boardCutouts).catch(() => []),
     ]);
+    const cutouts = new Map(cutoutRows.map((c) => [String(c.boardId), `/api/cutout/${c.boardId}?v=${Math.floor(c.at.getTime() / 1000)}`]));
 
     const boards = new Map<string, BoardModel>();
     const listings: Listing[] = [];
@@ -97,6 +100,7 @@ export class DbRepository implements CatalogRepository {
           msrp: { amount: b.msrpAmount ?? l.priceAmount, currency: (b.msrpCurrency ?? l.priceCurrency) as CurrencyCode },
           images: b.images.length ? b.images : l.images,
           colors: b.colors ?? [],
+          ...(cutouts.has(id) ? { cutout: cutouts.get(id) } : {}),
           ambassadors: b.ambassadors.map((a) => ({
             id: String(a.rider.id), name: a.rider.name, disciplines: a.rider.disciplines, confidence: a.confidence, sourceUrl: a.sourceUrl ?? undefined,
           })),

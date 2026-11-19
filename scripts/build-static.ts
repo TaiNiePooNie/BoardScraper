@@ -18,6 +18,22 @@ mkdirSync(tmp, { recursive: true });
 // 1. Catalog snapshot (active listings, 1y history, all sports) straight from the DB.
 const h = await openDb();
 const catalog = await new DbRepository(async () => h.db).getCatalog();
+// 1a. AI cut-outs (spotlight boards): embed them, the test page has no API.
+{
+  const { boardCutouts } = await import("../src/db/schema");
+  const sharp = (await import("sharp")).default;
+  const rows = await h.db.select({ boardId: boardCutouts.boardId, image: boardCutouts.image }).from(boardCutouts).catch(() => []);
+  const byId = new Map(rows.map((r) => [String(r.boardId), r.image]));
+  let n = 0;
+  for (const b of catalog.boards) {
+    const img = byId.get(b.id);
+    if (!img) { delete b.cutout; continue; }
+    const small = await sharp(img).resize({ width: 600, height: 600, fit: "inside", withoutEnlargement: true }).webp({ quality: 74, alphaQuality: 85 }).toBuffer();
+    b.cutout = `data:image/webp;base64,${small.toString("base64")}`;
+    n++;
+  }
+  console.log(`  cut-outs: ${n} embedded`);
+}
 await h.close();
 // 1b. Product photos: the artifact sandbox blocks shop image servers, so embed one small
 // photo per board (first image, resized to WebP). Skip with --no-photos.

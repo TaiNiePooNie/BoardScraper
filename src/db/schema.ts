@@ -264,3 +264,19 @@ export const feedbackMediaChunks = pgTable("feedback_media_chunks", {
   idx: integer("idx").notNull(),
   data: bytea("data").notNull(),
 }, (t) => [primaryKey({ columns: [t.mediaId, t.idx] })]);
+
+/**
+ * Board photo with the background removed by an AI model (src/scraper/cutouts.ts), for the
+ * boards in the spotlight (top deals). Shown floating on the board page and the shop band;
+ * other boards use the photo on a white card.
+ */
+export const boardCutouts = pgTable("board_cutouts", {
+  boardId: integer("board_id").primaryKey().references(() => boards.id, { onDelete: "cascade" }),
+  /** Transparent WebP. */
+  image: bytea("image").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  /** The shop photo it was made from (redone when the board's photo changes). */
+  sourceUrl: text("source_url").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

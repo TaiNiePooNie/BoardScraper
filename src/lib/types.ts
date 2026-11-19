@@ -223,6 +223,8 @@ export const BoardModel = z.object({
   images: z.array(z.string()),
   /** Main colours from the product photo (black, white, grey, red, orange, yellow, green, blue, purple, pink, brown). */
   colors: z.array(z.string()).optional(),
+  /** Photo with the background removed (URL or data URI), for boards in the spotlight. */
+  cutout: z.string().optional(),
   ambassadors: z.array(Ambassador),
   reviews: ReviewSummary.nullable(),
 });
