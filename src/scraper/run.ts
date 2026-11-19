@@ -21,7 +21,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { openDb } from "@/db/client";
 import { listings, scrapeRuns } from "@/db/schema";
-import { BlockedError, PoliteFetcher } from "./http";
+import { BlockedError, OutOfTimeError, PoliteFetcher } from "./http";
 import { deactivateMissing, ingestProduct, refreshBoards, upsertRetailer } from "./ingest";
 import { ADAPTERS } from "./retailers";
 import { Sport } from "@/lib/types";
@@ -68,6 +68,7 @@ async function ingestWithRetry(db: Db, id: string, p: Product) {
 async function scrapeRetailer(id: string, db: Db | null): Promise<boolean> {
   const adapter = ADAPTERS[id];
   const http = new PoliteFetcher();
+  if (Number.isFinite(budgetMs)) http.deadline = Date.now() + budgetMs;
   const log = (m: string) => console.log(`[${id}] ${m}`);
   const started = Date.now();
   let seen = 0;
@@ -101,20 +102,26 @@ async function scrapeRetailer(id: string, db: Db | null): Promise<boolean> {
     const inflight = new Set<Promise<void>>();
     let ingestError: unknown = null;
     let outOfTime = false;
-    for await (const p of adapter.crawl({ http, limit, log, sports, knownUrls })) {
-      seen++;
-      if (ingestError) throw ingestError;
-      if (!db) {
-        console.log(JSON.stringify({ sport: p.sport, category: p.category, brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.volumeL ? ` ${s.volumeL}L` : ""}${s.lengthCm && p.sport === "skate" ? ` (${s.lengthCm}cm)` : ""}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
-      } else {
-        await acquire();
-        const job = ingestWithRetry(db, id, p)
-          .then((r) => { boardIds.add(r.boardId); listingIds.push(r.listingId); })
-          .catch((e) => { ingestError ??= e; })
-          .finally(() => { release(); inflight.delete(job); });
-        inflight.add(job);
+    try {
+      for await (const p of adapter.crawl({ http, limit, log, sports, knownUrls })) {
+        seen++;
+        if (ingestError) throw ingestError;
+        if (!db) {
+          console.log(JSON.stringify({ sport: p.sport, category: p.category, brand: p.brand, model: p.model, season: p.season, price: p.price, listPrice: p.listPrice, currency: p.currency, sizes: p.sizes.map((s) => `${s.label}${s.volumeL ? ` ${s.volumeL}L` : ""}${s.lengthCm && p.sport === "skate" ? ` (${s.lengthCm}cm)` : ""}${s.inStock ? "" : "✗"}`).join(" "), specs: p.specs, rating: p.rating }));
+        } else {
+          await acquire();
+          const job = ingestWithRetry(db, id, p)
+            .then((r) => { boardIds.add(r.boardId); listingIds.push(r.listingId); })
+            .catch((e) => { ingestError ??= e; })
+            .finally(() => { release(); inflight.delete(job); });
+          inflight.add(job);
+        }
+        if (Date.now() - started > budgetMs) { outOfTime = true; break; }
       }
-      if (Date.now() - started > budgetMs) { outOfTime = true; break; }
+    } catch (e) {
+      // The fetcher's deadline: stop this shop, keep what was saved (a partial run).
+      if (!(e instanceof OutOfTimeError)) throw e;
+      outOfTime = true;
     }
     await Promise.all(inflight);
     if (ingestError) throw ingestError;
@@ -155,7 +162,12 @@ async function main() {
   let failed = false;
   try {
     if (parallel) {
-      const results = await Promise.all(runIds.map((id) => scrapeRetailer(id, db)));
+      // Every 10 minutes: which shops are still going (the job log shows where time goes).
+      const running = new Set(runIds);
+      const t0 = Date.now();
+      const beat = setInterval(() => console.log(`… ${Math.round((Date.now() - t0) / 60_000)} min: ${running.size} shop(s) still running: ${[...running].join(", ")}`), 600_000);
+      const results = await Promise.all(runIds.map((id) => scrapeRetailer(id, db).finally(() => running.delete(id))));
+      clearInterval(beat);
       failed = results.includes(false);
     } else {
       for (const id of runIds) if (!(await scrapeRetailer(id, db))) failed = true;

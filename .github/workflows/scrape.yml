@@ -76,6 +76,8 @@ jobs:
         run: npm run db:migrate
       - name: Scrape ${{ steps.plan.outputs.group }} shops
         if: steps.plan.outputs.skip != 'true'
+        # Shops stop at --budget-minutes; this is the hard stop so the steps below still run.
+        timeout-minutes: 190
         env:
           SCRAPER_MIN_DELAY_MS: "2500"
           INGEST_CONCURRENCY: "24" # shared by all shops of the run

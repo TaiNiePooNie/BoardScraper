@@ -9,6 +9,8 @@ import robotsParser from "robots-parser";
  */
 export class BlockedError extends Error {}
 export class DisallowedError extends Error {}
+/** The shop's time budget is used up (a BlockedError, so adapters stop instead of skipping a page). */
+export class OutOfTimeError extends BlockedError {}
 
 const BOT_TOKEN = "BoardScraperBot";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
@@ -33,6 +35,8 @@ export class PoliteFetcher {
   private queue = new Map<string, Promise<unknown>>();
   readonly opts: Required<FetcherOptions>;
   requests = 0;
+  /** Epoch ms after which every request fails with OutOfTimeError (time-boxed runs). */
+  deadline?: number;
 
   constructor(opts: FetcherOptions = {}) {
     this.opts = {
@@ -85,12 +89,16 @@ export class PoliteFetcher {
   }
 
   async get(url: string, accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"): Promise<FetchResult> {
+    if (this.deadline && Date.now() > this.deadline) throw new OutOfTimeError("time budget used up");
     if (!(await this.isAllowed(url))) throw new DisallowedError(`robots.txt disallows ${url}`);
     const host = new URL(url).host;
     let lastErr: unknown;
     for (let attempt = 0; attempt <= this.opts.retries; attempt++) {
       try {
-        const res = await this.throttle(host, () => this.raw(url, accept));
+        const res = await this.throttle(host, () => {
+          if (this.deadline && Date.now() > this.deadline) throw new OutOfTimeError("time budget used up");
+          return this.raw(url, accept);
+        });
         this.requests++;
         const text = await res.text();
         if (res.status === 403 || res.status === 429 || CHALLENGE.test(text.slice(0, 5000))) {
