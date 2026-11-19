@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { removeBackground } from "./cutout";
+import { opaqueBox, removeBackground } from "./cutout";
 
 /** W×H light-grey canvas with a dark rectangle (the "board") in the middle. */
 function photo(W: number, H: number, bg = [230, 230, 230]) {
@@ -27,5 +27,13 @@ describe("photo cut-out", () => {
     const W = 12, H = 20, d = photo(W, H, [30, 120, 60]);
     expect(removeBackground(d, W, H)).toBe(0);
     expect(alpha(d, W, 0, 0)).toBe(255);
+  });
+  it("crops to the board", () => {
+    const W = 12, H = 20, d = photo(W, H);
+    removeBackground(d, W, H);
+    const b = opaqueBox(d, W, H);
+    expect(b.left).toBeLessThanOrEqual(4);
+    expect(b.left + b.width).toBeGreaterThanOrEqual(W - 4);
+    expect(b.width).toBeLessThan(W);
   });
 });

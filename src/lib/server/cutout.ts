@@ -77,9 +77,29 @@ export async function cleanPhotoWebp(img: Sharp, height: number): Promise<Buffer
     .raw()
     .toBuffer({ resolveWithObject: true });
   removeBackground(data, info.width, info.height);
+  // Crop to what is left (sharp's own trim runs before flatten, so do it here).
+  const box = opaqueBox(data, info.width, info.height);
   return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
+    .extract(box)
     .flatten({ background: "#ffffff" })
-    .trim({ background: "#ffffff", threshold: 10 })
     .webp({ quality: 78 })
     .toBuffer();
+}
+
+/** Bounding box of the visible pixels (alpha > 16), with a 2px margin; the whole image if none. */
+export function opaqueBox(data: Uint8Array | Buffer, W: number, H: number) {
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4 + 3] > 16) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return { left: 0, top: 0, width: W, height: H };
+  x0 = Math.max(0, x0 - 2); y0 = Math.max(0, y0 - 2); x1 = Math.min(W - 1, x1 + 2); y1 = Math.min(H - 1, y1 + 2);
+  return { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
 }
