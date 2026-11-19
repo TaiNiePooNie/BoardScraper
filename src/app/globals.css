@@ -80,7 +80,39 @@
   --text-md: 0.9375rem;
   --text-md--line-height: 1.375rem;
 
+  /* Tinted "board page" palette (see .hue below); these defaults are the snow hue. */
+  --color-cream: hsl(212 24% 93%);
+  --color-paper: hsl(212 30% 97%);
+  --color-deep: hsl(212 34% 22%);
+  --color-deeper: hsl(212 34% 12%);
+  --color-word: hsl(212 38% 86%);
+  --color-on-deep: hsl(212 22% 74%);
+
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Archivo", "Arial Narrow", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * TINT  A `.hue` scope (style="--h: 212") recolours everything inside it from one hue:
+ *       deep / deeper  the dark band and the buy bar      word / on-deep  text on the band
+ *       cream          page background                    paper           cards, inputs (also "white")
+ *       ink, muted, line, surface   tinted versions of the neutrals
+ *       Shop screens use the sport's hue, a board page the board's own colour (src/lib/look.ts).
+ * TYPE  .display-word  the giant uppercase word (Archivo Black), sized to fit by <FitWord>.
+ *       .eyebrow       small uppercase spaced line on the band.
+ */
+.hue {
+  --color-white: hsl(var(--h) 30% 98%);
+  --color-paper: hsl(var(--h) 30% 97%);
+  --color-cream: hsl(var(--h) 24% 93%);
+  --color-surface: hsl(var(--h) 22% 89%);
+  --color-ink: hsl(var(--h) 30% 11%);
+  --color-muted: hsl(var(--h) 12% 37%);
+  --color-line: hsl(var(--h) 16% 82%);
+  --color-deep: hsl(var(--h) 34% 22%);
+  --color-deeper: hsl(var(--h) 34% 12%);
+  --color-word: hsl(var(--h) 38% 86%);
+  --color-on-deep: hsl(var(--h) 22% 74%);
 }
 
 :root {
@@ -160,6 +192,21 @@ body {
 
   .label {
     @apply text-xs font-semibold uppercase tracking-wider text-muted;
+  }
+
+  .display-word {
+    @apply block w-full whitespace-nowrap font-display uppercase;
+    font-weight: 900;
+    line-height: 0.86;
+    letter-spacing: -0.035em;
+  }
+  .eyebrow {
+    @apply text-[0.6875rem] font-semibold uppercase leading-snug text-on-deep;
+    letter-spacing: 0.14em;
+  }
+  .num {
+    @apply font-display font-extrabold tabular-nums;
+    letter-spacing: -0.03em;
   }
 
   .link {
