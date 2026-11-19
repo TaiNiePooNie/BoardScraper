@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-describe("weekly cron", () => {
+describe("daily cron", () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
   it("refuses calls without the cron secret", async () => {
     vi.stubEnv("CRON_SECRET", "s3cret-value");
