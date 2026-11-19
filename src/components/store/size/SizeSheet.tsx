@@ -11,6 +11,7 @@ import { AUDIENCE_LABEL } from "../FilterSheet";
 import { SPORT_SHORT } from "@/lib/store";
 import { SPORTS, type RiderInput, type RiderStyle, type SkateStyle, type SkillLevel, type Sport, type SurfWaves } from "@/lib/types";
 import { Sheet } from "../Sheet";
+import { FitWord } from "../look";
 import { SportIcon } from "../SportIcon";
 import { SizePreview } from "./SizePreview";
 import { SizeRange } from "./SizeRange";
@@ -187,7 +188,16 @@ export function SizeSheet({ sport: initialSport, buddy, buddies, onSave, onSwitc
   return (
     <Sheet
       title="Find my size"
+      label="Find my size"
       onClose={onClose}
+      hero={
+        <div className="relative pr-24">
+          <p className="eyebrow pr-8">Find my size · {SPORT_SHORT[sport]} · for {name.trim() || buddy.name}</p>
+          <FitWord as="p" max={84} min={30} className="mt-3">Your size</FitWord>
+          <p className="mt-1 font-display text-lg font-black uppercase tracking-tight text-on-deep">{fit.rangeLabel}</p>
+          <AssetImg src={ASSETS.mascotSport[sport]} alt="" className="pointer-events-none absolute -bottom-4 -right-3 h-28 w-28 drop-shadow-[0_8px_10px_rgb(0_0_0/0.3)]" fallback={null} />
+        </div>
+      }
       footer={
         <button type="button" className="btn-primary w-full !px-3" onClick={() => onSave(r, name.trim() || buddy.name, sport)}>
           Show {SPORT_SHORT[sport].toLowerCase()} boards in {fit.rangeLabel}

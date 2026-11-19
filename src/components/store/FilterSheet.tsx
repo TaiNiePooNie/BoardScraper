@@ -31,7 +31,8 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
 
   return (
     <Sheet
-      title="Filter & sort"
+      title="Filter"
+      label="Filter and sort"
       onClose={onClose}
       footer={
         <div className="flex gap-2">
@@ -41,9 +42,9 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
       }
     >
       <Group title="Sort by">
-        <select className="input" aria-label="Sort by" value={sort} onChange={(e) => onSort(e.target.value as SortMode)}>
-          {(Object.keys(SORT_LABEL) as SortMode[]).map((s) => <option key={s} value={s}>{SORT_LABEL[s]}</option>)}
-        </select>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Sort by">
+          {(Object.keys(SORT_LABEL) as SortMode[]).map((s) => <button key={s} type="button" role="radio" aria-checked={sort === s} onClick={() => onSort(s)} className="chip">{SORT_LABEL[s]}</button>)}
+        </div>
       </Group>
       <Group title="Deals">
         <p className="mb-1.5 text-xs text-muted">Discount off the original price</p>
@@ -68,7 +69,7 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
           })}
         </div>
       </Group>
-      <Group title="Max price" action={<span className="text-sm font-bold tabular-nums">{value.maxPrice === null ? "Any price" : `Up to ${formatMoney(price, currency)}`}</span>}>
+      <Group title="Max price, delivered" action={<span className="num text-2xl leading-none">{value.maxPrice === null ? "Any" : formatMoney(price, currency)}</span>}>
         <input type="range" className="bb-range" min={50} max={max} step={10} value={price} aria-label="Max price"
           aria-valuetext={value.maxPrice === null ? "Any price" : formatMoney(price, currency)}
           style={{ ["--fill" as string]: `${((price - 50) / Math.max(1, max - 50)) * 100}%` }}
@@ -76,14 +77,15 @@ export function FilterSheet({ value, onChange, sort, onSort, facets, currency, h
       </Group>
       {facets.colors.size > 0 && (
         <Group title="Colour" action={value.colors.length > 0 ? <button type="button" className="link text-xs" onClick={() => set({ colors: [] })}>Show all</button> : undefined}>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-5 gap-x-1 gap-y-3 sm:grid-cols-6">
             {BOARD_COLORS.filter((c) => facets.colors.has(c)).map((c) => {
               const on = value.colors.includes(c);
               return (
-                <button key={c} type="button" aria-pressed={on} title={COLOR_LABEL[c]} onClick={() => set({ colors: toggleIn(value.colors, c) })}
-                  className={clsx("flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1.5 pr-3 text-sm font-medium", on ? "border-ink bg-surface" : "border-line")}>
-                  <span className={clsx("h-7 w-7 rounded-full border", on ? "border-ink ring-2 ring-ink ring-offset-2" : "border-line")} style={{ background: COLOR_HEX[c] }} />
-                  {COLOR_LABEL[c]} <span className="text-muted">{facets.colors.get(c)}</span>
+                <button key={c} type="button" aria-pressed={on} title={`${COLOR_LABEL[c]} (${facets.colors.get(c)})`} onClick={() => set({ colors: toggleIn(value.colors, c) })}
+                  className="flex min-w-0 flex-col items-center gap-1.5 rounded-control py-1 text-[0.625rem] font-bold uppercase tracking-[0.1em]">
+                  <span className={clsx("h-9 w-9 rounded-full shadow-[inset_0_0_0_1px_rgb(0_0_0/0.15)]", on && "ring-2 ring-ink ring-offset-2 ring-offset-cream")} style={{ background: COLOR_HEX[c] }} />
+                  <span className="max-w-full truncate">{c === "brown" ? "Wood" : COLOR_LABEL[c]}</span>
+                  <span className="sr-only">, {facets.colors.get(c)} boards</span>
                 </button>
               );
             })}

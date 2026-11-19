@@ -436,7 +436,7 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
 
         {/* ── title ── */}
         <div id="grid" className="mt-5 flex min-h-11 scroll-mt-28 items-center gap-3 md:mt-8 md:scroll-mt-20">
-          <h2 className="min-w-0 flex-1 truncate font-display text-xl font-black uppercase tracking-tight md:text-2xl">
+          <h2 className={clsx("min-w-0 flex-1 truncate font-display text-xl font-black uppercase tracking-tight md:text-2xl", view === "saved" && "sr-only")}>
             {title}
             {result && <span className="ml-2 font-sans text-sm font-semibold normal-case tracking-normal text-muted">{list.length}</span>}
           </h2>
