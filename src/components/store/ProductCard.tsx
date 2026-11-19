@@ -43,16 +43,15 @@ export function ProductCard({ p, saved, onOpen, onToggleSave, priority }: { p: P
   return (
     <article className="relative min-w-0">
       <button type="button" onClick={onOpen} className="group block w-full rounded-card text-left">
-        {/* Tile tinted with the board's own colour; the cut-out board leans a little. */}
+        {/* Tile tinted with the board's own colour; the photo's white background blends into it. */}
         <div className="relative aspect-[4/5] overflow-hidden rounded-[20px]" style={{ background: `hsl(${boardHue(p.board)} 30% 86%)` }}>
           <ProductImg
             src={p.board.images[0]}
             alt={name}
             loading={priority ? "eager" : "lazy"}
             size={600}
-            cut
             placeholder={ASSETS.placeholder[p.board.sport]}
-            className="absolute inset-[7%] h-[86%] w-[86%] -rotate-6 object-contain drop-shadow-[0_12px_10px_rgb(0_0_0/0.25)] transition duration-300 group-hover:-rotate-3 group-hover:scale-[1.04]"
+            className="absolute inset-[7%] h-[86%] w-[86%] object-contain mix-blend-multiply transition duration-300 group-hover:scale-[1.04]"
           />
           {/* Bottom-left, wrapping: never under the save button, never wider than the card. */}
           {p.badges.length > 0 && (

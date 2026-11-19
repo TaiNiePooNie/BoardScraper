@@ -1,9 +1,11 @@
 /**
- * Board photo cut-out: removes the plain studio background (white or light grey) around a
- * board so it can float on a coloured backdrop. Flood-fills from the image edges through
- * pixels close to the corner colour, with a soft edge for anti-aliasing. Photos on a busy
- * background barely change (the fill stops at the first non-matching pixel).
- * Server only (sharp): used by /api/img?cut=1 and the static build.
+ * Clean product photo: turns a plain studio background (light grey, off-white) pure white
+ * and trims it, so the photo sits seamlessly on a white card or blends into a light tile
+ * (mix-blend-multiply). Flood-fills from the image edges through pixels close to the
+ * corner colour, with a soft edge. Turning the background white (instead of transparent)
+ * means a mistake is invisible: a white board on a white background just stays white.
+ * Photos on a busy or dark background are left alone.
+ * Server only (sharp): used by /api/img and the static build.
  */
 import type { Sharp } from "sharp";
 
@@ -64,14 +66,40 @@ function smoothEdges(data: Uint8Array | Buffer, W: number, H: number) {
   }
 }
 
-/** sharp pipeline → transparent WebP with the background removed and trimmed to the board. */
-export async function cutoutWebp(img: Sharp, height: number): Promise<Buffer> {
+/** sharp pipeline → WebP with the studio background turned white and trimmed off. */
+export async function cleanPhotoWebp(img: Sharp, height: number): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
   // Work at the output size: the fill is O(pixels).
-  const { data, info } = await img.resize({ height, width: Math.round(height * 1.4), fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await img
+    .flatten({ background: "#ffffff" })
+    .resize({ height, width: Math.round(height * 1.4), fit: "inside", withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   removeBackground(data, info.width, info.height);
+  // Crop to what is left (sharp's own trim runs before flatten, so do it here).
+  const box = opaqueBox(data, info.width, info.height);
   return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
-    .trim({ threshold: 1 })
-    .webp({ quality: 78, alphaQuality: 90 })
+    .extract(box)
+    .flatten({ background: "#ffffff" })
+    .webp({ quality: 78 })
     .toBuffer();
+}
+
+/** Bounding box of the visible pixels (alpha > 16), with a 2px margin; the whole image if none. */
+export function opaqueBox(data: Uint8Array | Buffer, W: number, H: number) {
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4 + 3] > 16) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return { left: 0, top: 0, width: W, height: H };
+  x0 = Math.max(0, x0 - 2); y0 = Math.max(0, y0 - 2); x1 = Math.min(W - 1, x1 + 2); y1 = Math.min(H - 1, y1 + 2);
+  return { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
 }

@@ -45,8 +45,9 @@ export function FitWord({ children, max = 150, min = 36, as: Tag = "h2", classNa
 }
 
 /**
- * Board photo turned sideways (cut out of its background) with a drop shadow, at most
- * `maxHeight` px tall. The box keeps the turned photo's proportions once it has loaded.
+ * Board photo turned sideways on a white sticker card (the photo keeps its own, whitened
+ * background, so every shop photo works), tilted, with a drop shadow. At most `maxHeight`
+ * px tall; the box takes the turned card's proportions once the photo has loaded.
  */
 export function SidewaysBoard({ src, alt, placeholder, maxHeight = 190, className, tilt = 4, eager }: {
   src: string;
@@ -58,27 +59,34 @@ export function SidewaysBoard({ src, alt, placeholder, maxHeight = 190, classNam
   tilt?: number;
   eager?: boolean;
 }) {
-  // r = turned width / turned height = photo height / photo width (boards are tall: ~3).
-  const [r, setR] = useState(3);
+  // Photo size (px) once loaded; boards are tall (~1:3) until then.
+  const [dim, setDim] = useState({ w: 1, h: 3 });
+  const pad = 0.07 * Math.min(dim.w, dim.h); // white margin around the photo
+  const cw = dim.w + 2 * pad, ch = dim.h + 2 * pad;
+  const r = ch / cw; // turned card: width / height
   return (
     <div className={clsx("relative mx-auto", className)} style={{ aspectRatio: String(r), width: `min(100%, ${Math.round(maxHeight * r)}px)` }}>
-      <ProductImg
-        src={src}
-        alt={alt}
-        cut
-        size={1200}
-        loading={eager ? "eager" : "lazy"}
-        placeholder={placeholder}
-        onLoad={(img) => { if (img.naturalWidth && img.naturalHeight) setR(img.naturalHeight / img.naturalWidth); }}
-        className="absolute left-1/2 top-1/2 max-w-none object-contain"
+      <div
+        className="absolute left-1/2 top-1/2 overflow-hidden rounded-2xl bg-[#fff]"
         style={{
           width: `${100 / r}%`,
           height: `${100 * r}%`,
           transform: `translate(-50%, -50%) rotate(${-90 - tilt}deg)`,
-          // The shadow is drawn before the turn: "left" ends up below the board.
-          filter: "drop-shadow(-18px 0 14px rgb(0 0 0 / 0.3)) drop-shadow(-4px 0 4px rgb(0 0 0 / 0.18))",
+          // Drawn before the turn: "left" ends up below the card.
+          boxShadow: "-16px 0 26px rgb(0 0 0 / 0.28), -3px 0 6px rgb(0 0 0 / 0.16)",
         }}
-      />
+      >
+        <ProductImg
+          src={src}
+          alt={alt}
+          size={1200}
+          loading={eager ? "eager" : "lazy"}
+          placeholder={placeholder}
+          onLoad={(img) => { if (img.naturalWidth && img.naturalHeight) setDim({ w: img.naturalWidth, h: img.naturalHeight }); }}
+          className="absolute object-contain"
+          style={{ left: `${(100 * pad) / cw}%`, right: `${(100 * pad) / cw}%`, top: `${(100 * pad) / ch}%`, bottom: `${(100 * pad) / ch}%`, width: `${(100 * dim.w) / cw}%`, height: `${(100 * dim.h) / ch}%` }}
+        />
+      </div>
     </div>
   );
 }

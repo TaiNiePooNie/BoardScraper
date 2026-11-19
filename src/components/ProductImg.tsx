@@ -10,13 +10,13 @@ export const BOARD_PLACEHOLDER = ASSETS.boardPlaceholder;
  * Shop photo URL → our image proxy (/api/img): trims the shop's white canvas,
  * resizes and caches. Static builds embed photos as data URIs and skip the proxy.
  */
-export function proxied(src: string, height: number, cut = false): string {
+export function proxied(src: string, height: number): string {
   const isStatic = typeof globalThis !== "undefined" && "__BB_ASSETS" in globalThis;
   if (!/^https?:\/\//.test(src) || isStatic) return src;
-  return `/api/img?src=${encodeURIComponent(src)}&h=${height}${cut ? "&cut=1" : ""}`;
+  return `/api/img?src=${encodeURIComponent(src)}&h=${height}`;
 }
 
-export function ProductImg({ src, alt, className, loading, style, size = 800, placeholder = BOARD_PLACEHOLDER, fillAspect, coverClassName, cut, onLoad }: {
+export function ProductImg({ src, alt, className, loading, style, size = 800, placeholder = BOARD_PLACEHOLDER, fillAspect, coverClassName, onLoad }: {
   src: string;
   alt: string;
   className?: string;
@@ -29,14 +29,12 @@ export function ProductImg({ src, alt, className, loading, style, size = 800, pl
   /** Box aspect (w/h). Photos shot on their own backdrop at about this aspect fill the box (coverClassName) instead of floating. */
   fillAspect?: number;
   coverClassName?: string;
-  /** Remove the plain studio background (transparent cut-out). */
-  cut?: boolean;
   onLoad?: (img: HTMLImageElement) => void;
 }) {
   const [cover, setCover] = useState(false);
   // 0 = proxied, 1 = original URL, 2 = placeholder
   const [attempt, setAttempt] = useState(0);
-  const url = !src || attempt >= 3 ? BOARD_PLACEHOLDER : attempt === 2 ? placeholder : attempt === 1 ? src : proxied(src, size, cut);
+  const url = !src || attempt >= 3 ? BOARD_PLACEHOLDER : attempt === 2 ? placeholder : attempt === 1 ? src : proxied(src, size);
   return (
     <img
       src={url}

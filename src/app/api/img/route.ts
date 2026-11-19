@@ -1,13 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { RETAILERS } from "@/lib/retailers";
-import { cutoutWebp } from "@/lib/server/cutout";
+import { cleanPhotoWebp } from "@/lib/server/cutout";
 
 /**
- * Product photo proxy: fetches a shop image, trims the white/transparent canvas
- * around the board, resizes and serves WebP with long CDN caching. Only known
- * shop image hosts are allowed (no open proxy).
- * `cut=1`: also removes a plain studio background (transparent WebP) so the board
- * can float on a coloured backdrop.
+ * Product photo proxy: fetches a shop image, turns a plain studio background white and
+ * trims it, resizes and serves WebP with long CDN caching. Only known shop image hosts
+ * are allowed (no open proxy).
  */
 export const runtime = "nodejs";
 
@@ -40,15 +38,8 @@ export async function GET(req: NextRequest) {
   if (!res?.ok) return NextResponse.json({ error: "upstream" }, { status: 502 });
 
   const sharp = (await import("sharp")).default;
-  const cut = req.nextUrl.searchParams.get("cut") === "1";
   try {
-    const input = Buffer.from(await res.arrayBuffer());
-    const out = cut ? await cutoutWebp(sharp(input), height) : await sharp(input)
-      .flatten({ background: "#ffffff" })
-      .trim({ background: "#ffffff", threshold: 18 })
-      .resize({ height, width: Math.round(height * 1.4), fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 76 })
-      .toBuffer();
+    const out = await cleanPhotoWebp(sharp(Buffer.from(await res.arrayBuffer())), height);
     return new NextResponse(new Uint8Array(out), {
       headers: {
         "content-type": "image/webp",
