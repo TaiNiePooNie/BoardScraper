@@ -1,23 +1,21 @@
 name: Scheduled scrape
 
-# Weekly price checks (kept low until the site earns money; each run bills its minutes):
-#   Monday   01:17 UTC  fast shops (catalogue feeds, Shopify)
-#   Thursday 01:17 UTC  slow shops (one page per product), max 150 min per shop
-# Vercel Cron starts these at a fixed time (vercel.json → /api/cron/scrape; Thursday = slow).
+# Daily price check at 01:17 UTC of all shops (the repo is public, so Actions minutes are free).
+# Slow shops (one page per product) get max 150 min each and re-check known boards stalest-first.
+# Vercel Cron starts it at a fixed time (vercel.json → /api/cron/scrape).
 # GitHub's own schedule (often hours late) is only a backup and skips itself when a
 # run was already started in the last 20 hours.
 # Everything runs in ONE job: all shops of the group side by side, each at its own
 # polite pace, so the waiting between requests is billed once, not once per shop.
 on:
   schedule:
-    - cron: "17 5 * * 1" # backup: fast shops
-    - cron: "17 5 * * 4" # backup: slow shops
+    - cron: "17 5 * * *" # backup
   workflow_dispatch:
     inputs:
       group:
         description: "Shops: fast (catalogue feeds), slow (page by page) or all"
         required: false
-        default: fast
+        default: all
         type: choice
         options: [fast, slow, all]
       retailer:
@@ -50,11 +48,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          SCHEDULE: ${{ github.event.schedule }}
           INPUT_GROUP: ${{ inputs.group }}
         run: |
-          group="${INPUT_GROUP:-fast}"
-          [ "$SCHEDULE" = "17 5 * * 4" ] && group=slow
+          group="${INPUT_GROUP:-all}"
           skip=false
           if [ "$EVENT" = "schedule" ]; then
             since=$(date -u -d '20 hours ago' +%Y-%m-%dT%H:%M:%SZ)
