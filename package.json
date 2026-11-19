@@ -17,7 +17,8 @@
     "build:static": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/build-static.ts",
     "alerts": "tsx src/alerts/run.ts",
     "survey": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx scripts/survey-retailers.ts",
-    "colors": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx src/scraper/colors.ts"
+    "colors": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx src/scraper/colors.ts",
+    "cutouts": "NODE_USE_ENV_PROXY=1 NODE_OPTIONS=--disable-warning=UNDICI-EHPA tsx src/scraper/cutouts.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",

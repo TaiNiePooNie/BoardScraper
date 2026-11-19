@@ -76,6 +76,8 @@ jobs:
         run: npm run db:migrate
       - name: Scrape ${{ steps.plan.outputs.group }} shops
         if: steps.plan.outputs.skip != 'true'
+        # Shops stop at --budget-minutes; this is the hard stop so the steps below still run.
+        timeout-minutes: 190
         env:
           SCRAPER_MIN_DELAY_MS: "2500"
           INGEST_CONCURRENCY: "24" # shared by all shops of the run
@@ -85,6 +87,16 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           SPORT: ${{ inputs.sport }}
         run: npm run scrape -- --group="$GROUP" --parallel --budget-minutes=150 ${RETAILER:+--retailer="$RETAILER"} ${LIMIT:+--limit="$LIMIT"} ${SPORT:+--sport="$SPORT"}
+      - name: Cache the cut-out model
+        if: always() && steps.plan.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with: { path: .cache, key: isnet-general-use-v1 }
+      - name: AI cut-outs for the top boards
+        if: always() && steps.plan.outputs.skip != 'true'
+        continue-on-error: true
+        run: |
+          npm i --no-save onnxruntime-node@1.23.0
+          npm run -s cutouts | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Read board colours from product photos (new boards only)
         if: always() && steps.plan.outputs.skip != 'true'
         run: npm run -s colors | tee -a "$GITHUB_STEP_SUMMARY"

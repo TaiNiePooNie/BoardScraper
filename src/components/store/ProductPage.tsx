@@ -110,7 +110,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
       </header>
       <div className="relative" style={{ background: "linear-gradient(var(--color-deep) 0 62%, var(--color-cream) 62%)" }}>
         <div className="app-gutter mx-auto max-w-6xl pb-3">
-          <SidewaysBoard src={images[0]} alt={`${b.brand} ${b.model}`} placeholder={ASSETS.placeholder[b.sport]} maxHeight={heroHeight} className="-mt-[0.4rem] md:-mt-4" eager />
+          <SidewaysBoard src={images[0]} cutout={b.cutout} alt={`${b.brand} ${b.model}`} placeholder={ASSETS.placeholder[b.sport]} maxHeight={heroHeight} className="-mt-[0.4rem] md:-mt-4" eager />
         </div>
       </div>
 

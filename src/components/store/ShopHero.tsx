@@ -47,7 +47,7 @@ export function ShopHero({ sport, count, onSale, country, best, onOpen, plural }
         <div className="app-gutter mx-auto max-w-7xl pb-1">
           {best ? (
             <button type="button" onClick={() => onOpen(best.id)} className="block w-full rounded-card" aria-label={`Best deal today: ${best.board.brand} ${best.board.model}`}>
-              <SidewaysBoard src={best.board.images[0] ?? ""} alt="" placeholder={ASSETS.placeholder[sport]} maxHeight={wide ? 170 : 112} className="-mt-5 md:-mt-16" eager />
+              <SidewaysBoard src={best.board.images[0] ?? ""} cutout={best.board.cutout} alt="" placeholder={ASSETS.placeholder[sport]} maxHeight={wide ? 170 : 112} className="-mt-5 md:-mt-16" eager />
             </button>
           ) : <div className="h-24" />}
         </div>
