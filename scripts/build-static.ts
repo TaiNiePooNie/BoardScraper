@@ -3,7 +3,7 @@
  * Claude artifact / any static host:
  *   DATABASE_URL=pglite:./data/pglite npx tsx scripts/build-static.ts [out.html]
  */
-import { cutoutWebp } from "../src/lib/server/cutout";
+import { cleanPhotoWebp } from "../src/lib/server/cutout";
 import { build } from "esbuild";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -32,8 +32,8 @@ if (!process.argv.includes("--no-photos")) {
       try {
         const res = await fetch(src.startsWith("//") ? `https:${src}` : src, { signal: AbortSignal.timeout(20_000), headers: { "user-agent": "Mozilla/5.0 BoardBuddy-static-build" } });
         if (!res.ok) throw new Error(String(res.status));
-        // Cut-out on a transparent background, like /api/img?cut=1 (boards float on the tinted UI).
-        const img = await cutoutWebp(sharp(Buffer.from(await res.arrayBuffer())), 560);
+        // Background turned white and trimmed, like /api/img.
+        const img = await cleanPhotoWebp(sharp(Buffer.from(await res.arrayBuffer())), 560);
         b.images = [`data:image/webp;base64,${img.toString("base64")}`];
         ok++;
       } catch {

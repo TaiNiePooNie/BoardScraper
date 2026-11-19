@@ -1,9 +1,11 @@
 /**
- * Board photo cut-out: removes the plain studio background (white or light grey) around a
- * board so it can float on a coloured backdrop. Flood-fills from the image edges through
- * pixels close to the corner colour, with a soft edge for anti-aliasing. Photos on a busy
- * background barely change (the fill stops at the first non-matching pixel).
- * Server only (sharp): used by /api/img?cut=1 and the static build.
+ * Clean product photo: turns a plain studio background (light grey, off-white) pure white
+ * and trims it, so the photo sits seamlessly on a white card or blends into a light tile
+ * (mix-blend-multiply). Flood-fills from the image edges through pixels close to the
+ * corner colour, with a soft edge. Turning the background white (instead of transparent)
+ * means a mistake is invisible: a white board on a white background just stays white.
+ * Photos on a busy or dark background are left alone.
+ * Server only (sharp): used by /api/img and the static build.
  */
 import type { Sharp } from "sharp";
 
@@ -64,14 +66,20 @@ function smoothEdges(data: Uint8Array | Buffer, W: number, H: number) {
   }
 }
 
-/** sharp pipeline → transparent WebP with the background removed and trimmed to the board. */
-export async function cutoutWebp(img: Sharp, height: number): Promise<Buffer> {
+/** sharp pipeline → WebP with the studio background turned white and trimmed off. */
+export async function cleanPhotoWebp(img: Sharp, height: number): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
   // Work at the output size: the fill is O(pixels).
-  const { data, info } = await img.resize({ height, width: Math.round(height * 1.4), fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = await img
+    .flatten({ background: "#ffffff" })
+    .resize({ height, width: Math.round(height * 1.4), fit: "inside", withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   removeBackground(data, info.width, info.height);
   return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } })
-    .trim({ threshold: 1 })
-    .webp({ quality: 78, alphaQuality: 90 })
+    .flatten({ background: "#ffffff" })
+    .trim({ background: "#ffffff", threshold: 10 })
+    .webp({ quality: 78 })
     .toBuffer();
 }
