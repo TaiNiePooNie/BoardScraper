@@ -25,7 +25,9 @@ import { Logo } from "./Logo";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
 import { ProductPage, type LiveCheck } from "./ProductPage";
 import { RestockSheet } from "./RestockSheet";
-import { SaleBanner } from "./SaleBanner";
+import { ShopHero } from "./ShopHero";
+import { FitWord } from "./look";
+import { hueStyle, SCREEN_HUE, SPORT_HUE } from "@/lib/look";
 import { SizeSheet } from "./size/SizeSheet";
 import { SportIcon } from "./SportIcon";
 
@@ -47,17 +49,6 @@ const scrollBehavior = (): ScrollBehavior => (window.matchMedia?.("(prefers-redu
 
 const safeGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const safeSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
-
-const HERO_TINT: Record<Sport, string> = {
-  snow: "from-ice/15 via-ice/5 to-white",
-  skate: "from-acid/35 via-acid/10 to-white",
-  surf: "from-ice/25 via-ice/10 to-white",
-};
-const HERO_LINE: Record<Sport, string> = {
-  snow: "Snowboards that fit you, at the best price.",
-  skate: "Decks and completes that fit you, at the best price.",
-  surf: "Surfboards with the right volume, at the best price.",
-};
 
 type View = "shop" | "saved";
 
@@ -93,7 +84,6 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
   const [acct, setAcct] = useState<AccountState>({ available: false, providers: { google: false, apple: false, email: false, password: false, passwordReset: false }, user: null });
   const [toast, setToast] = useState<string | null>(null);
   const [live, setLive] = useState<Record<string, LiveCheck>>({});
-  const heroArt = useArtReady(ASSETS.hero[sport]);
   const loadedAt = useRef(0);
   const localeRef = useRef(locale);
   localeRef.current = locale;
@@ -245,7 +235,9 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
     return out;
   }, [products, filters, visible.length]);
   const fitCount = useMemo(() => products.filter((p) => p.fits).length, [products]);
-  const shopCount = useMemo(() => new Set(deals.map((d) => d.retailer.id)).size, [deals]);
+  const onSaleCount = useMemo(() => products.filter((p) => p.discountPct > 0).length, [products]);
+  /** Shop band: the deepest discount that has a photo. */
+  const bestDeal = useMemo(() => products.filter((p) => p.board.images.length).reduce<(typeof products)[number] | null>((a, p) => (!a || p.discountPct > a.discountPct || (p.discountPct === a.discountPct && p.rank > a.rank) ? p : a), null), [products]);
 
   // Saved boards: across all sports.
   const savedProducts = useMemo(() => {
@@ -355,9 +347,9 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
   const otherSport: Sport = sport === "snow" ? "skate" : "snow";
 
   return (
-    <div className="min-h-screen bg-white pb-36 md:pb-0">
-      {/* ── header ── */}
-      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+    <div className="hue min-h-screen bg-cream pb-36 text-ink md:pb-0" style={hueStyle(view === "saved" ? SCREEN_HUE.saved : SPORT_HUE[sport])}>
+      {/* ── header: the top of the dark band ── */}
+      <header className="sticky top-0 z-40 bg-deep text-word" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
         <div className="app-gutter mx-auto flex h-14 max-w-7xl items-center gap-2 md:h-16 md:gap-3">
           <button type="button" onClick={goHome} aria-label="BoardBuddy home" className="flex min-h-11 shrink-0 items-center rounded-control">
             <Logo height={30} />
@@ -365,26 +357,26 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
           <nav aria-label="Sport" className="ml-4 hidden items-center gap-1 md:flex">
             {SPORTS.map((s) => (
               <button key={s} type="button" onClick={() => setSport(s)} aria-current={sport === s && view === "shop" ? "page" : undefined}
-                className={clsx("min-h-9 rounded-full px-3 text-sm font-semibold transition", sport === s && view === "shop" ? "bg-ink text-white" : "text-ink hover:bg-surface")}>
+                className={clsx("min-h-9 rounded-full px-3.5 font-display text-sm font-extrabold uppercase tracking-[0.12em] transition", sport === s && view === "shop" ? "bg-word text-deep" : "text-on-deep hover:text-word")}>
                 {SPORT_LABEL[s]}
               </button>
             ))}
           </nav>
-          <SearchBox className="ml-auto hidden max-w-sm flex-1 md:flex" value={filters.q} onChange={(q) => { changeFilters((f) => ({ ...f, q })); setView("shop"); }} />
+          <SearchBox className="ml-auto hidden max-w-sm flex-1 md:flex" dark value={filters.q} onChange={(q) => { changeFilters((f) => ({ ...f, q })); setView("shop"); }} />
           <div className="-mr-2 ml-auto flex items-center md:ml-1 md:mr-0">
-            <button type="button" onClick={() => openSize()} className="chip mr-1 !hidden font-semibold md:!inline-flex">
+            <button type="button" onClick={() => openSize()} className="chip mr-1 !hidden !border-on-deep/40 !bg-transparent font-semibold !text-word hover:!border-word md:!inline-flex">
               <Ruler className="h-4 w-4" />{fit ? fit.label : "Find my size"}
             </button>
-            <button type="button" onClick={() => { setView("saved"); window.scrollTo({ top: 0 }); }} className="icon-btn relative !hidden md:!grid" aria-label={`Saved boards (${store.holds.length})`}>
+            <button type="button" onClick={() => { setView("saved"); window.scrollTo({ top: 0 }); }} className="icon-btn relative !hidden text-word hover:bg-white/10 md:!grid" aria-label={`Saved boards (${store.holds.length})`}>
               <Heart className="h-5 w-5" />
               {store.holds.length > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-sale px-1 text-2xs font-bold text-white">{store.holds.length}</span>}
             </button>
             {services.feedback && (
-              <button type="button" onClick={() => setSheet("feedback")} className="icon-btn" aria-label="Feedback & support" title="Feedback & support">
+              <button type="button" onClick={() => setSheet("feedback")} className="icon-btn text-word hover:bg-white/10" aria-label="Feedback & support" title="Feedback & support">
                 <MessageCircleQuestion className="h-5 w-5" />
               </button>
             )}
-            <button type="button" onClick={() => setSheet("account")} className="icon-btn" aria-label="Your profile">
+            <button type="button" onClick={() => setSheet("account")} className="icon-btn hover:bg-white/10" aria-label="Your profile">
               <Avatar n={store.buddies[0].avatar} name={store.buddies[0].name} size={30} />
             </button>
           </div>
@@ -394,64 +386,44 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
           <nav aria-label="Sport" className="app-gutter flex gap-6 md:hidden">
             {SPORTS.map((s) => (
               <button key={s} type="button" onClick={() => setSport(s)} aria-current={sport === s ? "page" : undefined}
-                className={clsx("relative flex h-11 items-center gap-1.5 text-sm font-semibold", sport === s ? "text-ink" : "text-muted")}>
-                <SportIcon sport={s} className="h-5 w-5" art={false} />{SPORT_SHORT[s]}
-                {sport === s && <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-ink" />}
+                className={clsx("relative flex h-11 items-center font-display text-[0.8125rem] font-extrabold uppercase tracking-[0.12em]", sport === s ? "text-word" : "text-on-deep")}>
+                {SPORT_SHORT[s]}
+                {sport === s && <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-word" />}
               </button>
             ))}
           </nav>
         )}
       </header>
 
+      {/* ── the band: sport word + best deal, or SAVED ── */}
+      {showHero && (
+        <ShopHero sport={sport} count={result ? products.length : null} onSale={onSaleCount} country={locale.country} best={bestDeal} onOpen={openBoard} plural={SPORT_LABEL[sport].toLowerCase()} />
+      )}
+      {view === "saved" && (
+        <section aria-label="Saved boards" className="bg-deep text-word">
+          <div className="app-gutter mx-auto max-w-7xl pb-5 pt-3">
+            <p className="eyebrow">{store.holds.length} board{store.holds.length === 1 ? "" : "s"} · we email you when they get cheaper</p>
+            <FitWord as="h1" max={170} className="mt-3">Saved</FitWord>
+          </div>
+        </section>
+      )}
+
       <main className="app-gutter mx-auto max-w-7xl">
         {view === "shop" && (
-          <SearchBox className="mt-3 flex md:hidden" value={filters.q} onChange={(q) => changeFilters((f) => ({ ...f, q }))} />
+          <SearchBox className="mt-4 flex md:hidden" value={filters.q} onChange={(q) => changeFilters((f) => ({ ...f, q }))} />
         )}
-
-        {/* ── hero (desktop; phones get the floating size pill instead) ── */}
-        {showHero && (
-          <section aria-label={SPORT_LABEL[sport]} className={clsx("relative mt-6 hidden overflow-hidden rounded-sheet bg-gradient-to-br md:block", HERO_TINT[sport])}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {heroArt && <img src={ASSETS.hero[sport]} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right" />}
-            <div className="relative grid min-h-[320px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-10">
-              <div className="max-w-md">
-                <p className="label">{SPORT_LABEL[sport]}</p>
-                <p className="mt-1 text-5xl font-extrabold leading-[1.1] tracking-tight">{HERO_LINE[sport]}</p>
-                <p className="mt-2 text-base text-muted">
-                  {firstLoad ? "Checking the shops…" : `${products.length} boards from ${shopCount} shops · delivered prices to ${countryName(locale.country)}`}
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  {fit ? (
-                    <>
-                      <button type="button" className="btn-lime" onClick={() => { changeFilters((f) => ({ ...f, fitsMe: true })); toGrid(); }}>
-                        {fitCount} fit {firstName} · {fit.rangeLabel}
-                      </button>
-                      <button type="button" className="link text-sm" onClick={() => openSize()}>Edit size</button>
-                    </>
-                  ) : (
-                    <button type="button" className="btn-lime" onClick={() => openSize()}><Ruler className="h-4 w-4" />Find my size</button>
-                  )}
-                </div>
-              </div>
-              {!heroArt && <AssetImg src={ASSETS.mascotSport[sport]} alt="" className="h-56 w-56 self-end" fallback={<AssetImg src={ASSETS.mascot.wave} alt="" className="h-56 w-56 self-end" />} />}
-            </div>
-          </section>
-        )}
-
-        {/* ── sale calendar ── */}
-        {view === "shop" && !searching && <SaleBanner sport={sport} country={locale.country} onShowSale={() => { changeFilters((f) => ({ ...f, minDiscount: Math.max(f.minDiscount, MIN_DISCOUNT) })); toGrid(); }} onAlerts={() => setSheet("account")} />}
 
         {/* ── shop by type ── */}
         {view === "shop" && !searching && facets.categories.size > 0 && (
           <section className="mt-5 md:mt-6" aria-label="Shop by type">
-            <h2 className="mb-2 text-base font-bold md:mb-3 md:text-lg">Shop by type</h2>
+            <h2 className="mb-2 font-display text-base font-black uppercase tracking-wide md:mb-3 md:text-lg">Shop by type</h2>
             {/* phones: one swipeable line, so long names ("Longboards") never break mid-word */}
             <div className={clsx("no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:grid sm:overflow-visible sm:px-0", CATEGORIES_BY_SPORT[sport].length > 4 ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
               {CATEGORIES_BY_SPORT[sport].filter((c) => facets.categories.has(c)).map((c) => {
                 const on = filters.category === c;
                 return (
                   <button key={c} type="button" aria-pressed={on} onClick={() => changeFilters((f) => ({ ...f, category: on ? null : c }))}
-                    className={clsx("flex w-[5.25rem] shrink-0 flex-col items-center gap-1 rounded-card border px-1 py-2 text-center transition sm:w-auto sm:min-w-0 sm:shrink md:p-3", on ? "border-ink bg-surface" : "border-transparent bg-surface hover:border-line")}>
+                    className={clsx("flex w-[5.25rem] shrink-0 flex-col items-center gap-1 rounded-card border-[1.5px] px-1 py-2 text-center transition sm:w-auto sm:min-w-0 sm:shrink md:p-3", on ? "border-ink bg-paper" : "border-line bg-paper hover:border-ink")}>
                     <AssetImg src={ASSETS.type[c]} alt="" className="h-10 w-10 md:h-14 md:w-14" fallback={<SportIcon sport={sport} className="h-10 w-10 p-2 text-muted md:h-14 md:w-14" art={false} />} />
                     <span className="line-clamp-2 max-w-full text-2xs font-semibold leading-tight md:text-sm">{CATEGORY_LABEL[c]}</span>
                     <span className="text-2xs text-muted md:text-xs">{facets.categories.get(c)}</span>
@@ -464,10 +436,10 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
 
         {/* ── title ── */}
         <div id="grid" className="mt-5 flex min-h-11 scroll-mt-28 items-center gap-3 md:mt-8 md:scroll-mt-20">
-          <h1 className="min-w-0 flex-1 truncate text-lg font-bold md:text-xl">
+          <h2 className="min-w-0 flex-1 truncate font-display text-xl font-black uppercase tracking-tight md:text-2xl">
             {title}
-            {result && <span className="ml-2 text-sm font-medium text-muted">{list.length}</span>}
-          </h1>
+            {result && <span className="ml-2 font-sans text-sm font-semibold normal-case tracking-normal text-muted">{list.length}</span>}
+          </h2>
           {view === "shop" ? (
             <label className="hidden shrink-0 items-center gap-2 text-sm md:flex">
               <span className="text-muted">Sort</span>
@@ -482,7 +454,7 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
 
         {/* ── quick filters: one sticky line, scrolls sideways ── */}
         {view === "shop" && (
-          <div className="sticky top-[calc(env(safe-area-inset-top,0px)+6.25rem)] z-30 -mx-4 flex items-center bg-white/95 py-2 backdrop-blur md:top-16 md:mx-0">
+          <div className="sticky top-[calc(env(safe-area-inset-top,0px)+6.25rem)] z-30 -mx-4 flex items-center bg-cream/95 py-2 backdrop-blur md:top-16 md:mx-0">
             <div className="shrink-0 pl-4 pr-2 md:pl-0">
               <button type="button" onClick={() => setSheet("filters")} className="chip font-semibold" aria-label={`Filter and sort${nFilters ? `, ${nFilters} active` : ""}`}>
                 <SlidersHorizontal className="h-4 w-4" />Filter{nFilters > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-2xs font-bold text-white">{nFilters}</span>}
@@ -564,7 +536,7 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
       {view === "shop" && !openProduct && !sheet && visible.length > 0 && (
         <div className={clsx("pointer-events-none fixed inset-x-0 z-30 flex justify-center px-4 transition duration-200 md:hidden", pillHidden && "translate-y-24 opacity-0")} style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 4.25rem)" }}>
           {fit ? (
-            <div className="pointer-events-auto flex max-w-full items-center overflow-hidden rounded-full border border-line bg-white text-sm font-semibold shadow-float">
+            <div className="pointer-events-auto flex max-w-full items-center overflow-hidden rounded-full border border-line bg-paper text-sm font-semibold shadow-float">
               <button type="button" aria-pressed={filters.fitsMe} onClick={() => changeFilters((f) => ({ ...f, fitsMe: !f.fitsMe }))}
                 className={clsx("flex min-h-11 min-w-0 items-center gap-1.5 pl-3.5 pr-3 focus-visible:outline-offset-[-2px]", filters.fitsMe ? "bg-ink text-white" : "text-ink")}>
                 <span aria-hidden className={clsx("grid h-4 w-4 shrink-0 place-items-center rounded-full border", filters.fitsMe ? "border-acid bg-acid text-ink" : "border-muted")}>{filters.fitsMe && <Check className="h-3 w-3" />}</span>
@@ -579,7 +551,7 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
       )}
 
       {/* ── phones: bottom nav ── */}
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="grid grid-cols-4">
           {([
             ["shop", "Shop", Home, () => { setView("shop"); window.scrollTo({ top: 0, behavior: scrollBehavior() }); }],
@@ -676,28 +648,14 @@ export function StoreApp({ initialLocale, services, initialBoardId }: { initialL
 
 /** True once an art file has loaded (false while missing), so layouts can fall back. */
 const artCache = new Map<string, boolean>();
-function useArtReady(src: string): boolean {
-  const [ok, setOk] = useState(() => artCache.get(src) ?? false);
-  useEffect(() => {
-    if (artCache.has(src)) { setOk(artCache.get(src)!); return; }
-    setOk(false);
-    let alive = true;
-    const img = new Image();
-    img.onload = () => { artCache.set(src, img.naturalWidth > 0); if (alive) setOk(img.naturalWidth > 0); };
-    img.onerror = () => { artCache.set(src, false); if (alive) setOk(false); };
-    img.src = src;
-    return () => { alive = false; };
-  }, [src]);
-  return ok;
-}
-
-function SearchBox({ value, onChange, className }: { value: string; onChange: (q: string) => void; className?: string }) {
+function SearchBox({ value, onChange, className, dark }: { value: string; onChange: (q: string) => void; className?: string; dark?: boolean }) {
   return (
     <label className={clsx("relative items-center", className)}>
       <span className="sr-only">Search boards</span>
-      <Search className="pointer-events-none absolute left-3.5 h-4 w-4 text-muted" aria-hidden />
+      <Search className={clsx("pointer-events-none absolute left-3.5 h-4 w-4", dark ? "text-on-deep" : "text-muted")} aria-hidden />
       <input type="search" enterKeyHint="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Search brands and models"
-        className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-11 text-base outline-none transition placeholder:text-muted focus:border-ink focus:bg-white md:h-10 md:text-sm [&::-webkit-search-cancel-button]:hidden" />
+        className={clsx("h-12 w-full rounded-full border-[1.5px] pl-10 pr-11 text-base outline-none transition md:h-10 md:text-sm [&::-webkit-search-cancel-button]:hidden",
+          dark ? "border-on-deep/30 bg-white/10 text-word placeholder:text-on-deep focus:border-word" : "border-line bg-paper placeholder:text-muted focus:border-ink")} />
       {value && <button type="button" onClick={() => onChange("")} className="icon-btn absolute right-0 !h-11 !w-11 hover:!bg-transparent md:!h-10" aria-label="Clear search"><X className="h-4 w-4" /></button>}
     </label>
   );

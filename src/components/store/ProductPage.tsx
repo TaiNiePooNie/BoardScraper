@@ -11,7 +11,7 @@ import { CATEGORY_LABEL, type Product } from "@/lib/store";
 import { effectiveMsrp } from "@/lib/deals";
 import type { Deal } from "@/lib/types";
 import { BadgePill } from "./ProductCard";
-import { FitWord, SidewaysBoard } from "./look";
+import { FitWord, SidewaysBoard, useIsWide } from "./look";
 import { boardHue, heroWord, hueStyle } from "@/lib/look";
 import { BuyOrWait } from "./SaleBanner";
 import { useDialog } from "./useDialog";
@@ -55,7 +55,7 @@ export function ProductPage({ p, fit, saved, onToggleSave, onClose, onEditSize, 
 
   const b = p.board;
   const shops = new Set(p.offers.map((o) => o.retailer.id)).size;
-  const heroHeight = useHeroHeight();
+  const heroHeight = useIsWide() ? 260 : 190;
   const fittingLabels = new Set(p.fitSizes.map((m) => m.size.label));
   const offerFits = fit ? new Set(offer.listing.sizes.filter((s) => fittingLabels.has(s.label)).map((s) => s.label)) : new Set<string>();
   const images = p.board.images.length ? p.board.images : [""];
@@ -291,19 +291,6 @@ function Photos({ images, alt, placeholder }: { images: string[]; alt: string; p
       </div>
     </section>
   );
-}
-
-/** Board height in the hero: phones ~190px, wider screens up to 300px. */
-function useHeroHeight() {
-  const [h, setH] = useState(190);
-  useEffect(() => {
-    const mq = window.matchMedia?.("(min-width: 768px)");
-    const set = () => setH(mq?.matches ? 260 : 190);
-    set();
-    mq?.addEventListener("change", set);
-    return () => mq?.removeEventListener("change", set);
-  }, []);
-  return h;
 }
 
 function Details({ p, fit }: { p: Product; fit: SportFit | null }) {
