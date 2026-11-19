@@ -1,7 +1,7 @@
 "use client";
 /* The "board page" look: giant fitted word and a board lying sideways (see src/lib/look.ts). */
 import clsx from "clsx";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ProductImg } from "@/components/ProductImg";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? () => {} : useLayoutEffect;
@@ -26,7 +26,9 @@ export function FitWord({ children, max = 150, min = 36, as: Tag = "h2", classNa
       const avail = el.clientWidth;
       if (!avail) return;
       el.style.fontSize = "100px";
-      const size = Math.max(min, Math.min(max, (100 * avail) / Math.max(1, el.scrollWidth)));
+      // The inner span's width is the text's own width (the block itself is as wide as its box).
+      const text = (el.firstElementChild as HTMLElement | null)?.offsetWidth ?? el.scrollWidth;
+      const size = Math.max(min, Math.min(max, (100 * avail) / Math.max(1, text)));
       el.style.fontSize = `${Math.floor(size * 10) / 10}px`;
     };
     fit();
@@ -38,7 +40,7 @@ export function FitWord({ children, max = 150, min = 36, as: Tag = "h2", classNa
   const guess = `min(${max}px, max(${min}px, calc((100vw - 40px) / ${(children.length * 0.72 + 0.2).toFixed(2)})))`;
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Tag ref={ref as any} className={clsx("display-word", className)} style={{ fontSize: guess, ...style }}>{children}</Tag>
+    <Tag ref={ref as any} className={clsx("display-word", className)} style={{ fontSize: guess, ...style }}><span className="inline-block">{children}</span></Tag>
   );
 }
 
@@ -79,4 +81,17 @@ export function SidewaysBoard({ src, alt, placeholder, maxHeight = 190, classNam
       />
     </div>
   );
+}
+
+/** True on tablets and desktops (≥ 768px). */
+export function useIsWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(min-width: 768px)");
+    const set = () => setWide(!!mq?.matches);
+    set();
+    mq?.addEventListener("change", set);
+    return () => mq?.removeEventListener("change", set);
+  }, []);
+  return wide;
 }
