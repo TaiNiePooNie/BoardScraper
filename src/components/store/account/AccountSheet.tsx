@@ -1,5 +1,7 @@
 "use client";
 import clsx from "clsx";
+import { FitWord } from "../look";
+import { SCREEN_HUE } from "@/lib/look";
 import { LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { AssetImg } from "@/components/AssetImg";
@@ -68,22 +70,21 @@ export function AccountSheet({ account, state, buddies, activeId, alerts, onAler
   };
 
   return (
-    <Sheet title="Profile" onClose={onClose} wide>
-      {/* who */}
-      <section className="flex items-center gap-3 pb-4 pt-1">
-        {me && <Avatar n={me.avatar} name={me.name} size={56} />}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xl font-bold">{(me?.name && me.name !== "Me" ? me.name : state.user?.name) || me?.name || "Guest"}</p>
-          <p className={clsx("text-sm text-muted", state.user && "truncate")}>{state.user ? state.user.email : "Guest · saved on this device only"}</p>
+    <Sheet title="Profile" label="Profile" onClose={onClose} wide hue={SCREEN_HUE.profile} hero={
+      <div>
+        <p className="eyebrow pr-10">{state.user ? state.user.email : "Guest · saved on this device"}</p>
+        <div className="mt-4 flex items-end gap-4">
+          {me && <span className="shrink-0 rounded-full border-[3px] border-word bg-word"><Avatar n={me.avatar} name={me.name} size={84} /></span>}
+          <FitWord as="p" max={120} min={32} className="min-w-0 flex-1">{(me?.name && me.name !== "Me" ? me.name : state.user?.name) || me?.name || "Guest"}</FitWord>
+          {me && <button type="button" onClick={() => onEdit(me.id)} className="icon-btn shrink-0 text-word hover:bg-white/10" aria-label="Change your name and sizes"><Pencil className="h-4 w-4" /></button>}
         </div>
-        {me && <button type="button" onClick={() => onEdit(me.id)} className="icon-btn" aria-label="Change your name and sizes"><Pencil className="h-4 w-4" /></button>}
-      </section>
-
+      </div>
+    }>
       {/* sign in */}
       {!signedIn && (
-        <section className="relative mb-4 overflow-hidden rounded-card bg-surface p-4">
+        <section className="relative mb-4 mt-3 overflow-hidden rounded-card border-[1.5px] border-line bg-paper p-4">
           <AssetImg src={ASSETS.mascotCard} alt="" className="pointer-events-none absolute -right-3 -top-2 h-24 w-24 rotate-6" fallback={<AssetImg src={ASSETS.mascot.wave} alt="" className="pointer-events-none absolute -right-3 -top-2 h-24 w-24 rotate-6" />} />
-          <h3 className="pr-20 text-base font-bold">Sign in to keep it everywhere</h3>
+          <h3 className="pr-20 font-display text-lg font-black uppercase leading-tight tracking-tight">Keep it everywhere</h3>
           <p className="mb-3 mt-1 pr-20 text-sm text-muted">Your sizes, riders and saved boards on every device, plus price-drop emails. Free, and you can delete it any time.</p>
           {state.available && account ? (
             <SignInOptions account={account} providers={state.providers} defaultName={me?.name === "Me" ? "" : me?.name} />
